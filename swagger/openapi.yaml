@@ -1,0 +1,1470 @@
+openapi: 3.0.3
+info:
+  title: 営業リスト管理システムAPI
+  description: 企業リスト管理、案件管理、営業ステータス管理を行うシステムのAPI
+  version: 1.0.0
+  contact:
+    name: バジェットアドテクノロジー
+servers:
+  - url: http://localhost:4010
+    description: Mock Server
+  - url: https://api.budget-sales.com/api/v1
+    description: Production Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+    description: 認証関連
+  - name: Companies
+    description: 企業管理
+  - name: Executives
+    description: 役員管理
+  - name: Projects
+    description: 案件管理
+  - name: Filters
+    description: 保存済みフィルタ
+  - name: Master
+    description: マスタデータ
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: ログイン
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: ログイン成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+                  refresh_token:
+                    type: string
+                    example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: user@example.com
+                      name:
+                        type: string
+                        example: 山田太郎
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: ログアウト
+      responses:
+        '200':
+          description: ログアウト成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: ログアウトしました
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: トークン更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: トークン更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+
+  /companies:
+    get:
+      tags:
+        - Companies
+      summary: 企業一覧取得
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: ページ番号
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            enum: [50, 100, 200]
+          description: 1ページあたりの件数
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: 企業名検索
+        - in: query
+          name: industry
+          schema:
+            type: string
+          description: 業界フィルタ
+        - in: query
+          name: employee_min
+          schema:
+            type: integer
+          description: 従業員数最小値
+        - in: query
+          name: employee_max
+          schema:
+            type: integer
+          description: 従業員数最大値
+        - in: query
+          name: revenue_min
+          schema:
+            type: integer
+          description: 売上高最小値
+        - in: query
+          name: revenue_max
+          schema:
+            type: integer
+          description: 売上高最大値
+        - in: query
+          name: prefecture
+          schema:
+            type: string
+          description: 都道府県
+        - in: query
+          name: established_year_min
+          schema:
+            type: integer
+          description: 設立年最小値
+        - in: query
+          name: established_year_max
+          schema:
+            type: integer
+          description: 設立年最大値
+        - in: query
+          name: has_facebook
+          schema:
+            type: boolean
+          description: Facebook URL有無
+        - in: query
+          name: exclude_ng
+          schema:
+            type: boolean
+          description: NG企業除外
+        - in: query
+          name: project_id
+          schema:
+            type: integer
+          description: 案件IDによるNG企業除外
+        - in: query
+          name: random_seed
+          schema:
+            type: string
+          description: ランダム表示用シード値
+      responses:
+        '200':
+          description: 企業一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 25000
+                  next:
+                    type: string
+                    nullable: true
+                    example: http://localhost:4010/companies?page=2
+                  previous:
+                    type: string
+                    nullable: true
+                    example: null
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompanyList'
+
+    post:
+      tags:
+        - Companies
+      summary: 企業作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyCreate'
+      responses:
+        '201':
+          description: 企業作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /companies/{id}:
+    get:
+      tags:
+        - Companies
+      summary: 企業詳細取得
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: 企業ID
+      responses:
+        '200':
+          description: 企業詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Companies
+      summary: 企業更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyCreate'
+      responses:
+        '200':
+          description: 企業更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDetail'
+
+    patch:
+      tags:
+        - Companies
+      summary: 企業部分更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyPartialUpdate'
+      responses:
+        '200':
+          description: 企業更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDetail'
+
+    delete:
+      tags:
+        - Companies
+      summary: 企業削除
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 削除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /companies/{id}/toggle_ng:
+    post:
+      tags:
+        - Companies
+      summary: 企業NG設定切り替え
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: 競合他社のため
+      responses:
+        '200':
+          description: NG設定更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_global_ng:
+                    type: boolean
+                  ng_reason:
+                    type: string
+
+  /companies/import_csv:
+    post:
+      tags:
+        - Companies
+      summary: CSVインポート
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: インポート成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  imported_count:
+                    type: integer
+                    example: 150
+                  error_count:
+                    type: integer
+                    example: 5
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row:
+                          type: integer
+                        message:
+                          type: string
+
+  /companies/export_csv:
+    get:
+      tags:
+        - Companies
+      summary: CSVエクスポート
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: industry
+          schema:
+            type: string
+        - in: query
+          name: prefecture
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CSVファイル
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /companies/{company_id}/executives:
+    get:
+      tags:
+        - Executives
+      summary: 役員一覧取得
+      parameters:
+        - in: path
+          name: company_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 役員一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Executive'
+
+    post:
+      tags:
+        - Executives
+      summary: 役員作成
+      parameters:
+        - in: path
+          name: company_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutiveCreate'
+      responses:
+        '201':
+          description: 役員作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Executive'
+
+  /executives/{id}:
+    put:
+      tags:
+        - Executives
+      summary: 役員更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutiveCreate'
+      responses:
+        '200':
+          description: 役員更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Executive'
+
+    patch:
+      tags:
+        - Executives
+      summary: 役員部分更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutivePartialUpdate'
+      responses:
+        '200':
+          description: 役員更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Executive'
+
+    delete:
+      tags:
+        - Executives
+      summary: 役員削除
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 削除成功
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: 案件一覧取得
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: 案件名・依頼企業名検索
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [進行中, 完了, 中止]
+          description: ステータスフィルタ
+        - in: query
+          name: created_from
+          schema:
+            type: string
+            format: date
+          description: 作成日開始
+        - in: query
+          name: created_to
+          schema:
+            type: string
+            format: date
+          description: 作成日終了
+      responses:
+        '200':
+          description: 案件一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 25
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProjectList'
+
+    post:
+      tags:
+        - Projects
+      summary: 案件作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: 案件作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetail'
+
+  /projects/{id}:
+    get:
+      tags:
+        - Projects
+      summary: 案件詳細取得
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 案件詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetail'
+
+    put:
+      tags:
+        - Projects
+      summary: 案件更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '200':
+          description: 案件更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetail'
+
+    patch:
+      tags:
+        - Projects
+      summary: 案件部分更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectPartialUpdate'
+      responses:
+        '200':
+          description: 案件更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetail'
+
+    delete:
+      tags:
+        - Projects
+      summary: 案件削除
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 削除成功
+
+  /projects/{id}/add_companies:
+    post:
+      tags:
+        - Projects
+      summary: 案件に企業追加
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - company_ids
+              properties:
+                company_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 2, 3, 4, 5]
+      responses:
+        '200':
+          description: 企業追加成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  added_count:
+                    type: integer
+                    example: 5
+                  message:
+                    type: string
+                    example: 5社を案件に追加しました
+
+  /projects/{id}/companies:
+    get:
+      tags:
+        - Projects
+      summary: 案件企業一覧取得
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: 案件企業一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 150
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProjectCompany'
+
+  /projects/{project_id}/companies/{company_id}:
+    patch:
+      tags:
+        - Projects
+      summary: 案件企業ステータス更新
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: company_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [未接触, DM送信予定, DM送信済み, 返信あり, アポ獲得, 成約, NG]
+                contact_date:
+                  type: string
+                  format: date
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: ステータス更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCompany'
+
+    delete:
+      tags:
+        - Projects
+      summary: 案件企業削除
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: company_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 削除成功
+
+  /projects/{id}/bulk_update_status:
+    post:
+      tags:
+        - Projects
+      summary: 案件企業一括ステータス更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - company_ids
+                - status
+              properties:
+                company_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 2, 3]
+                status:
+                  type: string
+                  enum: [未接触, DM送信予定, DM送信済み, 返信あり, アポ獲得, 成約, NG]
+                contact_date:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: 一括更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated_count:
+                    type: integer
+                    example: 3
+                  message:
+                    type: string
+
+  /projects/{project_id}/ng_companies:
+    post:
+      tags:
+        - Projects
+      summary: 案件NG企業設定
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - company_id
+              properties:
+                company_id:
+                  type: integer
+                reason:
+                  type: string
+                  example: クライアントからNG指定
+      responses:
+        '201':
+          description: NG企業設定成功
+
+  /projects/{id}/export_csv:
+    get:
+      tags:
+        - Projects
+      summary: 案件CSVエクスポート
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: CSVファイル
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /saved_filters:
+    get:
+      tags:
+        - Filters
+      summary: 保存済みフィルタ一覧取得
+      responses:
+        '200':
+          description: フィルタ一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SavedFilter'
+
+    post:
+      tags:
+        - Filters
+      summary: フィルタ保存
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedFilterCreate'
+      responses:
+        '201':
+          description: フィルタ保存成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedFilter'
+
+  /saved_filters/{id}:
+    delete:
+      tags:
+        - Filters
+      summary: フィルタ削除
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 削除成功
+
+  /master/industries:
+    get:
+      tags:
+        - Master
+      summary: 業界一覧取得
+      responses:
+        '200':
+          description: 業界一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - IT・ソフトウェア
+                  - 製造業
+                  - 人材・派遣
+                  - 金融・保険
+                  - 不動産
+                  - その他
+
+  /master/prefectures:
+    get:
+      tags:
+        - Master
+      summary: 都道府県一覧取得
+      responses:
+        '200':
+          description: 都道府県一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - 北海道
+                  - 青森県
+                  - 岩手県
+                  - 宮城県
+                  - 秋田県
+                  - 山形県
+                  - 福島県
+                  - 茨城県
+                  - 栃木県
+                  - 群馬県
+                  - 埼玉県
+                  - 千葉県
+                  - 東京都
+                  - 神奈川県
+
+  /master/statuses:
+    get:
+      tags:
+        - Master
+      summary: ステータス一覧取得
+      responses:
+        '200':
+          description: ステータス一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - 未接触
+                  - DM送信予定
+                  - DM送信済み
+                  - 返信あり
+                  - アポ獲得
+                  - 成約
+                  - NG
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CompanyList:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 株式会社サンプル
+        industry:
+          type: string
+          example: IT・ソフトウェア
+        employee_count:
+          type: integer
+          example: 150
+        revenue:
+          type: integer
+          example: 500000000
+        prefecture:
+          type: string
+          example: 東京都
+        city:
+          type: string
+          example: 渋谷区
+        established_year:
+          type: integer
+          example: 2010
+        website_url:
+          type: string
+          example: https://example.com
+        contact_email:
+          type: string
+          example: info@example.com
+        phone:
+          type: string
+          example: 03-1234-5678
+        notes:
+          type: string
+          example: 備考
+        is_global_ng:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15T15:30:00Z
+        executives:
+          type: array
+          items:
+            $ref: '#/components/schemas/Executive'
+
+    CompanyDetail:
+      allOf:
+        - $ref: '#/components/schemas/CompanyList'
+        - type: object
+          properties:
+            ng_reason:
+              type: string
+              example: ''
+
+    CompanyCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: 株式会社新規企業
+        industry:
+          type: string
+          example: 製造業
+        employee_count:
+          type: integer
+          example: 100
+        revenue:
+          type: integer
+          example: 300000000
+        prefecture:
+          type: string
+          example: 大阪府
+        city:
+          type: string
+          example: 大阪市
+        established_year:
+          type: integer
+          example: 2015
+        website_url:
+          type: string
+          example: https://newcompany.com
+        contact_email:
+          type: string
+          example: info@newcompany.com
+        phone:
+          type: string
+          example: 06-1234-5678
+        notes:
+          type: string
+          example: 新規登録企業
+
+    CompanyPartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        industry:
+          type: string
+        employee_count:
+          type: integer
+        revenue:
+          type: integer
+        prefecture:
+          type: string
+        city:
+          type: string
+        established_year:
+          type: integer
+        website_url:
+          type: string
+        contact_email:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: string
+
+    Executive:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 山田太郎
+        position:
+          type: string
+          example: 代表取締役
+        facebook_url:
+          type: string
+          example: https://facebook.com/yamada
+        other_sns_url:
+          type: string
+          example: ''
+        direct_email:
+          type: string
+          example: yamada@example.com
+        notes:
+          type: string
+          example: ''
+
+    ExecutiveCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: 佐藤花子
+        position:
+          type: string
+          example: 取締役
+        facebook_url:
+          type: string
+          example: https://facebook.com/sato
+        other_sns_url:
+          type: string
+          example: https://linkedin.com/in/sato
+        direct_email:
+          type: string
+          example: sato@example.com
+        notes:
+          type: string
+          example: 営業担当
+
+    ExecutivePartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        position:
+          type: string
+        facebook_url:
+          type: string
+        other_sns_url:
+          type: string
+        direct_email:
+          type: string
+        notes:
+          type: string
+
+    ProjectList:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 人材会社向けDM案件
+        client_company:
+          type: string
+          example: 株式会社クライアント
+        description:
+          type: string
+          example: 人材業界向けの営業DM送信
+        status:
+          type: string
+          enum: [進行中, 完了, 中止]
+          example: 進行中
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15T15:30:00Z
+        company_count:
+          type: integer
+          example: 150
+
+    ProjectDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProjectList'
+        - type: object
+          properties:
+            assigned_user:
+              type: string
+              example: 田中次郎
+
+    ProjectCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: 新規案件
+        client_company:
+          type: string
+          example: 株式会社ABC
+        description:
+          type: string
+          example: IT企業向けの営業活動
+        status:
+          type: string
+          enum: [進行中, 完了, 中止]
+          default: 進行中
+        assigned_user:
+          type: string
+          example: 鈴木三郎
+
+    ProjectPartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        client_company:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [進行中, 完了, 中止]
+        assigned_user:
+          type: string
+
+    ProjectCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        company:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: 株式会社サンプル
+            industry:
+              type: string
+              example: IT・ソフトウェア
+        status:
+          type: string
+          enum: [未接触, DM送信予定, DM送信済み, 返信あり, アポ獲得, 成約, NG]
+          example: 未接触
+        contact_date:
+          type: string
+          format: date
+          nullable: true
+          example: null
+        notes:
+          type: string
+          example: ''
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-10T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-10T10:00:00Z
+
+    SavedFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 人材会社_2025Q1
+        filter_conditions:
+          type: object
+          example:
+            industry: 人材・派遣
+            employee_min: 50
+            has_facebook: true
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+
+    SavedFilterCreate:
+      type: object
+      required:
+        - name
+        - filter_conditions
+      properties:
+        name:
+          type: string
+          example: IT企業_大手
+        filter_conditions:
+          type: object
+          example:
+            industry: IT・ソフトウェア
+            employee_min: 300
+            revenue_min: 1000000000
+
+  responses:
+    BadRequest:
+      description: 不正なリクエスト
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: validation_error
+              message:
+                type: string
+                example: 入力データにエラーがあります
+              details:
+                type: object
+                example:
+                  name: ["この項目は必須です"]
+
+    Unauthorized:
+      description: 認証エラー
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: unauthorized
+              message:
+                type: string
+                example: 認証が必要です
+
+    NotFound:
+      description: リソースが見つからない
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: not_found
+              message:
+                type: string
+                example: 指定されたリソースが見つかりません
+
+    InternalServerError:
+      description: サーバー内部エラー
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: internal_server_error
+              message:
+                type: string
+                example: サーバー内部エラーが発生しました

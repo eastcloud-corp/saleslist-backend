@@ -1,0 +1,16 @@
+{
+  "name": "saleslist-mock-server",
+  "version": "1.0.0",
+  "description": "営業リスト管理システムのモックサーバー",
+  "scripts": {
+    "mock": "prism mock -h 0.0.0.0 -p 4010 --cors openapi.yaml",
+    "mock:dynamic": "prism mock -h 0.0.0.0 -p 4010 --cors -d openapi.yaml",
+    "validate": "swagger-cli validate openapi.yaml",
+    "install:prism": "npm install -g @stoplight/prism-cli",
+    "install:swagger-cli": "npm install -g @apidevtools/swagger-cli"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "^5.8.1",
+    "@apidevtools/swagger-cli": "^4.0.4"
+  }
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "id": 1,
+    "name": "IT企業向けDMキャンペーン2025Q1",
+    "client_company": "株式会社マーケティングプロ",
+    "description": "IT・ソフトウェア企業向けの新サービス紹介DM送信",
+    "status": "進行中",
+    "assigned_user": "田中次郎",
+    "created_at": "2025-01-01T10:00:00Z",
+    "updated_at": "2025-01-20T15:30:00Z",
+    "company_count": 85
+  },
+  {
+    "id": 2,
+    "name": "人材会社向け営業リスト",
+    "client_company": "株式会社HRソリューション",
+    "description": "人材派遣会社へのサービス提案用リスト作成と営業活動",
+    "status": "進行中",
+    "assigned_user": "佐藤美咲",
+    "created_at": "2025-01-05T09:00:00Z",
+    "updated_at": "2025-01-22T14:20:00Z",
+    "company_count": 42
+  },
+  {
+    "id": 3,
+    "name": "製造業向けソリューション提案",
+    "client_company": "株式会社インダストリアル",
+    "description": "製造業向けIoTソリューションの提案活動",
+    "status": "完了",
+    "assigned_user": "山田太郎",
+    "created_at": "2024-12-01T10:00:00Z",
+    "updated_at": "2025-01-10T16:45:00Z",
+    "company_count": 120
+  },
+  {
+    "id": 4,
+    "name": "金融機関向け新規開拓",
+    "client_company": "株式会社フィンテックパートナー",
+    "description": "金融・保険業界への新規サービス提案",
+    "status": "進行中",
+    "assigned_user": "鈴木健一",
+    "created_at": "2025-01-15T11:30:00Z",
+    "updated_at": "2025-01-23T13:15:00Z",
+    "company_count": 28
+  },
+  {
+    "id": 5,
+    "name": "スタートアップ企業リスト",
+    "client_company": "株式会社ベンチャーキャピタル",
+    "description": "2020年以降設立のスタートアップ企業へのアプローチ",
+    "status": "進行中",
+    "assigned_user": "高橋優子",
+    "created_at": "2025-01-18T08:45:00Z",
+    "updated_at": "2025-01-24T10:00:00Z",
+    "company_count": 65
+  }
+]

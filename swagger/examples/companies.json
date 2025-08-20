@@ -1,0 +1,3657 @@
+[
+  {
+    "id": 1,
+    "name": "株式会社インテグレーションリクルート",
+    "industry": "人材・派遣",
+    "employee_count": 85,
+    "revenue": 262604100,
+    "prefecture": "新潟県",
+    "city": "新潟市",
+    "established_year": 1993,
+    "website_url": "https://インテグレーションリクルート.co.jp",
+    "contact_email": "info@インテグレーションリクルート.co.jp",
+    "phone": "03-1523-1809",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-16T16:02:00Z",
+    "updated_at": "2025-01-17T22:02:00Z",
+    "executives": [
+      {
+        "name": "佐藤さくら",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/佐藤.さくら",
+        "other_sns_url": "https://linkedin.com/in/佐藤-さくら",
+        "direct_email": "佐藤さくら@インテグレーションリクルート.co.jp",
+        "notes": "",
+        "id": 10
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "合同会社インテグレーションリアルティ",
+    "industry": "不動産",
+    "employee_count": 166,
+    "revenue": 2357278020,
+    "prefecture": "大分県",
+    "city": "大分市",
+    "established_year": 1995,
+    "website_url": "https://インテグレーションリアルティ.co.jp",
+    "contact_email": "info@インテグレーションリアルティ.co.jp",
+    "phone": "03-1786-1973",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-17T15:08:00Z",
+    "updated_at": "2025-01-23T22:08:00Z",
+    "executives": [
+      {
+        "name": "森智子",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/森.智子",
+        "other_sns_url": "https://linkedin.com/in/森-智子",
+        "direct_email": "森智子@インテグレーションリアルティ.co.jp",
+        "notes": "",
+        "id": 20
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "合同会社エンタープライズグループ",
+    "industry": "その他",
+    "employee_count": 277,
+    "revenue": 855774049,
+    "prefecture": "岩手県",
+    "city": "岩手市",
+    "established_year": 2005,
+    "website_url": "https://エンタープライズグループ.co.jp",
+    "contact_email": "info@エンタープライズグループ.co.jp",
+    "phone": "03-2701-7246",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-17T14:15:00Z",
+    "updated_at": "2025-02-02T18:15:00Z",
+    "executives": [
+      {
+        "name": "田中直樹",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-直樹",
+        "direct_email": "田中直樹@エンタープライズグループ.co.jp",
+        "notes": "",
+        "id": 30
+      },
+      {
+        "name": "加藤正人",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/加藤.正人",
+        "other_sns_url": "https://linkedin.com/in/加藤-正人",
+        "direct_email": "加藤正人@エンタープライズグループ.co.jp",
+        "notes": "",
+        "id": 31
+      },
+      {
+        "name": "森浩",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/森.浩",
+        "other_sns_url": "",
+        "direct_email": "森浩@エンタープライズグループ.co.jp",
+        "notes": "",
+        "id": 32
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "有限会社ビジネス産業",
+    "industry": "製造業",
+    "employee_count": 893,
+    "revenue": 7437403187,
+    "prefecture": "長野県",
+    "city": "長野市",
+    "established_year": 1985,
+    "website_url": "https://ビジネス産業.co.jp",
+    "contact_email": "info@ビジネス産業.co.jp",
+    "phone": "03-9093-2603",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-14T15:36:00Z",
+    "updated_at": "2025-01-28T15:36:00Z",
+    "executives": [
+      {
+        "name": "鈴木優子",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "鈴木優子@ビジネス産業.co.jp",
+        "notes": "",
+        "id": 40
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "株式会社アドバンス不動産",
+    "industry": "不動産",
+    "employee_count": 149,
+    "revenue": 1273558279,
+    "prefecture": "徳島県",
+    "city": "徳島市",
+    "established_year": 2009,
+    "website_url": "https://アドバンス不動産.co.jp",
+    "contact_email": "info@アドバンス不動産.co.jp",
+    "phone": "03-2724-4328",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-07T14:26:00Z",
+    "updated_at": "2025-01-08T17:26:00Z",
+    "executives": [
+      {
+        "name": "鈴木正人",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/鈴木.正人",
+        "other_sns_url": "https://linkedin.com/in/鈴木-正人",
+        "direct_email": "鈴木正人@アドバンス不動産.co.jp",
+        "notes": "",
+        "id": 50
+      },
+      {
+        "name": "山田三郎",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/山田-三郎",
+        "direct_email": "山田三郎@アドバンス不動産.co.jp",
+        "notes": "",
+        "id": 51
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "有限会社エンタープライズシステムズ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 400,
+    "revenue": 2650121200,
+    "prefecture": "新潟県",
+    "city": "新潟市",
+    "established_year": 1984,
+    "website_url": "https://エンタープライズシステムズ.co.jp",
+    "contact_email": "info@エンタープライズシステムズ.co.jp",
+    "phone": "03-1515-7148",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T15:50:00Z",
+    "updated_at": "2025-01-21T19:50:00Z",
+    "executives": [
+      {
+        "name": "吉田みどり",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/吉田.みどり",
+        "other_sns_url": "",
+        "direct_email": "吉田みどり@エンタープライズシステムズ.co.jp",
+        "notes": "",
+        "id": 60
+      },
+      {
+        "name": "高橋さくら",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "高橋さくら@エンタープライズシステムズ.co.jp",
+        "notes": "",
+        "id": 61
+      },
+      {
+        "name": "井上陽子",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/井上.陽子",
+        "other_sns_url": "https://linkedin.com/in/井上-陽子",
+        "direct_email": "井上陽子@エンタープライズシステムズ.co.jp",
+        "notes": "",
+        "id": 62
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "合同会社イノベーショングループ",
+    "industry": "その他",
+    "employee_count": 168,
+    "revenue": 1165568376,
+    "prefecture": "岐阜県",
+    "city": "岐阜市",
+    "established_year": 1981,
+    "website_url": "https://イノベーショングループ.co.jp",
+    "contact_email": "info@イノベーショングループ.co.jp",
+    "phone": "03-7933-7431",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-07T17:04:00Z",
+    "updated_at": "2025-01-08T21:04:00Z",
+    "executives": [
+      {
+        "name": "山田翔太",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/山田.翔太",
+        "other_sns_url": "",
+        "direct_email": "山田翔太@イノベーショングループ.co.jp",
+        "notes": "",
+        "id": 70
+      },
+      {
+        "name": "中村太郎",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/中村.太郎",
+        "other_sns_url": "https://linkedin.com/in/中村-太郎",
+        "direct_email": "中村太郎@イノベーショングループ.co.jp",
+        "notes": "",
+        "id": 71
+      },
+      {
+        "name": "中村三郎",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/中村.三郎",
+        "other_sns_url": "",
+        "direct_email": "中村三郎@イノベーショングループ.co.jp",
+        "notes": "",
+        "id": 72
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "株式会社ダイナミックサービス",
+    "industry": "その他",
+    "employee_count": 104,
+    "revenue": 1012028056,
+    "prefecture": "広島県",
+    "city": "広島市",
+    "established_year": 1988,
+    "website_url": "https://ダイナミックサービス.co.jp",
+    "contact_email": "info@ダイナミックサービス.co.jp",
+    "phone": "03-8700-2636",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T13:05:00Z",
+    "updated_at": "2025-01-28T20:05:00Z",
+    "executives": [
+      {
+        "name": "渡辺みどり",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/渡辺.みどり",
+        "other_sns_url": "",
+        "direct_email": "渡辺みどり@ダイナミックサービス.co.jp",
+        "notes": "",
+        "id": 80
+      },
+      {
+        "name": "森陽子",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/森.陽子",
+        "other_sns_url": "",
+        "direct_email": "森陽子@ダイナミックサービス.co.jp",
+        "notes": "",
+        "id": 81
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "有限会社エンタープライズソフト",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 158,
+    "revenue": 1082015916,
+    "prefecture": "福島県",
+    "city": "福島市",
+    "established_year": 2006,
+    "website_url": "https://エンタープライズソフト.co.jp",
+    "contact_email": "info@エンタープライズソフト.co.jp",
+    "phone": "03-5117-7371",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-09T12:44:00Z",
+    "updated_at": "2025-01-26T15:44:00Z",
+    "executives": [
+      {
+        "name": "高橋ゆり",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "高橋ゆり@エンタープライズソフト.co.jp",
+        "notes": "",
+        "id": 90
+      },
+      {
+        "name": "井上美咲",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/井上.美咲",
+        "other_sns_url": "",
+        "direct_email": "井上美咲@エンタープライズソフト.co.jp",
+        "notes": "",
+        "id": 91
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "有限会社マネジメントスタッフ",
+    "industry": "人材・派遣",
+    "employee_count": 60,
+    "revenue": 408371520,
+    "prefecture": "石川県",
+    "city": "石川市",
+    "established_year": 1994,
+    "website_url": "https://マネジメントスタッフ.co.jp",
+    "contact_email": "info@マネジメントスタッフ.co.jp",
+    "phone": "03-3881-2700",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T12:46:00Z",
+    "updated_at": "2025-01-16T14:46:00Z",
+    "executives": [
+      {
+        "name": "森美香",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/森.美香",
+        "other_sns_url": "https://linkedin.com/in/森-美香",
+        "direct_email": "森美香@マネジメントスタッフ.co.jp",
+        "notes": "",
+        "id": 100
+      },
+      {
+        "name": "鈴木誠",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/鈴木.誠",
+        "other_sns_url": "https://linkedin.com/in/鈴木-誠",
+        "direct_email": "鈴木誠@マネジメントスタッフ.co.jp",
+        "notes": "",
+        "id": 101
+      },
+      {
+        "name": "伊藤健一",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "伊藤健一@マネジメントスタッフ.co.jp",
+        "notes": "",
+        "id": 102
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "株式会社ビジネス不動産",
+    "industry": "不動産",
+    "employee_count": 24,
+    "revenue": 288260712,
+    "prefecture": "新潟県",
+    "city": "新潟市",
+    "established_year": 2006,
+    "website_url": "https://ビジネス不動産.co.jp",
+    "contact_email": "info@ビジネス不動産.co.jp",
+    "phone": "03-4453-9073",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-02T15:40:00Z",
+    "updated_at": "2025-01-14T19:40:00Z",
+    "executives": [
+      {
+        "name": "高橋真由美",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/高橋.真由美",
+        "other_sns_url": "https://linkedin.com/in/高橋-真由美",
+        "direct_email": "高橋真由美@ビジネス不動産.co.jp",
+        "notes": "",
+        "id": 110
+      },
+      {
+        "name": "吉田みどり",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/吉田.みどり",
+        "other_sns_url": "",
+        "direct_email": "吉田みどり@ビジネス不動産.co.jp",
+        "notes": "",
+        "id": 111
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "name": "株式会社フューチャーファクトリー",
+    "industry": "製造業",
+    "employee_count": 425,
+    "revenue": 1798368375,
+    "prefecture": "埼玉県",
+    "city": "埼玉市",
+    "established_year": 2006,
+    "website_url": "https://フューチャーファクトリー.co.jp",
+    "contact_email": "info@フューチャーファクトリー.co.jp",
+    "phone": "03-3789-5170",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-02T09:59:00Z",
+    "updated_at": "2025-01-04T16:59:00Z",
+    "executives": [
+      {
+        "name": "森優子",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "森優子@フューチャーファクトリー.co.jp",
+        "notes": "",
+        "id": 120
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "株式会社テクノロジーデベロップメント",
+    "industry": "不動産",
+    "employee_count": 194,
+    "revenue": 4431940476,
+    "prefecture": "岡山県",
+    "city": "岡山市",
+    "established_year": 2008,
+    "website_url": "https://テクノロジーデベロップメント.co.jp",
+    "contact_email": "info@テクノロジーデベロップメント.co.jp",
+    "phone": "03-3985-3072",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T18:29:00Z",
+    "updated_at": "2025-01-14T21:29:00Z",
+    "executives": [
+      {
+        "name": "高橋次郎",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/高橋-次郎",
+        "direct_email": "高橋次郎@テクノロジーデベロップメント.co.jp",
+        "notes": "",
+        "id": 130
+      },
+      {
+        "name": "高橋陽子",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/高橋.陽子",
+        "other_sns_url": "",
+        "direct_email": "高橋陽子@テクノロジーデベロップメント.co.jp",
+        "notes": "",
+        "id": 131
+      },
+      {
+        "name": "松本智子",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "松本智子@テクノロジーデベロップメント.co.jp",
+        "notes": "",
+        "id": 132
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "name": "株式会社スマートネット",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 178,
+    "revenue": 1063079368,
+    "prefecture": "高知県",
+    "city": "高知市",
+    "established_year": 1994,
+    "website_url": "https://スマートネット.co.jp",
+    "contact_email": "info@スマートネット.co.jp",
+    "phone": "03-3879-2858",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T18:00:00Z",
+    "updated_at": "2025-01-14T00:00:00Z",
+    "executives": [
+      {
+        "name": "伊藤翔太",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/伊藤.翔太",
+        "other_sns_url": "https://linkedin.com/in/伊藤-翔太",
+        "direct_email": "伊藤翔太@スマートネット.co.jp",
+        "notes": "",
+        "id": 140
+      },
+      {
+        "name": "渡辺あやか",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/渡辺.あやか",
+        "other_sns_url": "https://linkedin.com/in/渡辺-あやか",
+        "direct_email": "渡辺あやか@スマートネット.co.jp",
+        "notes": "",
+        "id": 141
+      },
+      {
+        "name": "中村正人",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "中村正人@スマートネット.co.jp",
+        "notes": "",
+        "id": 142
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "name": "有限会社インテグレーションヒューマン",
+    "industry": "人材・派遣",
+    "employee_count": 200,
+    "revenue": 1518410800,
+    "prefecture": "秋田県",
+    "city": "秋田市",
+    "established_year": 1991,
+    "website_url": "https://インテグレーションヒューマン.co.jp",
+    "contact_email": "info@インテグレーションヒューマン.co.jp",
+    "phone": "03-8509-4880",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-07T12:28:00Z",
+    "updated_at": "2025-01-08T18:28:00Z",
+    "executives": [
+      {
+        "name": "田中直樹",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/田中.直樹",
+        "other_sns_url": "",
+        "direct_email": "田中直樹@インテグレーションヒューマン.co.jp",
+        "notes": "",
+        "id": 150
+      },
+      {
+        "name": "加藤正人",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/加藤.正人",
+        "other_sns_url": "https://linkedin.com/in/加藤-正人",
+        "direct_email": "加藤正人@インテグレーションヒューマン.co.jp",
+        "notes": "",
+        "id": 151
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "name": "株式会社テクノロジーアセット",
+    "industry": "金融・保険",
+    "employee_count": 497,
+    "revenue": 7756639240,
+    "prefecture": "山形県",
+    "city": "山形市",
+    "established_year": 1999,
+    "website_url": "https://テクノロジーアセット.co.jp",
+    "contact_email": "info@テクノロジーアセット.co.jp",
+    "phone": "03-1747-5523",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-10T15:38:00Z",
+    "updated_at": "2025-01-23T17:38:00Z",
+    "executives": [
+      {
+        "name": "鈴木隆",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/鈴木.隆",
+        "other_sns_url": "",
+        "direct_email": "鈴木隆@テクノロジーアセット.co.jp",
+        "notes": "",
+        "id": 160
+      },
+      {
+        "name": "鈴木健太",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/鈴木.健太",
+        "other_sns_url": "",
+        "direct_email": "鈴木健太@テクノロジーアセット.co.jp",
+        "notes": "",
+        "id": 161
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "name": "合同会社ダイナミックファイナンス",
+    "industry": "金融・保険",
+    "employee_count": 39,
+    "revenue": 246887316,
+    "prefecture": "徳島県",
+    "city": "徳島市",
+    "established_year": 2013,
+    "website_url": "https://ダイナミックファイナンス.co.jp",
+    "contact_email": "info@ダイナミックファイナンス.co.jp",
+    "phone": "03-3071-8848",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T17:05:00Z",
+    "updated_at": "2025-01-09T20:05:00Z",
+    "executives": [
+      {
+        "name": "伊藤拓也",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/伊藤.拓也",
+        "other_sns_url": "",
+        "direct_email": "伊藤拓也@ダイナミックファイナンス.co.jp",
+        "notes": "",
+        "id": 170
+      },
+      {
+        "name": "渡辺健太",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/渡辺.健太",
+        "other_sns_url": "",
+        "direct_email": "渡辺健太@ダイナミックファイナンス.co.jp",
+        "notes": "",
+        "id": 171
+      },
+      {
+        "name": "伊藤真由美",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/伊藤.真由美",
+        "other_sns_url": "",
+        "direct_email": "伊藤真由美@ダイナミックファイナンス.co.jp",
+        "notes": "",
+        "id": 172
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "name": "合同会社インテグレーションリクルート",
+    "industry": "人材・派遣",
+    "employee_count": 209,
+    "revenue": 982402410,
+    "prefecture": "岩手県",
+    "city": "岩手市",
+    "established_year": 1986,
+    "website_url": "https://インテグレーションリクルート.co.jp",
+    "contact_email": "info@インテグレーションリクルート.co.jp",
+    "phone": "03-5063-4630",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T15:00:00Z",
+    "updated_at": "2025-01-12T22:00:00Z",
+    "executives": [
+      {
+        "name": "鈴木次郎",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/鈴木-次郎",
+        "direct_email": "鈴木次郎@インテグレーションリクルート.co.jp",
+        "notes": "",
+        "id": 180
+      },
+      {
+        "name": "森次郎",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/森.次郎",
+        "other_sns_url": "https://linkedin.com/in/森-次郎",
+        "direct_email": "森次郎@インテグレーションリクルート.co.jp",
+        "notes": "",
+        "id": 181
+      },
+      {
+        "name": "山本誠",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本誠@インテグレーションリクルート.co.jp",
+        "notes": "",
+        "id": 182
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "name": "株式会社グローバルヒューマン",
+    "industry": "人材・派遣",
+    "employee_count": 251,
+    "revenue": 1026469018,
+    "prefecture": "長野県",
+    "city": "長野市",
+    "established_year": 1980,
+    "website_url": "https://グローバルヒューマン.co.jp",
+    "contact_email": "info@グローバルヒューマン.co.jp",
+    "phone": "03-2913-7319",
+    "notes": "",
+    "is_global_ng": true,
+    "created_at": "2025-01-17T10:54:00Z",
+    "updated_at": "2025-01-27T14:54:00Z",
+    "executives": [
+      {
+        "name": "加藤由美子",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "加藤由美子@グローバルヒューマン.co.jp",
+        "notes": "",
+        "id": 190
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "name": "有限会社イノベーションプロパティ",
+    "industry": "不動産",
+    "employee_count": 199,
+    "revenue": 1725428704,
+    "prefecture": "岡山県",
+    "city": "岡山市",
+    "established_year": 1991,
+    "website_url": "https://イノベーションプロパティ.co.jp",
+    "contact_email": "info@イノベーションプロパティ.co.jp",
+    "phone": "03-5976-9217",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-14T17:12:00Z",
+    "updated_at": "2025-01-19T00:12:00Z",
+    "executives": [
+      {
+        "name": "井上次郎",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/井上.次郎",
+        "other_sns_url": "",
+        "direct_email": "井上次郎@イノベーションプロパティ.co.jp",
+        "notes": "",
+        "id": 200
+      },
+      {
+        "name": "中村直樹",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "中村直樹@イノベーションプロパティ.co.jp",
+        "notes": "",
+        "id": 201
+      },
+      {
+        "name": "松本拓也",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/松本.拓也",
+        "other_sns_url": "",
+        "direct_email": "松本拓也@イノベーションプロパティ.co.jp",
+        "notes": "",
+        "id": 202
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "name": "株式会社スマートタレント",
+    "industry": "人材・派遣",
+    "employee_count": 193,
+    "revenue": 901256539,
+    "prefecture": "富山県",
+    "city": "富山市",
+    "established_year": 2007,
+    "website_url": "https://スマートタレント.co.jp",
+    "contact_email": "info@スマートタレント.co.jp",
+    "phone": "03-4946-5623",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-09T18:15:00Z",
+    "updated_at": "2025-01-19T02:15:00Z",
+    "executives": [
+      {
+        "name": "中村愛",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/中村.愛",
+        "other_sns_url": "",
+        "direct_email": "中村愛@スマートタレント.co.jp",
+        "notes": "",
+        "id": 210
+      },
+      {
+        "name": "加藤大輔",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "加藤大輔@スマートタレント.co.jp",
+        "notes": "",
+        "id": 211
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "name": "有限会社ビジネス産業",
+    "industry": "製造業",
+    "employee_count": 165,
+    "revenue": 1438382715,
+    "prefecture": "和歌山県",
+    "city": "和歌山市",
+    "established_year": 2007,
+    "website_url": "https://ビジネス産業.co.jp",
+    "contact_email": "info@ビジネス産業.co.jp",
+    "phone": "03-7742-2615",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T08:11:00Z",
+    "updated_at": "2025-01-12T12:11:00Z",
+    "executives": [
+      {
+        "name": "森恵美",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/森.恵美",
+        "other_sns_url": "https://linkedin.com/in/森-恵美",
+        "direct_email": "森恵美@ビジネス産業.co.jp",
+        "notes": "",
+        "id": 220
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "name": "合同会社ソリューションコーポレーション",
+    "industry": "その他",
+    "employee_count": 198,
+    "revenue": 906860592,
+    "prefecture": "福井県",
+    "city": "福井市",
+    "established_year": 2019,
+    "website_url": "https://ソリューションコーポレーション.co.jp",
+    "contact_email": "info@ソリューションコーポレーション.co.jp",
+    "phone": "03-6854-4310",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-13T08:41:00Z",
+    "updated_at": "2025-01-21T13:41:00Z",
+    "executives": [
+      {
+        "name": "山田明美",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/山田.明美",
+        "other_sns_url": "",
+        "direct_email": "山田明美@ソリューションコーポレーション.co.jp",
+        "notes": "",
+        "id": 230
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "name": "有限会社パートナーズヒューマン",
+    "industry": "人材・派遣",
+    "employee_count": 124,
+    "revenue": 651664516,
+    "prefecture": "大阪府",
+    "city": "堺市",
+    "established_year": 2021,
+    "website_url": "https://パートナーズヒューマン.co.jp",
+    "contact_email": "info@パートナーズヒューマン.co.jp",
+    "phone": "06-8262-2100",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-20T12:23:00Z",
+    "updated_at": "2025-01-28T13:23:00Z",
+    "executives": [
+      {
+        "name": "小林ゆり",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/小林.ゆり",
+        "other_sns_url": "",
+        "direct_email": "小林ゆり@パートナーズヒューマン.co.jp",
+        "notes": "",
+        "id": 240
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "name": "株式会社デジタル不動産",
+    "industry": "不動産",
+    "employee_count": 130,
+    "revenue": 2433854930,
+    "prefecture": "新潟県",
+    "city": "新潟市",
+    "established_year": 1996,
+    "website_url": "https://デジタル不動産.co.jp",
+    "contact_email": "info@デジタル不動産.co.jp",
+    "phone": "03-7208-1379",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-13T15:55:00Z",
+    "updated_at": "2025-01-14T17:55:00Z",
+    "executives": [
+      {
+        "name": "森花子",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/森.花子",
+        "other_sns_url": "",
+        "direct_email": "森花子@デジタル不動産.co.jp",
+        "notes": "",
+        "id": 250
+      },
+      {
+        "name": "森優子",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/森-優子",
+        "direct_email": "森優子@デジタル不動産.co.jp",
+        "notes": "",
+        "id": 251
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "name": "合同会社クリエイティブマテリアル",
+    "industry": "製造業",
+    "employee_count": 978,
+    "revenue": 8965424778,
+    "prefecture": "高知県",
+    "city": "高知市",
+    "established_year": 2020,
+    "website_url": "https://クリエイティブマテリアル.co.jp",
+    "contact_email": "info@クリエイティブマテリアル.co.jp",
+    "phone": "03-2969-6461",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-06T13:14:00Z",
+    "updated_at": "2025-01-17T19:14:00Z",
+    "executives": [
+      {
+        "name": "渡辺みどり",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "渡辺みどり@クリエイティブマテリアル.co.jp",
+        "notes": "",
+        "id": 260
+      },
+      {
+        "name": "田中太郎",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/田中.太郎",
+        "other_sns_url": "",
+        "direct_email": "田中太郎@クリエイティブマテリアル.co.jp",
+        "notes": "",
+        "id": 261
+      },
+      {
+        "name": "渡辺さくら",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/渡辺.さくら",
+        "other_sns_url": "https://linkedin.com/in/渡辺-さくら",
+        "direct_email": "渡辺さくら@クリエイティブマテリアル.co.jp",
+        "notes": "",
+        "id": 262
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "name": "合同会社エンタープライズデジタル",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 272,
+    "revenue": 699857904,
+    "prefecture": "福島県",
+    "city": "福島市",
+    "established_year": 2012,
+    "website_url": "https://エンタープライズデジタル.co.jp",
+    "contact_email": "info@エンタープライズデジタル.co.jp",
+    "phone": "03-9878-3374",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T11:45:00Z",
+    "updated_at": "2025-01-17T11:45:00Z",
+    "executives": [
+      {
+        "name": "渡辺優子",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/渡辺.優子",
+        "other_sns_url": "",
+        "direct_email": "渡辺優子@エンタープライズデジタル.co.jp",
+        "notes": "",
+        "id": 270
+      },
+      {
+        "name": "山本明",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本明@エンタープライズデジタル.co.jp",
+        "notes": "",
+        "id": 271
+      }
+    ]
+  },
+  {
+    "id": 28,
+    "name": "株式会社スマートワークス",
+    "industry": "人材・派遣",
+    "employee_count": 37,
+    "revenue": 202188239,
+    "prefecture": "滋賀県",
+    "city": "滋賀市",
+    "established_year": 1998,
+    "website_url": "https://スマートワークス.co.jp",
+    "contact_email": "info@スマートワークス.co.jp",
+    "phone": "03-5083-6287",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-18T18:20:00Z",
+    "updated_at": "2025-01-23T18:20:00Z",
+    "executives": [
+      {
+        "name": "田中愛",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/田中.愛",
+        "other_sns_url": "https://linkedin.com/in/田中-愛",
+        "direct_email": "田中愛@スマートワークス.co.jp",
+        "notes": "",
+        "id": 280
+      },
+      {
+        "name": "高橋花子",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/高橋-花子",
+        "direct_email": "高橋花子@スマートワークス.co.jp",
+        "notes": "",
+        "id": 281
+      },
+      {
+        "name": "吉田愛",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/吉田.愛",
+        "other_sns_url": "https://linkedin.com/in/吉田-愛",
+        "direct_email": "吉田愛@スマートワークス.co.jp",
+        "notes": "",
+        "id": 282
+      }
+    ]
+  },
+  {
+    "id": 29,
+    "name": "合同会社アドバンスプロダクツ",
+    "industry": "製造業",
+    "employee_count": 331,
+    "revenue": 3669088991,
+    "prefecture": "京都府",
+    "city": "京市",
+    "established_year": 2022,
+    "website_url": "https://アドバンスプロダクツ.co.jp",
+    "contact_email": "info@アドバンスプロダクツ.co.jp",
+    "phone": "075-4890-8959",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T12:09:00Z",
+    "updated_at": "2025-01-11T14:09:00Z",
+    "executives": [
+      {
+        "name": "佐藤明",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/佐藤-明",
+        "direct_email": "佐藤明@アドバンスプロダクツ.co.jp",
+        "notes": "",
+        "id": 290
+      },
+      {
+        "name": "高橋隆",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "高橋隆@アドバンスプロダクツ.co.jp",
+        "notes": "",
+        "id": 291
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "name": "有限会社スマート証券",
+    "industry": "金融・保険",
+    "employee_count": 285,
+    "revenue": 4770819060,
+    "prefecture": "富山県",
+    "city": "富山市",
+    "established_year": 2022,
+    "website_url": "https://スマート証券.co.jp",
+    "contact_email": "info@スマート証券.co.jp",
+    "phone": "03-9107-2160",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-09T08:24:00Z",
+    "updated_at": "2025-01-09T08:24:00Z",
+    "executives": [
+      {
+        "name": "鈴木浩",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "鈴木浩@スマート証券.co.jp",
+        "notes": "",
+        "id": 300
+      }
+    ]
+  },
+  {
+    "id": 31,
+    "name": "株式会社インテグレーションラボ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 380,
+    "revenue": 1564700540,
+    "prefecture": "千葉県",
+    "city": "千葉市",
+    "established_year": 1999,
+    "website_url": "https://インテグレーションラボ.co.jp",
+    "contact_email": "info@インテグレーションラボ.co.jp",
+    "phone": "03-6684-8229",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T15:37:00Z",
+    "updated_at": "2025-01-23T21:37:00Z",
+    "executives": [
+      {
+        "name": "小林太郎",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "小林太郎@インテグレーションラボ.co.jp",
+        "notes": "",
+        "id": 310
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "name": "株式会社パートナーズデベロップメント",
+    "industry": "不動産",
+    "employee_count": 175,
+    "revenue": 3310800150,
+    "prefecture": "滋賀県",
+    "city": "滋賀市",
+    "established_year": 1990,
+    "website_url": "https://パートナーズデベロップメント.co.jp",
+    "contact_email": "info@パートナーズデベロップメント.co.jp",
+    "phone": "03-9544-6583",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T09:28:00Z",
+    "updated_at": "2025-01-12T17:28:00Z",
+    "executives": [
+      {
+        "name": "山本拓也",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/山本.拓也",
+        "other_sns_url": "",
+        "direct_email": "山本拓也@パートナーズデベロップメント.co.jp",
+        "notes": "",
+        "id": 320
+      },
+      {
+        "name": "井上美香",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/井上.美香",
+        "other_sns_url": "",
+        "direct_email": "井上美香@パートナーズデベロップメント.co.jp",
+        "notes": "",
+        "id": 321
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "name": "有限会社インテグレーションカンパニー",
+    "industry": "その他",
+    "employee_count": 30,
+    "revenue": 77005980,
+    "prefecture": "山口県",
+    "city": "山口市",
+    "established_year": 1983,
+    "website_url": "https://インテグレーションカンパニー.co.jp",
+    "contact_email": "info@インテグレーションカンパニー.co.jp",
+    "phone": "03-5201-6232",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T11:23:00Z",
+    "updated_at": "2025-01-07T15:23:00Z",
+    "executives": [
+      {
+        "name": "渡辺誠",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/渡辺.誠",
+        "other_sns_url": "",
+        "direct_email": "渡辺誠@インテグレーションカンパニー.co.jp",
+        "notes": "",
+        "id": 330
+      },
+      {
+        "name": "山本美咲",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/山本.美咲",
+        "other_sns_url": "https://linkedin.com/in/山本-美咲",
+        "direct_email": "山本美咲@インテグレーションカンパニー.co.jp",
+        "notes": "",
+        "id": 331
+      },
+      {
+        "name": "佐藤誠",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/佐藤-誠",
+        "direct_email": "佐藤誠@インテグレーションカンパニー.co.jp",
+        "notes": "",
+        "id": 332
+      }
+    ]
+  },
+  {
+    "id": 34,
+    "name": "合同会社ソリューションスタッフ",
+    "industry": "人材・派遣",
+    "employee_count": 113,
+    "revenue": 359055579,
+    "prefecture": "福岡県",
+    "city": "福岡市",
+    "established_year": 1995,
+    "website_url": "https://ソリューションスタッフ.co.jp",
+    "contact_email": "info@ソリューションスタッフ.co.jp",
+    "phone": "092-9369-5865",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-03T12:38:00Z",
+    "updated_at": "2025-01-06T14:38:00Z",
+    "executives": [
+      {
+        "name": "高橋健一",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/高橋.健一",
+        "other_sns_url": "https://linkedin.com/in/高橋-健一",
+        "direct_email": "高橋健一@ソリューションスタッフ.co.jp",
+        "notes": "",
+        "id": 340
+      },
+      {
+        "name": "鈴木隆",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "鈴木隆@ソリューションスタッフ.co.jp",
+        "notes": "",
+        "id": 341
+      }
+    ]
+  },
+  {
+    "id": 35,
+    "name": "合同会社デジタルインベストメント",
+    "industry": "金融・保険",
+    "employee_count": 452,
+    "revenue": 5069331872,
+    "prefecture": "徳島県",
+    "city": "徳島市",
+    "established_year": 2020,
+    "website_url": "https://デジタルインベストメント.co.jp",
+    "contact_email": "info@デジタルインベストメント.co.jp",
+    "phone": "03-7058-2740",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-09T11:40:00Z",
+    "updated_at": "2025-01-13T16:40:00Z",
+    "executives": [
+      {
+        "name": "山本翔太",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本翔太@デジタルインベストメント.co.jp",
+        "notes": "",
+        "id": 350
+      },
+      {
+        "name": "加藤太郎",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "加藤太郎@デジタルインベストメント.co.jp",
+        "notes": "",
+        "id": 351
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "name": "合同会社プロフェッショナルシステムズ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 381,
+    "revenue": 1354107147,
+    "prefecture": "徳島県",
+    "city": "徳島市",
+    "established_year": 2009,
+    "website_url": "https://プロフェッショナルシステムズ.co.jp",
+    "contact_email": "info@プロフェッショナルシステムズ.co.jp",
+    "phone": "03-1661-7153",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-02T11:20:00Z",
+    "updated_at": "2025-01-02T18:20:00Z",
+    "executives": [
+      {
+        "name": "井上太郎",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/井上.太郎",
+        "other_sns_url": "",
+        "direct_email": "井上太郎@プロフェッショナルシステムズ.co.jp",
+        "notes": "",
+        "id": 360
+      },
+      {
+        "name": "伊藤智子",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/伊藤.智子",
+        "other_sns_url": "",
+        "direct_email": "伊藤智子@プロフェッショナルシステムズ.co.jp",
+        "notes": "",
+        "id": 361
+      },
+      {
+        "name": "高橋健太",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "高橋健太@プロフェッショナルシステムズ.co.jp",
+        "notes": "",
+        "id": 362
+      }
+    ]
+  },
+  {
+    "id": 37,
+    "name": "株式会社ビジネス製造",
+    "industry": "製造業",
+    "employee_count": 611,
+    "revenue": 5620895111,
+    "prefecture": "宮城県",
+    "city": "宮城市",
+    "established_year": 2020,
+    "website_url": "https://ビジネス製造.co.jp",
+    "contact_email": "info@ビジネス製造.co.jp",
+    "phone": "03-6033-3629",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-17T16:25:00Z",
+    "updated_at": "2025-01-31T23:25:00Z",
+    "executives": [
+      {
+        "name": "佐藤美咲",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "佐藤美咲@ビジネス製造.co.jp",
+        "notes": "",
+        "id": 370
+      },
+      {
+        "name": "小林三郎",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "小林三郎@ビジネス製造.co.jp",
+        "notes": "",
+        "id": 371
+      },
+      {
+        "name": "高橋明美",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/高橋.明美",
+        "other_sns_url": "",
+        "direct_email": "高橋明美@ビジネス製造.co.jp",
+        "notes": "",
+        "id": 372
+      }
+    ]
+  },
+  {
+    "id": 38,
+    "name": "株式会社グローバルリアルティ",
+    "industry": "不動産",
+    "employee_count": 191,
+    "revenue": 4549876704,
+    "prefecture": "石川県",
+    "city": "石川市",
+    "established_year": 1989,
+    "website_url": "https://グローバルリアルティ.co.jp",
+    "contact_email": "info@グローバルリアルティ.co.jp",
+    "phone": "03-4251-2782",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-11T16:23:00Z",
+    "updated_at": "2025-01-29T20:23:00Z",
+    "executives": [
+      {
+        "name": "森優子",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/森.優子",
+        "other_sns_url": "",
+        "direct_email": "森優子@グローバルリアルティ.co.jp",
+        "notes": "",
+        "id": 380
+      },
+      {
+        "name": "中村さくら",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "中村さくら@グローバルリアルティ.co.jp",
+        "notes": "",
+        "id": 381
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "name": "合同会社システムキャピタル",
+    "industry": "金融・保険",
+    "employee_count": 47,
+    "revenue": 422792354,
+    "prefecture": "岡山県",
+    "city": "岡山市",
+    "established_year": 1980,
+    "website_url": "https://システムキャピタル.co.jp",
+    "contact_email": "info@システムキャピタル.co.jp",
+    "phone": "03-4206-3515",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-19T10:51:00Z",
+    "updated_at": "2025-01-20T16:51:00Z",
+    "executives": [
+      {
+        "name": "加藤雄一",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "加藤雄一@システムキャピタル.co.jp",
+        "notes": "",
+        "id": 390
+      }
+    ]
+  },
+  {
+    "id": 40,
+    "name": "合同会社プロフェッショナルマテリアル",
+    "industry": "製造業",
+    "employee_count": 218,
+    "revenue": 3048632990,
+    "prefecture": "愛媛県",
+    "city": "愛媛市",
+    "established_year": 2019,
+    "website_url": "https://プロフェッショナルマテリアル.co.jp",
+    "contact_email": "info@プロフェッショナルマテリアル.co.jp",
+    "phone": "03-4475-9063",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T16:09:00Z",
+    "updated_at": "2025-01-23T19:09:00Z",
+    "executives": [
+      {
+        "name": "山本陽子",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/山本.陽子",
+        "other_sns_url": "",
+        "direct_email": "山本陽子@プロフェッショナルマテリアル.co.jp",
+        "notes": "",
+        "id": 400
+      }
+    ]
+  },
+  {
+    "id": 41,
+    "name": "株式会社インテグレーションマテリアル",
+    "industry": "製造業",
+    "employee_count": 661,
+    "revenue": 2282934699,
+    "prefecture": "福島県",
+    "city": "福島市",
+    "established_year": 1997,
+    "website_url": "https://インテグレーションマテリアル.co.jp",
+    "contact_email": "info@インテグレーションマテリアル.co.jp",
+    "phone": "03-4181-5949",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T12:57:00Z",
+    "updated_at": "2025-01-23T13:57:00Z",
+    "executives": [
+      {
+        "name": "井上拓也",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/井上-拓也",
+        "direct_email": "井上拓也@インテグレーションマテリアル.co.jp",
+        "notes": "",
+        "id": 410
+      }
+    ]
+  },
+  {
+    "id": 42,
+    "name": "有限会社ダイナミックキャピタル",
+    "industry": "金融・保険",
+    "employee_count": 356,
+    "revenue": 5208264336,
+    "prefecture": "鳥取県",
+    "city": "鳥取市",
+    "established_year": 2013,
+    "website_url": "https://ダイナミックキャピタル.co.jp",
+    "contact_email": "info@ダイナミックキャピタル.co.jp",
+    "phone": "03-2887-9617",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T13:06:00Z",
+    "updated_at": "2025-01-07T21:06:00Z",
+    "executives": [
+      {
+        "name": "松本愛",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "松本愛@ダイナミックキャピタル.co.jp",
+        "notes": "",
+        "id": 420
+      },
+      {
+        "name": "佐藤太郎",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "佐藤太郎@ダイナミックキャピタル.co.jp",
+        "notes": "",
+        "id": 421
+      }
+    ]
+  },
+  {
+    "id": 43,
+    "name": "株式会社サービスプロパティ",
+    "industry": "不動産",
+    "employee_count": 87,
+    "revenue": 1602722526,
+    "prefecture": "徳島県",
+    "city": "徳島市",
+    "established_year": 2013,
+    "website_url": "https://サービスプロパティ.co.jp",
+    "contact_email": "info@サービスプロパティ.co.jp",
+    "phone": "03-5036-3409",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-18T14:39:00Z",
+    "updated_at": "2025-02-02T19:39:00Z",
+    "executives": [
+      {
+        "name": "鈴木隆",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/鈴木.隆",
+        "other_sns_url": "",
+        "direct_email": "鈴木隆@サービスプロパティ.co.jp",
+        "notes": "",
+        "id": 430
+      },
+      {
+        "name": "山本三郎",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本三郎@サービスプロパティ.co.jp",
+        "notes": "",
+        "id": 431
+      }
+    ]
+  },
+  {
+    "id": 44,
+    "name": "有限会社グローバルトラスト",
+    "industry": "金融・保険",
+    "employee_count": 474,
+    "revenue": 8691012306,
+    "prefecture": "兵庫県",
+    "city": "兵庫市",
+    "established_year": 1984,
+    "website_url": "https://グローバルトラスト.co.jp",
+    "contact_email": "info@グローバルトラスト.co.jp",
+    "phone": "078-3604-7680",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-19T14:27:00Z",
+    "updated_at": "2025-02-03T14:27:00Z",
+    "executives": [
+      {
+        "name": "松本次郎",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "松本次郎@グローバルトラスト.co.jp",
+        "notes": "",
+        "id": 440
+      },
+      {
+        "name": "渡辺直樹",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/渡辺.直樹",
+        "other_sns_url": "",
+        "direct_email": "渡辺直樹@グローバルトラスト.co.jp",
+        "notes": "",
+        "id": 441
+      },
+      {
+        "name": "吉田浩",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/吉田.浩",
+        "other_sns_url": "",
+        "direct_email": "吉田浩@グローバルトラスト.co.jp",
+        "notes": "",
+        "id": 442
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "name": "有限会社スマートカンパニー",
+    "industry": "その他",
+    "employee_count": 272,
+    "revenue": 1507991392,
+    "prefecture": "岐阜県",
+    "city": "岐阜市",
+    "established_year": 2019,
+    "website_url": "https://スマートカンパニー.co.jp",
+    "contact_email": "info@スマートカンパニー.co.jp",
+    "phone": "03-8738-7453",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-13T15:29:00Z",
+    "updated_at": "2025-01-26T15:29:00Z",
+    "executives": [
+      {
+        "name": "森拓也",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "森拓也@スマートカンパニー.co.jp",
+        "notes": "",
+        "id": 450
+      },
+      {
+        "name": "吉田大輔",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/吉田.大輔",
+        "other_sns_url": "",
+        "direct_email": "吉田大輔@スマートカンパニー.co.jp",
+        "notes": "",
+        "id": 451
+      },
+      {
+        "name": "加藤隆",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "加藤隆@スマートカンパニー.co.jp",
+        "notes": "",
+        "id": 452
+      }
+    ]
+  },
+  {
+    "id": 46,
+    "name": "合同会社テクノロジーマテリアル",
+    "industry": "製造業",
+    "employee_count": 91,
+    "revenue": 1205029735,
+    "prefecture": "石川県",
+    "city": "石川市",
+    "established_year": 1998,
+    "website_url": "https://テクノロジーマテリアル.co.jp",
+    "contact_email": "info@テクノロジーマテリアル.co.jp",
+    "phone": "03-2564-8278",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T12:59:00Z",
+    "updated_at": "2025-01-08T18:59:00Z",
+    "executives": [
+      {
+        "name": "山田優子",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山田優子@テクノロジーマテリアル.co.jp",
+        "notes": "",
+        "id": 460
+      }
+    ]
+  },
+  {
+    "id": 47,
+    "name": "株式会社コンサルティングリクルート",
+    "industry": "人材・派遣",
+    "employee_count": 108,
+    "revenue": 798774588,
+    "prefecture": "鳥取県",
+    "city": "鳥取市",
+    "established_year": 2005,
+    "website_url": "https://コンサルティングリクルート.co.jp",
+    "contact_email": "info@コンサルティングリクルート.co.jp",
+    "phone": "03-2722-8229",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-18T08:10:00Z",
+    "updated_at": "2025-01-25T16:10:00Z",
+    "executives": [
+      {
+        "name": "山田隆",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/山田.隆",
+        "other_sns_url": "",
+        "direct_email": "山田隆@コンサルティングリクルート.co.jp",
+        "notes": "",
+        "id": 470
+      }
+    ]
+  },
+  {
+    "id": 48,
+    "name": "合同会社システムネット",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 469,
+    "revenue": 4676989940,
+    "prefecture": "島根県",
+    "city": "島根市",
+    "established_year": 1996,
+    "website_url": "https://システムネット.co.jp",
+    "contact_email": "info@システムネット.co.jp",
+    "phone": "03-7308-7915",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-16T13:59:00Z",
+    "updated_at": "2025-01-19T20:59:00Z",
+    "executives": [
+      {
+        "name": "山本浩",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/山本.浩",
+        "other_sns_url": "https://linkedin.com/in/山本-浩",
+        "direct_email": "山本浩@システムネット.co.jp",
+        "notes": "",
+        "id": 480
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "name": "合同会社サービスコーポレーション",
+    "industry": "その他",
+    "employee_count": 108,
+    "revenue": 713861532,
+    "prefecture": "山口県",
+    "city": "山口市",
+    "established_year": 2002,
+    "website_url": "https://サービスコーポレーション.co.jp",
+    "contact_email": "info@サービスコーポレーション.co.jp",
+    "phone": "03-4603-8811",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-10T13:26:00Z",
+    "updated_at": "2025-01-19T19:26:00Z",
+    "executives": [
+      {
+        "name": "加藤翔太",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/加藤.翔太",
+        "other_sns_url": "",
+        "direct_email": "加藤翔太@サービスコーポレーション.co.jp",
+        "notes": "",
+        "id": 490
+      }
+    ]
+  },
+  {
+    "id": 50,
+    "name": "有限会社パートナーズバンク",
+    "industry": "金融・保険",
+    "employee_count": 96,
+    "revenue": 1531902336,
+    "prefecture": "大阪府",
+    "city": "堺市",
+    "established_year": 1980,
+    "website_url": "https://パートナーズバンク.co.jp",
+    "contact_email": "info@パートナーズバンク.co.jp",
+    "phone": "06-5791-8918",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-13T15:52:00Z",
+    "updated_at": "2025-01-14T23:52:00Z",
+    "executives": [
+      {
+        "name": "鈴木由美子",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/鈴木.由美子",
+        "other_sns_url": "https://linkedin.com/in/鈴木-由美子",
+        "direct_email": "鈴木由美子@パートナーズバンク.co.jp",
+        "notes": "",
+        "id": 500
+      },
+      {
+        "name": "森優子",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "森優子@パートナーズバンク.co.jp",
+        "notes": "",
+        "id": 501
+      }
+    ]
+  },
+  {
+    "id": 51,
+    "name": "株式会社グローバルプロパティ",
+    "industry": "不動産",
+    "employee_count": 170,
+    "revenue": 3528067970,
+    "prefecture": "埼玉県",
+    "city": "埼玉市",
+    "established_year": 1987,
+    "website_url": "https://グローバルプロパティ.co.jp",
+    "contact_email": "info@グローバルプロパティ.co.jp",
+    "phone": "03-7308-7845",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-03T10:53:00Z",
+    "updated_at": "2025-01-19T15:53:00Z",
+    "executives": [
+      {
+        "name": "山田健一",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/山田.健一",
+        "other_sns_url": "",
+        "direct_email": "山田健一@グローバルプロパティ.co.jp",
+        "notes": "",
+        "id": 510
+      },
+      {
+        "name": "松本明美",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/松本.明美",
+        "other_sns_url": "",
+        "direct_email": "松本明美@グローバルプロパティ.co.jp",
+        "notes": "",
+        "id": 511
+      }
+    ]
+  },
+  {
+    "id": 52,
+    "name": "株式会社デジタルテック",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 304,
+    "revenue": 1089879824,
+    "prefecture": "山梨県",
+    "city": "山梨市",
+    "established_year": 2002,
+    "website_url": "https://デジタルテック.co.jp",
+    "contact_email": "info@デジタルテック.co.jp",
+    "phone": "03-4698-4686",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-09T12:25:00Z",
+    "updated_at": "2025-01-10T12:25:00Z",
+    "executives": [
+      {
+        "name": "田中明美",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-明美",
+        "direct_email": "田中明美@デジタルテック.co.jp",
+        "notes": "",
+        "id": 520
+      },
+      {
+        "name": "伊藤ゆり",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/伊藤.ゆり",
+        "other_sns_url": "",
+        "direct_email": "伊藤ゆり@デジタルテック.co.jp",
+        "notes": "",
+        "id": 521
+      },
+      {
+        "name": "松本あやか",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/松本.あやか",
+        "other_sns_url": "",
+        "direct_email": "松本あやか@デジタルテック.co.jp",
+        "notes": "",
+        "id": 522
+      }
+    ]
+  },
+  {
+    "id": 53,
+    "name": "有限会社システム産業",
+    "industry": "製造業",
+    "employee_count": 351,
+    "revenue": 2447474211,
+    "prefecture": "群馬県",
+    "city": "群馬市",
+    "established_year": 1996,
+    "website_url": "https://システム産業.co.jp",
+    "contact_email": "info@システム産業.co.jp",
+    "phone": "03-6725-9816",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T13:34:00Z",
+    "updated_at": "2025-01-15T16:34:00Z",
+    "executives": [
+      {
+        "name": "中村みどり",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/中村.みどり",
+        "other_sns_url": "",
+        "direct_email": "中村みどり@システム産業.co.jp",
+        "notes": "",
+        "id": 530
+      }
+    ]
+  },
+  {
+    "id": 54,
+    "name": "有限会社コンサルティングハウジング",
+    "industry": "不動産",
+    "employee_count": 27,
+    "revenue": 419980086,
+    "prefecture": "秋田県",
+    "city": "秋田市",
+    "established_year": 2022,
+    "website_url": "https://コンサルティングハウジング.co.jp",
+    "contact_email": "info@コンサルティングハウジング.co.jp",
+    "phone": "03-9556-5335",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T15:12:00Z",
+    "updated_at": "2025-01-12T17:12:00Z",
+    "executives": [
+      {
+        "name": "山本由美子",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/山本-由美子",
+        "direct_email": "山本由美子@コンサルティングハウジング.co.jp",
+        "notes": "",
+        "id": 540
+      },
+      {
+        "name": "井上智子",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/井上.智子",
+        "other_sns_url": "",
+        "direct_email": "井上智子@コンサルティングハウジング.co.jp",
+        "notes": "",
+        "id": 541
+      }
+    ]
+  },
+  {
+    "id": 55,
+    "name": "株式会社パートナーズトラスト",
+    "industry": "金融・保険",
+    "employee_count": 179,
+    "revenue": 1501448420,
+    "prefecture": "高知県",
+    "city": "高知市",
+    "established_year": 2018,
+    "website_url": "https://パートナーズトラスト.co.jp",
+    "contact_email": "info@パートナーズトラスト.co.jp",
+    "phone": "03-3963-5300",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-19T11:22:00Z",
+    "updated_at": "2025-02-01T13:22:00Z",
+    "executives": [
+      {
+        "name": "佐藤健一",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "佐藤健一@パートナーズトラスト.co.jp",
+        "notes": "",
+        "id": 550
+      },
+      {
+        "name": "井上正人",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "井上正人@パートナーズトラスト.co.jp",
+        "notes": "",
+        "id": 551
+      },
+      {
+        "name": "山田拓也",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/山田.拓也",
+        "other_sns_url": "",
+        "direct_email": "山田拓也@パートナーズトラスト.co.jp",
+        "notes": "",
+        "id": 552
+      }
+    ]
+  },
+  {
+    "id": 56,
+    "name": "株式会社サービス不動産",
+    "industry": "不動産",
+    "employee_count": 43,
+    "revenue": 239296118,
+    "prefecture": "静岡県",
+    "city": "静岡市",
+    "established_year": 1990,
+    "website_url": "https://サービス不動産.co.jp",
+    "contact_email": "info@サービス不動産.co.jp",
+    "phone": "03-2735-9082",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-15T17:26:00Z",
+    "updated_at": "2025-01-25T22:26:00Z",
+    "executives": [
+      {
+        "name": "加藤明",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/加藤.明",
+        "other_sns_url": "",
+        "direct_email": "加藤明@サービス不動産.co.jp",
+        "notes": "",
+        "id": 560
+      },
+      {
+        "name": "山田優子",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山田優子@サービス不動産.co.jp",
+        "notes": "",
+        "id": 561
+      },
+      {
+        "name": "井上あやか",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/井上.あやか",
+        "other_sns_url": "",
+        "direct_email": "井上あやか@サービス不動産.co.jp",
+        "notes": "",
+        "id": 562
+      }
+    ]
+  },
+  {
+    "id": 57,
+    "name": "株式会社ネットワークキャリア",
+    "industry": "人材・派遣",
+    "employee_count": 53,
+    "revenue": 362037753,
+    "prefecture": "宮崎県",
+    "city": "宮崎市",
+    "established_year": 2016,
+    "website_url": "https://ネットワークキャリア.co.jp",
+    "contact_email": "info@ネットワークキャリア.co.jp",
+    "phone": "03-8921-4326",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-10T14:03:00Z",
+    "updated_at": "2025-01-30T22:03:00Z",
+    "executives": [
+      {
+        "name": "渡辺あやか",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/渡辺.あやか",
+        "other_sns_url": "https://linkedin.com/in/渡辺-あやか",
+        "direct_email": "渡辺あやか@ネットワークキャリア.co.jp",
+        "notes": "",
+        "id": 570
+      },
+      {
+        "name": "田中恵美",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-恵美",
+        "direct_email": "田中恵美@ネットワークキャリア.co.jp",
+        "notes": "",
+        "id": 571
+      }
+    ]
+  },
+  {
+    "id": 58,
+    "name": "株式会社アドバンス製造",
+    "industry": "製造業",
+    "employee_count": 443,
+    "revenue": 3564459955,
+    "prefecture": "埼玉県",
+    "city": "埼玉市",
+    "established_year": 2014,
+    "website_url": "https://アドバンス製造.co.jp",
+    "contact_email": "info@アドバンス製造.co.jp",
+    "phone": "03-8362-2675",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-18T09:58:00Z",
+    "updated_at": "2025-01-29T11:58:00Z",
+    "executives": [
+      {
+        "name": "松本明",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "松本明@アドバンス製造.co.jp",
+        "notes": "",
+        "id": 580
+      },
+      {
+        "name": "吉田さくら",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/吉田.さくら",
+        "other_sns_url": "",
+        "direct_email": "吉田さくら@アドバンス製造.co.jp",
+        "notes": "",
+        "id": 581
+      },
+      {
+        "name": "佐藤花子",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/佐藤.花子",
+        "other_sns_url": "",
+        "direct_email": "佐藤花子@アドバンス製造.co.jp",
+        "notes": "",
+        "id": 582
+      }
+    ]
+  },
+  {
+    "id": 59,
+    "name": "株式会社サービスソフト",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 392,
+    "revenue": 3723376720,
+    "prefecture": "滋賀県",
+    "city": "滋賀市",
+    "established_year": 2021,
+    "website_url": "https://サービスソフト.co.jp",
+    "contact_email": "info@サービスソフト.co.jp",
+    "phone": "03-7011-8712",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T10:48:00Z",
+    "updated_at": "2025-01-16T10:48:00Z",
+    "executives": [
+      {
+        "name": "田中正人",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/田中.正人",
+        "other_sns_url": "",
+        "direct_email": "田中正人@サービスソフト.co.jp",
+        "notes": "",
+        "id": 590
+      }
+    ]
+  },
+  {
+    "id": 60,
+    "name": "株式会社ソリューションビルディング",
+    "industry": "不動産",
+    "employee_count": 34,
+    "revenue": 463047666,
+    "prefecture": "愛媛県",
+    "city": "愛媛市",
+    "established_year": 2003,
+    "website_url": "https://ソリューションビルディング.co.jp",
+    "contact_email": "info@ソリューションビルディング.co.jp",
+    "phone": "03-5554-4394",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-17T10:06:00Z",
+    "updated_at": "2025-02-02T16:06:00Z",
+    "executives": [
+      {
+        "name": "田中明美",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/田中.明美",
+        "other_sns_url": "",
+        "direct_email": "田中明美@ソリューションビルディング.co.jp",
+        "notes": "",
+        "id": 600
+      },
+      {
+        "name": "小林健太",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "小林健太@ソリューションビルディング.co.jp",
+        "notes": "",
+        "id": 601
+      }
+    ]
+  },
+  {
+    "id": 61,
+    "name": "株式会社コンサルティングハウジング",
+    "industry": "不動産",
+    "employee_count": 91,
+    "revenue": 1499441489,
+    "prefecture": "大分県",
+    "city": "大分市",
+    "established_year": 1998,
+    "website_url": "https://コンサルティングハウジング.co.jp",
+    "contact_email": "info@コンサルティングハウジング.co.jp",
+    "phone": "03-7566-9545",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-02T14:54:00Z",
+    "updated_at": "2025-01-07T22:54:00Z",
+    "executives": [
+      {
+        "name": "小林隆",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "小林隆@コンサルティングハウジング.co.jp",
+        "notes": "",
+        "id": 610
+      },
+      {
+        "name": "高橋優子",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/高橋.優子",
+        "other_sns_url": "https://linkedin.com/in/高橋-優子",
+        "direct_email": "高橋優子@コンサルティングハウジング.co.jp",
+        "notes": "",
+        "id": 611
+      }
+    ]
+  },
+  {
+    "id": 62,
+    "name": "株式会社スマートファイナンス",
+    "industry": "金融・保険",
+    "employee_count": 349,
+    "revenue": 4032176735,
+    "prefecture": "福島県",
+    "city": "福島市",
+    "established_year": 1983,
+    "website_url": "https://スマートファイナンス.co.jp",
+    "contact_email": "info@スマートファイナンス.co.jp",
+    "phone": "03-8552-6730",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T11:46:00Z",
+    "updated_at": "2025-01-27T17:46:00Z",
+    "executives": [
+      {
+        "name": "加藤直樹",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/加藤.直樹",
+        "other_sns_url": "https://linkedin.com/in/加藤-直樹",
+        "direct_email": "加藤直樹@スマートファイナンス.co.jp",
+        "notes": "",
+        "id": 620
+      },
+      {
+        "name": "井上次郎",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/井上-次郎",
+        "direct_email": "井上次郎@スマートファイナンス.co.jp",
+        "notes": "",
+        "id": 621
+      }
+    ]
+  },
+  {
+    "id": 63,
+    "name": "株式会社マネジメントウェブ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 307,
+    "revenue": 1737075382,
+    "prefecture": "山梨県",
+    "city": "山梨市",
+    "established_year": 2016,
+    "website_url": "https://マネジメントウェブ.co.jp",
+    "contact_email": "info@マネジメントウェブ.co.jp",
+    "phone": "03-2620-2183",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T18:33:00Z",
+    "updated_at": "2025-01-19T19:33:00Z",
+    "executives": [
+      {
+        "name": "伊藤みどり",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/伊藤.みどり",
+        "other_sns_url": "",
+        "direct_email": "伊藤みどり@マネジメントウェブ.co.jp",
+        "notes": "",
+        "id": 630
+      }
+    ]
+  },
+  {
+    "id": 64,
+    "name": "有限会社エンタープライズキャピタル",
+    "industry": "金融・保険",
+    "employee_count": 376,
+    "revenue": 4513352096,
+    "prefecture": "千葉県",
+    "city": "千葉市",
+    "established_year": 2003,
+    "website_url": "https://エンタープライズキャピタル.co.jp",
+    "contact_email": "info@エンタープライズキャピタル.co.jp",
+    "phone": "03-1840-2231",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-02T15:51:00Z",
+    "updated_at": "2025-01-21T23:51:00Z",
+    "executives": [
+      {
+        "name": "井上隆",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "井上隆@エンタープライズキャピタル.co.jp",
+        "notes": "",
+        "id": 640
+      },
+      {
+        "name": "山本健太",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/山本-健太",
+        "direct_email": "山本健太@エンタープライズキャピタル.co.jp",
+        "notes": "",
+        "id": 641
+      }
+    ]
+  },
+  {
+    "id": 65,
+    "name": "合同会社イノベーションデータ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 16,
+    "revenue": 52545824,
+    "prefecture": "福井県",
+    "city": "福井市",
+    "established_year": 1982,
+    "website_url": "https://イノベーションデータ.co.jp",
+    "contact_email": "info@イノベーションデータ.co.jp",
+    "phone": "03-7790-3361",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T13:11:00Z",
+    "updated_at": "2025-01-05T17:11:00Z",
+    "executives": [
+      {
+        "name": "田中拓也",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-拓也",
+        "direct_email": "田中拓也@イノベーションデータ.co.jp",
+        "notes": "",
+        "id": 650
+      },
+      {
+        "name": "伊藤愛",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/伊藤.愛",
+        "other_sns_url": "https://linkedin.com/in/伊藤-愛",
+        "direct_email": "伊藤愛@イノベーションデータ.co.jp",
+        "notes": "",
+        "id": 651
+      }
+    ]
+  },
+  {
+    "id": 66,
+    "name": "有限会社イノベーションシステムズ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 38,
+    "revenue": 270972148,
+    "prefecture": "愛媛県",
+    "city": "愛媛市",
+    "established_year": 1983,
+    "website_url": "https://イノベーションシステムズ.co.jp",
+    "contact_email": "info@イノベーションシステムズ.co.jp",
+    "phone": "03-9139-1777",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-16T18:53:00Z",
+    "updated_at": "2025-02-05T23:53:00Z",
+    "executives": [
+      {
+        "name": "井上健一",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "井上健一@イノベーションシステムズ.co.jp",
+        "notes": "",
+        "id": 660
+      },
+      {
+        "name": "伊藤大輔",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "伊藤大輔@イノベーションシステムズ.co.jp",
+        "notes": "",
+        "id": 661
+      },
+      {
+        "name": "高橋智子",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "高橋智子@イノベーションシステムズ.co.jp",
+        "notes": "",
+        "id": 662
+      }
+    ]
+  },
+  {
+    "id": 67,
+    "name": "有限会社ダイナミックコーポレーション",
+    "industry": "その他",
+    "employee_count": 129,
+    "revenue": 1264511793,
+    "prefecture": "高知県",
+    "city": "高知市",
+    "established_year": 1996,
+    "website_url": "https://ダイナミックコーポレーション.co.jp",
+    "contact_email": "info@ダイナミックコーポレーション.co.jp",
+    "phone": "03-6636-3004",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T08:42:00Z",
+    "updated_at": "2025-01-15T11:42:00Z",
+    "executives": [
+      {
+        "name": "佐藤さくら",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "佐藤さくら@ダイナミックコーポレーション.co.jp",
+        "notes": "",
+        "id": 670
+      }
+    ]
+  },
+  {
+    "id": 68,
+    "name": "合同会社エンタープライズコーポレーション",
+    "industry": "その他",
+    "employee_count": 131,
+    "revenue": 618226597,
+    "prefecture": "山口県",
+    "city": "山口市",
+    "established_year": 1990,
+    "website_url": "https://エンタープライズコーポレーション.co.jp",
+    "contact_email": "info@エンタープライズコーポレーション.co.jp",
+    "phone": "03-5706-8131",
+    "notes": "",
+    "is_global_ng": true,
+    "created_at": "2025-01-07T17:36:00Z",
+    "updated_at": "2025-01-20T17:36:00Z",
+    "executives": [
+      {
+        "name": "井上直樹",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/井上.直樹",
+        "other_sns_url": "",
+        "direct_email": "井上直樹@エンタープライズコーポレーション.co.jp",
+        "notes": "",
+        "id": 680
+      },
+      {
+        "name": "高橋次郎",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/高橋-次郎",
+        "direct_email": "高橋次郎@エンタープライズコーポレーション.co.jp",
+        "notes": "",
+        "id": 681
+      }
+    ]
+  },
+  {
+    "id": 69,
+    "name": "合同会社イノベーションファクトリー",
+    "industry": "製造業",
+    "employee_count": 626,
+    "revenue": 5564483952,
+    "prefecture": "鳥取県",
+    "city": "鳥取市",
+    "established_year": 2011,
+    "website_url": "https://イノベーションファクトリー.co.jp",
+    "contact_email": "info@イノベーションファクトリー.co.jp",
+    "phone": "03-2275-5914",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-06T12:06:00Z",
+    "updated_at": "2025-01-18T14:06:00Z",
+    "executives": [
+      {
+        "name": "加藤さくら",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/加藤.さくら",
+        "other_sns_url": "",
+        "direct_email": "加藤さくら@イノベーションファクトリー.co.jp",
+        "notes": "",
+        "id": 690
+      }
+    ]
+  },
+  {
+    "id": 70,
+    "name": "有限会社ダイナミックバンク",
+    "industry": "金融・保険",
+    "employee_count": 456,
+    "revenue": 6781316448,
+    "prefecture": "鹿児島県",
+    "city": "鹿児島市",
+    "established_year": 1989,
+    "website_url": "https://ダイナミックバンク.co.jp",
+    "contact_email": "info@ダイナミックバンク.co.jp",
+    "phone": "03-2867-4995",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-06T16:21:00Z",
+    "updated_at": "2025-01-27T00:21:00Z",
+    "executives": [
+      {
+        "name": "森次郎",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/森.次郎",
+        "other_sns_url": "",
+        "direct_email": "森次郎@ダイナミックバンク.co.jp",
+        "notes": "",
+        "id": 700
+      },
+      {
+        "name": "吉田由美子",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/吉田.由美子",
+        "other_sns_url": "",
+        "direct_email": "吉田由美子@ダイナミックバンク.co.jp",
+        "notes": "",
+        "id": 701
+      },
+      {
+        "name": "森翔太",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/森.翔太",
+        "other_sns_url": "https://linkedin.com/in/森-翔太",
+        "direct_email": "森翔太@ダイナミックバンク.co.jp",
+        "notes": "",
+        "id": 702
+      }
+    ]
+  },
+  {
+    "id": 71,
+    "name": "株式会社デジタルウェブ",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 287,
+    "revenue": 1736575295,
+    "prefecture": "大分県",
+    "city": "大分市",
+    "established_year": 2012,
+    "website_url": "https://デジタルウェブ.co.jp",
+    "contact_email": "info@デジタルウェブ.co.jp",
+    "phone": "03-3742-8042",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-14T15:57:00Z",
+    "updated_at": "2025-01-31T15:57:00Z",
+    "executives": [
+      {
+        "name": "森翔太",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/森.翔太",
+        "other_sns_url": "",
+        "direct_email": "森翔太@デジタルウェブ.co.jp",
+        "notes": "",
+        "id": 710
+      },
+      {
+        "name": "小林拓也",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "小林拓也@デジタルウェブ.co.jp",
+        "notes": "",
+        "id": 711
+      }
+    ]
+  },
+  {
+    "id": 72,
+    "name": "有限会社ソリューションスタッフ",
+    "industry": "人材・派遣",
+    "employee_count": 210,
+    "revenue": 1262922990,
+    "prefecture": "千葉県",
+    "city": "千葉市",
+    "established_year": 1985,
+    "website_url": "https://ソリューションスタッフ.co.jp",
+    "contact_email": "info@ソリューションスタッフ.co.jp",
+    "phone": "03-3052-9308",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T16:03:00Z",
+    "updated_at": "2025-01-16T00:03:00Z",
+    "executives": [
+      {
+        "name": "井上花子",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/井上.花子",
+        "other_sns_url": "",
+        "direct_email": "井上花子@ソリューションスタッフ.co.jp",
+        "notes": "",
+        "id": 720
+      }
+    ]
+  },
+  {
+    "id": 73,
+    "name": "有限会社インテグレーションキャリア",
+    "industry": "人材・派遣",
+    "employee_count": 223,
+    "revenue": 1670039864,
+    "prefecture": "島根県",
+    "city": "島根市",
+    "established_year": 2011,
+    "website_url": "https://インテグレーションキャリア.co.jp",
+    "contact_email": "info@インテグレーションキャリア.co.jp",
+    "phone": "03-2956-4417",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-16T16:56:00Z",
+    "updated_at": "2025-01-18T18:56:00Z",
+    "executives": [
+      {
+        "name": "田中直樹",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-直樹",
+        "direct_email": "田中直樹@インテグレーションキャリア.co.jp",
+        "notes": "",
+        "id": 730
+      },
+      {
+        "name": "高橋美咲",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/高橋.美咲",
+        "other_sns_url": "",
+        "direct_email": "高橋美咲@インテグレーションキャリア.co.jp",
+        "notes": "",
+        "id": 731
+      }
+    ]
+  },
+  {
+    "id": 74,
+    "name": "合同会社コンサルティングファイナンス",
+    "industry": "金融・保険",
+    "employee_count": 92,
+    "revenue": 1756640824,
+    "prefecture": "宮城県",
+    "city": "宮城市",
+    "established_year": 2002,
+    "website_url": "https://コンサルティングファイナンス.co.jp",
+    "contact_email": "info@コンサルティングファイナンス.co.jp",
+    "phone": "03-2862-9397",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T08:09:00Z",
+    "updated_at": "2025-01-10T09:09:00Z",
+    "executives": [
+      {
+        "name": "森翔太",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/森-翔太",
+        "direct_email": "森翔太@コンサルティングファイナンス.co.jp",
+        "notes": "",
+        "id": 740
+      }
+    ]
+  },
+  {
+    "id": 75,
+    "name": "合同会社ダイナミック製作所",
+    "industry": "製造業",
+    "employee_count": 102,
+    "revenue": 1109646168,
+    "prefecture": "佐賀県",
+    "city": "佐賀市",
+    "established_year": 2001,
+    "website_url": "https://ダイナミック製作所.co.jp",
+    "contact_email": "info@ダイナミック製作所.co.jp",
+    "phone": "03-1045-1181",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-20T09:35:00Z",
+    "updated_at": "2025-01-20T17:35:00Z",
+    "executives": [
+      {
+        "name": "森花子",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/森.花子",
+        "other_sns_url": "",
+        "direct_email": "森花子@ダイナミック製作所.co.jp",
+        "notes": "",
+        "id": 750
+      }
+    ]
+  },
+  {
+    "id": 76,
+    "name": "株式会社エンタープライズネット",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 450,
+    "revenue": 4155306300,
+    "prefecture": "福島県",
+    "city": "福島市",
+    "established_year": 2001,
+    "website_url": "https://エンタープライズネット.co.jp",
+    "contact_email": "info@エンタープライズネット.co.jp",
+    "phone": "03-8695-3080",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T13:31:00Z",
+    "updated_at": "2025-01-22T18:31:00Z",
+    "executives": [
+      {
+        "name": "山田由美子",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/山田-由美子",
+        "direct_email": "山田由美子@エンタープライズネット.co.jp",
+        "notes": "",
+        "id": 760
+      },
+      {
+        "name": "井上雄一",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "井上雄一@エンタープライズネット.co.jp",
+        "notes": "",
+        "id": 761
+      }
+    ]
+  },
+  {
+    "id": 77,
+    "name": "有限会社フューチャージョブ",
+    "industry": "人材・派遣",
+    "employee_count": 87,
+    "revenue": 632653386,
+    "prefecture": "山口県",
+    "city": "山口市",
+    "established_year": 1980,
+    "website_url": "https://フューチャージョブ.co.jp",
+    "contact_email": "info@フューチャージョブ.co.jp",
+    "phone": "03-9343-8346",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T17:05:00Z",
+    "updated_at": "2025-01-02T17:05:00Z",
+    "executives": [
+      {
+        "name": "山田明美",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/山田-明美",
+        "direct_email": "山田明美@フューチャージョブ.co.jp",
+        "notes": "",
+        "id": 770
+      }
+    ]
+  },
+  {
+    "id": 78,
+    "name": "株式会社ダイナミックアセット",
+    "industry": "金融・保険",
+    "employee_count": 304,
+    "revenue": 5927630640,
+    "prefecture": "東京都",
+    "city": "目黒区",
+    "established_year": 1989,
+    "website_url": "https://ダイナミックアセット.co.jp",
+    "contact_email": "info@ダイナミックアセット.co.jp",
+    "phone": "03-4786-4827",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-10T16:49:00Z",
+    "updated_at": "2025-01-16T18:49:00Z",
+    "executives": [
+      {
+        "name": "田中愛",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-愛",
+        "direct_email": "田中愛@ダイナミックアセット.co.jp",
+        "notes": "",
+        "id": 780
+      },
+      {
+        "name": "小林雄一",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/小林.雄一",
+        "other_sns_url": "",
+        "direct_email": "小林雄一@ダイナミックアセット.co.jp",
+        "notes": "",
+        "id": 781
+      }
+    ]
+  },
+  {
+    "id": 79,
+    "name": "合同会社デジタル保険",
+    "industry": "金融・保険",
+    "employee_count": 171,
+    "revenue": 2689364025,
+    "prefecture": "富山県",
+    "city": "富山市",
+    "established_year": 2005,
+    "website_url": "https://デジタル保険.co.jp",
+    "contact_email": "info@デジタル保険.co.jp",
+    "phone": "03-8599-2215",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T15:39:00Z",
+    "updated_at": "2025-01-05T22:39:00Z",
+    "executives": [
+      {
+        "name": "田中健太",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/田中.健太",
+        "other_sns_url": "https://linkedin.com/in/田中-健太",
+        "direct_email": "田中健太@デジタル保険.co.jp",
+        "notes": "",
+        "id": 790
+      }
+    ]
+  },
+  {
+    "id": 80,
+    "name": "合同会社グローバル産業",
+    "industry": "製造業",
+    "employee_count": 567,
+    "revenue": 4425156603,
+    "prefecture": "沖縄県",
+    "city": "沖縄市",
+    "established_year": 2022,
+    "website_url": "https://グローバル産業.co.jp",
+    "contact_email": "info@グローバル産業.co.jp",
+    "phone": "03-8805-4489",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-13T14:32:00Z",
+    "updated_at": "2025-01-23T21:32:00Z",
+    "executives": [
+      {
+        "name": "松本美咲",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/松本.美咲",
+        "other_sns_url": "",
+        "direct_email": "松本美咲@グローバル産業.co.jp",
+        "notes": "",
+        "id": 800
+      }
+    ]
+  },
+  {
+    "id": 81,
+    "name": "有限会社スマートスタッフ",
+    "industry": "人材・派遣",
+    "employee_count": 274,
+    "revenue": 963427018,
+    "prefecture": "岩手県",
+    "city": "岩手市",
+    "established_year": 1985,
+    "website_url": "https://スマートスタッフ.co.jp",
+    "contact_email": "info@スマートスタッフ.co.jp",
+    "phone": "03-5787-2586",
+    "notes": "",
+    "is_global_ng": true,
+    "created_at": "2025-01-12T08:49:00Z",
+    "updated_at": "2025-01-17T09:49:00Z",
+    "executives": [
+      {
+        "name": "松本拓也",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "松本拓也@スマートスタッフ.co.jp",
+        "notes": "",
+        "id": 810
+      },
+      {
+        "name": "渡辺由美子",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/渡辺.由美子",
+        "other_sns_url": "",
+        "direct_email": "渡辺由美子@スマートスタッフ.co.jp",
+        "notes": "",
+        "id": 811
+      }
+    ]
+  },
+  {
+    "id": 82,
+    "name": "有限会社パートナーズエンジニアリング",
+    "industry": "製造業",
+    "employee_count": 411,
+    "revenue": 1615488930,
+    "prefecture": "愛媛県",
+    "city": "愛媛市",
+    "established_year": 2002,
+    "website_url": "https://パートナーズエンジニアリング.co.jp",
+    "contact_email": "info@パートナーズエンジニアリング.co.jp",
+    "phone": "03-8011-1490",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T09:23:00Z",
+    "updated_at": "2025-01-09T13:23:00Z",
+    "executives": [
+      {
+        "name": "山本浩",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/山本.浩",
+        "other_sns_url": "",
+        "direct_email": "山本浩@パートナーズエンジニアリング.co.jp",
+        "notes": "",
+        "id": 820
+      },
+      {
+        "name": "伊藤美香",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/伊藤.美香",
+        "other_sns_url": "",
+        "direct_email": "伊藤美香@パートナーズエンジニアリング.co.jp",
+        "notes": "",
+        "id": 821
+      }
+    ]
+  },
+  {
+    "id": 83,
+    "name": "株式会社イノベーションインベストメント",
+    "industry": "金融・保険",
+    "employee_count": 460,
+    "revenue": 4588378100,
+    "prefecture": "和歌山県",
+    "city": "和歌山市",
+    "established_year": 1988,
+    "website_url": "https://イノベーションインベストメント.co.jp",
+    "contact_email": "info@イノベーションインベストメント.co.jp",
+    "phone": "03-4311-6407",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-09T16:50:00Z",
+    "updated_at": "2025-01-09T19:50:00Z",
+    "executives": [
+      {
+        "name": "鈴木ゆり",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "鈴木ゆり@イノベーションインベストメント.co.jp",
+        "notes": "",
+        "id": 830
+      }
+    ]
+  },
+  {
+    "id": 84,
+    "name": "有限会社フューチャービルディング",
+    "industry": "不動産",
+    "employee_count": 71,
+    "revenue": 1540241340,
+    "prefecture": "青森県",
+    "city": "青森市",
+    "established_year": 2018,
+    "website_url": "https://フューチャービルディング.co.jp",
+    "contact_email": "info@フューチャービルディング.co.jp",
+    "phone": "03-2413-6095",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-14T18:54:00Z",
+    "updated_at": "2025-02-01T02:54:00Z",
+    "executives": [
+      {
+        "name": "小林直樹",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/小林.直樹",
+        "other_sns_url": "https://linkedin.com/in/小林-直樹",
+        "direct_email": "小林直樹@フューチャービルディング.co.jp",
+        "notes": "",
+        "id": 840
+      },
+      {
+        "name": "高橋明美",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "高橋明美@フューチャービルディング.co.jp",
+        "notes": "",
+        "id": 841
+      },
+      {
+        "name": "田中正人",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-正人",
+        "direct_email": "田中正人@フューチャービルディング.co.jp",
+        "notes": "",
+        "id": 842
+      }
+    ]
+  },
+  {
+    "id": 85,
+    "name": "株式会社グローバルテック",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 384,
+    "revenue": 2637467520,
+    "prefecture": "広島県",
+    "city": "広島市",
+    "established_year": 2013,
+    "website_url": "https://グローバルテック.co.jp",
+    "contact_email": "info@グローバルテック.co.jp",
+    "phone": "03-6664-2278",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T17:14:00Z",
+    "updated_at": "2025-01-30T20:14:00Z",
+    "executives": [
+      {
+        "name": "森みどり",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/森.みどり",
+        "other_sns_url": "https://linkedin.com/in/森-みどり",
+        "direct_email": "森みどり@グローバルテック.co.jp",
+        "notes": "",
+        "id": 850
+      },
+      {
+        "name": "田中誠",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/田中.誠",
+        "other_sns_url": "",
+        "direct_email": "田中誠@グローバルテック.co.jp",
+        "notes": "",
+        "id": 851
+      }
+    ]
+  },
+  {
+    "id": 86,
+    "name": "有限会社インテグレーションコーポレーション",
+    "industry": "その他",
+    "employee_count": 104,
+    "revenue": 917883096,
+    "prefecture": "愛知県",
+    "city": "名古屋市",
+    "established_year": 2022,
+    "website_url": "https://インテグレーションコーポレーション.co.jp",
+    "contact_email": "info@インテグレーションコーポレーション.co.jp",
+    "phone": "052-8359-3731",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-07T18:45:00Z",
+    "updated_at": "2025-01-08T01:45:00Z",
+    "executives": [
+      {
+        "name": "佐藤さくら",
+        "position": "代表取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "佐藤さくら@インテグレーションコーポレーション.co.jp",
+        "notes": "",
+        "id": 860
+      },
+      {
+        "name": "小林みどり",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/小林.みどり",
+        "other_sns_url": "",
+        "direct_email": "小林みどり@インテグレーションコーポレーション.co.jp",
+        "notes": "",
+        "id": 861
+      },
+      {
+        "name": "渡辺正人",
+        "position": "代表取締役CEO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/渡辺-正人",
+        "direct_email": "渡辺正人@インテグレーションコーポレーション.co.jp",
+        "notes": "",
+        "id": 862
+      }
+    ]
+  },
+  {
+    "id": 87,
+    "name": "合同会社クリエイティブプロパティ",
+    "industry": "不動産",
+    "employee_count": 155,
+    "revenue": 2772083860,
+    "prefecture": "新潟県",
+    "city": "新潟市",
+    "established_year": 2021,
+    "website_url": "https://クリエイティブプロパティ.co.jp",
+    "contact_email": "info@クリエイティブプロパティ.co.jp",
+    "phone": "03-5058-4624",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T15:51:00Z",
+    "updated_at": "2025-01-31T20:51:00Z",
+    "executives": [
+      {
+        "name": "渡辺さくら",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/渡辺.さくら",
+        "other_sns_url": "",
+        "direct_email": "渡辺さくら@クリエイティブプロパティ.co.jp",
+        "notes": "",
+        "id": 870
+      }
+    ]
+  },
+  {
+    "id": 88,
+    "name": "合同会社プロフェッショナルネット",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 255,
+    "revenue": 2534155830,
+    "prefecture": "佐賀県",
+    "city": "佐賀市",
+    "established_year": 2013,
+    "website_url": "https://プロフェッショナルネット.co.jp",
+    "contact_email": "info@プロフェッショナルネット.co.jp",
+    "phone": "03-1664-7104",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-12T16:25:00Z",
+    "updated_at": "2025-01-23T23:25:00Z",
+    "executives": [
+      {
+        "name": "佐藤健一",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/佐藤.健一",
+        "other_sns_url": "",
+        "direct_email": "佐藤健一@プロフェッショナルネット.co.jp",
+        "notes": "",
+        "id": 880
+      },
+      {
+        "name": "吉田誠",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "吉田誠@プロフェッショナルネット.co.jp",
+        "notes": "",
+        "id": 881
+      }
+    ]
+  },
+  {
+    "id": 89,
+    "name": "合同会社フューチャープロダクツ",
+    "industry": "製造業",
+    "employee_count": 957,
+    "revenue": 4015136565,
+    "prefecture": "宮城県",
+    "city": "宮城市",
+    "established_year": 2013,
+    "website_url": "https://フューチャープロダクツ.co.jp",
+    "contact_email": "info@フューチャープロダクツ.co.jp",
+    "phone": "03-3307-4865",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-05T12:30:00Z",
+    "updated_at": "2025-01-17T15:30:00Z",
+    "executives": [
+      {
+        "name": "加藤太郎",
+        "position": "取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "加藤太郎@フューチャープロダクツ.co.jp",
+        "notes": "",
+        "id": 890
+      },
+      {
+        "name": "吉田ゆり",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/吉田.ゆり",
+        "other_sns_url": "",
+        "direct_email": "吉田ゆり@フューチャープロダクツ.co.jp",
+        "notes": "",
+        "id": 891
+      }
+    ]
+  },
+  {
+    "id": 90,
+    "name": "有限会社ビジネスマテリアル",
+    "industry": "製造業",
+    "employee_count": 610,
+    "revenue": 8039505980,
+    "prefecture": "福井県",
+    "city": "福井市",
+    "established_year": 1995,
+    "website_url": "https://ビジネスマテリアル.co.jp",
+    "contact_email": "info@ビジネスマテリアル.co.jp",
+    "phone": "03-6696-6945",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-04T10:35:00Z",
+    "updated_at": "2025-01-24T11:35:00Z",
+    "executives": [
+      {
+        "name": "森三郎",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/森-三郎",
+        "direct_email": "森三郎@ビジネスマテリアル.co.jp",
+        "notes": "",
+        "id": 900
+      },
+      {
+        "name": "伊藤美香",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/伊藤.美香",
+        "other_sns_url": "",
+        "direct_email": "伊藤美香@ビジネスマテリアル.co.jp",
+        "notes": "",
+        "id": 901
+      },
+      {
+        "name": "山田翔太",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/山田.翔太",
+        "other_sns_url": "https://linkedin.com/in/山田-翔太",
+        "direct_email": "山田翔太@ビジネスマテリアル.co.jp",
+        "notes": "",
+        "id": 902
+      }
+    ]
+  },
+  {
+    "id": 91,
+    "name": "株式会社エンタープライズエステート",
+    "industry": "不動産",
+    "employee_count": 32,
+    "revenue": 312230400,
+    "prefecture": "福井県",
+    "city": "福井市",
+    "established_year": 1982,
+    "website_url": "https://エンタープライズエステート.co.jp",
+    "contact_email": "info@エンタープライズエステート.co.jp",
+    "phone": "03-3812-3294",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-19T09:12:00Z",
+    "updated_at": "2025-02-04T09:12:00Z",
+    "executives": [
+      {
+        "name": "山本次郎",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本次郎@エンタープライズエステート.co.jp",
+        "notes": "",
+        "id": 910
+      }
+    ]
+  },
+  {
+    "id": 92,
+    "name": "株式会社ビジネスホールディングス",
+    "industry": "その他",
+    "employee_count": 256,
+    "revenue": 1011038976,
+    "prefecture": "長崎県",
+    "city": "長崎市",
+    "established_year": 1980,
+    "website_url": "https://ビジネスホールディングス.co.jp",
+    "contact_email": "info@ビジネスホールディングス.co.jp",
+    "phone": "03-9314-6393",
+    "notes": "",
+    "is_global_ng": true,
+    "created_at": "2025-01-07T15:09:00Z",
+    "updated_at": "2025-01-22T22:09:00Z",
+    "executives": [
+      {
+        "name": "小林美咲",
+        "position": "代表取締役社長",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "小林美咲@ビジネスホールディングス.co.jp",
+        "notes": "",
+        "id": 920
+      }
+    ]
+  },
+  {
+    "id": 93,
+    "name": "有限会社ダイナミックキャリア",
+    "industry": "人材・派遣",
+    "employee_count": 173,
+    "revenue": 755669190,
+    "prefecture": "山形県",
+    "city": "山形市",
+    "established_year": 1984,
+    "website_url": "https://ダイナミックキャリア.co.jp",
+    "contact_email": "info@ダイナミックキャリア.co.jp",
+    "phone": "03-9410-4361",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-01T13:29:00Z",
+    "updated_at": "2025-01-21T15:29:00Z",
+    "executives": [
+      {
+        "name": "小林太郎",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/小林.太郎",
+        "other_sns_url": "https://linkedin.com/in/小林-太郎",
+        "direct_email": "小林太郎@ダイナミックキャリア.co.jp",
+        "notes": "",
+        "id": 930
+      },
+      {
+        "name": "吉田美香",
+        "position": "専務取締役",
+        "facebook_url": "https://facebook.com/吉田.美香",
+        "other_sns_url": "https://linkedin.com/in/吉田-美香",
+        "direct_email": "吉田美香@ダイナミックキャリア.co.jp",
+        "notes": "",
+        "id": 931
+      }
+    ]
+  },
+  {
+    "id": 94,
+    "name": "合同会社ソリューションビルディング",
+    "industry": "不動産",
+    "employee_count": 176,
+    "revenue": 1626341552,
+    "prefecture": "茨城県",
+    "city": "茨城市",
+    "established_year": 2011,
+    "website_url": "https://ソリューションビルディング.co.jp",
+    "contact_email": "info@ソリューションビルディング.co.jp",
+    "phone": "03-7241-2857",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-15T11:33:00Z",
+    "updated_at": "2025-01-21T14:33:00Z",
+    "executives": [
+      {
+        "name": "山本由美子",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/山本-由美子",
+        "direct_email": "山本由美子@ソリューションビルディング.co.jp",
+        "notes": "",
+        "id": 940
+      },
+      {
+        "name": "山本健太",
+        "position": "常務取締役",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本健太@ソリューションビルディング.co.jp",
+        "notes": "",
+        "id": 941
+      }
+    ]
+  },
+  {
+    "id": 95,
+    "name": "合同会社ソリューションAI",
+    "industry": "IT・ソフトウェア",
+    "employee_count": 306,
+    "revenue": 2850052482,
+    "prefecture": "福岡県",
+    "city": "北九州市",
+    "established_year": 1986,
+    "website_url": "https://ソリューションai.co.jp",
+    "contact_email": "info@ソリューションai.co.jp",
+    "phone": "092-7595-6827",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-07T13:35:00Z",
+    "updated_at": "2025-01-18T18:35:00Z",
+    "executives": [
+      {
+        "name": "中村恵美",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/中村.恵美",
+        "other_sns_url": "",
+        "direct_email": "中村恵美@ソリューションai.co.jp",
+        "notes": "",
+        "id": 950
+      },
+      {
+        "name": "山田陽子",
+        "position": "代表取締役社長",
+        "facebook_url": "https://facebook.com/山田.陽子",
+        "other_sns_url": "",
+        "direct_email": "山田陽子@ソリューションai.co.jp",
+        "notes": "",
+        "id": 951
+      },
+      {
+        "name": "鈴木さくら",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/鈴木.さくら",
+        "other_sns_url": "",
+        "direct_email": "鈴木さくら@ソリューションai.co.jp",
+        "notes": "",
+        "id": 952
+      }
+    ]
+  },
+  {
+    "id": 96,
+    "name": "合同会社テクノロジープロダクツ",
+    "industry": "製造業",
+    "employee_count": 88,
+    "revenue": 1099431608,
+    "prefecture": "富山県",
+    "city": "富山市",
+    "established_year": 2011,
+    "website_url": "https://テクノロジープロダクツ.co.jp",
+    "contact_email": "info@テクノロジープロダクツ.co.jp",
+    "phone": "03-5631-4976",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-08T17:38:00Z",
+    "updated_at": "2025-01-16T20:38:00Z",
+    "executives": [
+      {
+        "name": "鈴木雄一",
+        "position": "代表取締役",
+        "facebook_url": "https://facebook.com/鈴木.雄一",
+        "other_sns_url": "",
+        "direct_email": "鈴木雄一@テクノロジープロダクツ.co.jp",
+        "notes": "",
+        "id": 960
+      },
+      {
+        "name": "吉田雄一",
+        "position": "代表取締役CEO",
+        "facebook_url": "https://facebook.com/吉田.雄一",
+        "other_sns_url": "",
+        "direct_email": "吉田雄一@テクノロジープロダクツ.co.jp",
+        "notes": "",
+        "id": 961
+      },
+      {
+        "name": "吉田太郎",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/吉田.太郎",
+        "other_sns_url": "",
+        "direct_email": "吉田太郎@テクノロジープロダクツ.co.jp",
+        "notes": "",
+        "id": 962
+      }
+    ]
+  },
+  {
+    "id": 97,
+    "name": "株式会社クリエイティブマテリアル",
+    "industry": "製造業",
+    "employee_count": 775,
+    "revenue": 5656079425,
+    "prefecture": "兵庫県",
+    "city": "兵庫市",
+    "established_year": 1993,
+    "website_url": "https://クリエイティブマテリアル.co.jp",
+    "contact_email": "info@クリエイティブマテリアル.co.jp",
+    "phone": "078-1261-6757",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-15T15:27:00Z",
+    "updated_at": "2025-01-19T22:27:00Z",
+    "executives": [
+      {
+        "name": "田中健一",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/田中-健一",
+        "direct_email": "田中健一@クリエイティブマテリアル.co.jp",
+        "notes": "",
+        "id": 970
+      },
+      {
+        "name": "中村さくら",
+        "position": "専務取締役",
+        "facebook_url": "",
+        "other_sns_url": "https://linkedin.com/in/中村-さくら",
+        "direct_email": "中村さくら@クリエイティブマテリアル.co.jp",
+        "notes": "",
+        "id": 971
+      }
+    ]
+  },
+  {
+    "id": 98,
+    "name": "合同会社コンサルティングデベロップメント",
+    "industry": "不動産",
+    "employee_count": 53,
+    "revenue": 1242561203,
+    "prefecture": "栃木県",
+    "city": "栃木市",
+    "established_year": 1983,
+    "website_url": "https://コンサルティングデベロップメント.co.jp",
+    "contact_email": "info@コンサルティングデベロップメント.co.jp",
+    "phone": "03-5026-1499",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-14T17:17:00Z",
+    "updated_at": "2025-01-28T21:17:00Z",
+    "executives": [
+      {
+        "name": "松本さくら",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/松本.さくら",
+        "other_sns_url": "",
+        "direct_email": "松本さくら@コンサルティングデベロップメント.co.jp",
+        "notes": "",
+        "id": 980
+      },
+      {
+        "name": "鈴木恵美",
+        "position": "常務取締役",
+        "facebook_url": "https://facebook.com/鈴木.恵美",
+        "other_sns_url": "https://linkedin.com/in/鈴木-恵美",
+        "direct_email": "鈴木恵美@コンサルティングデベロップメント.co.jp",
+        "notes": "",
+        "id": 981
+      },
+      {
+        "name": "田中翔太",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "田中翔太@コンサルティングデベロップメント.co.jp",
+        "notes": "",
+        "id": 982
+      }
+    ]
+  },
+  {
+    "id": 99,
+    "name": "株式会社ダイナミックグループ",
+    "industry": "その他",
+    "employee_count": 50,
+    "revenue": 417431400,
+    "prefecture": "群馬県",
+    "city": "群馬市",
+    "established_year": 2013,
+    "website_url": "https://ダイナミックグループ.co.jp",
+    "contact_email": "info@ダイナミックグループ.co.jp",
+    "phone": "03-2352-5585",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-20T14:13:00Z",
+    "updated_at": "2025-02-04T21:13:00Z",
+    "executives": [
+      {
+        "name": "佐藤あやか",
+        "position": "取締役",
+        "facebook_url": "https://facebook.com/佐藤.あやか",
+        "other_sns_url": "https://linkedin.com/in/佐藤-あやか",
+        "direct_email": "佐藤あやか@ダイナミックグループ.co.jp",
+        "notes": "",
+        "id": 990
+      },
+      {
+        "name": "井上美咲",
+        "position": "取締役CTO",
+        "facebook_url": "https://facebook.com/井上.美咲",
+        "other_sns_url": "",
+        "direct_email": "井上美咲@ダイナミックグループ.co.jp",
+        "notes": "",
+        "id": 991
+      }
+    ]
+  },
+  {
+    "id": 100,
+    "name": "株式会社エンタープライズ不動産",
+    "industry": "不動産",
+    "employee_count": 123,
+    "revenue": 2360164221,
+    "prefecture": "宮崎県",
+    "city": "宮崎市",
+    "established_year": 1981,
+    "website_url": "https://エンタープライズ不動産.co.jp",
+    "contact_email": "info@エンタープライズ不動産.co.jp",
+    "phone": "03-1134-3027",
+    "notes": "",
+    "is_global_ng": false,
+    "created_at": "2025-01-04T14:28:00Z",
+    "updated_at": "2025-01-14T14:28:00Z",
+    "executives": [
+      {
+        "name": "山本花子",
+        "position": "取締役CTO",
+        "facebook_url": "",
+        "other_sns_url": "",
+        "direct_email": "山本花子@エンタープライズ不動産.co.jp",
+        "notes": "",
+        "id": 1000
+      }
+    ]
+  }
+]
