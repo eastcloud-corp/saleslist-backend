@@ -1,0 +1,9 @@
+node_modules
+*.pyc
+__pycache__
+.git
+.gitignore
+README.md
+package.json
+package-lock.json
+generate_companies.py

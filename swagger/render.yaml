@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: saleslist-mock-api
+    runtime: docker
+    dockerfilePath: ./saleslist-backend/swagger/Dockerfile
+    dockerContext: ./saleslist-backend/swagger
+    envVars:
+      - key: PORT
+        value: 4010
+    healthCheckPath: /
+    region: singapore  # または oregon, frankfurt, ohio から選択
