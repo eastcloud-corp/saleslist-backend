@@ -1,15 +1,14 @@
-# Prism Mock Server用のDockerfile
-FROM stoplight/prism:5
+# Prism Mock Server for Render.com
+FROM stoplight/prism:4
 
-# 作業ディレクトリを設定
-WORKDIR /app
+# OpenAPI仕様書をコピー
+COPY ./openapi.yaml /swagger/openapi.yaml
+COPY ./examples /swagger/examples
 
-# OpenAPI定義とサンプルデータをコピー
-COPY openapi.yaml .
-COPY examples ./examples
+# Renderのポート要件に対応
+EXPOSE 10000
 
-# ポート4010を公開
-EXPOSE 4010
-
-# Prismモックサーバーを起動（動的モード、CORS有効）
-CMD ["mock", "-h", "0.0.0.0", "-p", "4010", "--cors", "-d", "openapi.yaml"]
+# Prismを起動（成功例と同じ設定）
+# --cors でCORS有効化
+# --errors=false で認証エラーを無効化（モック環境用）
+CMD ["mock", "-h", "0.0.0.0", "-p", "10000", "--cors", "--errors=false", "/swagger/openapi.yaml"]
