@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: 営業リスト管理システムAPI
+  description: 企業リスト管理、案件管理、営業ステータス管理を行うシステムのAPI
+  version: 1.0.0
+  contact:
+    name: バジェットアドテクノロジー
+servers:
+- url: http://localhost:4010
+  description: Mock Server
+- url: https://api.budget-sales.com/api/v1
+  description: Production Server
+security:
+- bearerAuth: []
+tags:
+- name: Auth
+  description: 認証関連
+- name: Clients
+  description: クライアント管理
+- name: Companies
+  description: 企業管理
+- name: Executives
+  description: 役員管理
+- name: Projects
+  description: 案件管理
+- name: Filters
+  description: 保存済みフィルタ
+- name: Master
+  description: マスタデータ
+
+# Include all path definitions
+paths:
+  $ref: './paths/auth.yaml#/paths'
+  $ref: './paths/companies.yaml#/paths'  
+  $ref: './paths/projects.yaml#/paths'
+  $ref: './paths/clients.yaml#/paths'
+  $ref: './paths/master.yaml#/paths'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    $ref: './schemas/all-schemas.yaml#/schemas'
+  responses:
+    $ref: './responses/common-responses.yaml#/responses'
+  examples:
+    $ref: './examples/all-examples.yaml#/examples'
+

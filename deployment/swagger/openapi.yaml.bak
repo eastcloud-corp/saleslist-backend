@@ -3358,15 +3358,6 @@ paths:
                 file:
                   type: string
                   format: binary
-          application/json:
-            schema:
-              type: object
-              required:
-              - csv_data
-              properties:
-                csv_data:
-                  type: string
-                  description: CSV形式のテキストデータ
       responses:
         '200':
           description: インポート成功
@@ -3768,7 +3759,6 @@ paths:
                 status:
                   type: string
                   enum:
-                  - contacted
                   - 未接触
                   - DM送信予定
                   - DM送信済み
@@ -3943,7 +3933,6 @@ paths:
                 status:
                   type: string
                   enum:
-                  - contacted
                   - 未接触
                   - DM送信予定
                   - DM送信済み
@@ -4184,7 +4173,8 @@ paths:
                   results:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Client'
+                      ? ''
+                      : '#/components/schemas/Client'
               examples:
                 ClientListResponse:
                   value:
@@ -4237,7 +4227,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClientCreate'
+              ? ''
+              : '#/components/schemas/ClientCreate'
       responses:
         '201':
           description: クライアント作成成功
@@ -4278,7 +4269,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClientCreate'
+              ? ''
+              : '#/components/schemas/ClientCreate'
       responses:
         '200':
           description: クライアント更新成功
@@ -4378,7 +4370,8 @@ paths:
                   results:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ClientNGCompany'
+                      ? ''
+                      : '#/components/schemas/ClientNGCompany'
               examples:
                 NGListResponse:
                   value:
@@ -4455,15 +4448,6 @@ paths:
                   description: CSVファイル
               required:
               - file
-          application/json:
-            schema:
-              type: object
-              properties:
-                csv_data:
-                  type: string
-                  description: CSV形式のテキストデータ
-              required:
-              - csv_data
       responses:
         '200':
           description: インポート結果
@@ -4622,7 +4606,8 @@ paths:
                   updated_companies:
                     type: array
                     items:
-                      $ref: '#/components/schemas/CompanyList'
+                      ? ''
+                      : '#/components/schemas/Company'
 components:
   securitySchemes:
     bearerAuth:
@@ -4862,14 +4847,10 @@ components:
       type: object
       required:
       - name
-      - client_id
       properties:
         name:
           type: string
           example: 新規案件
-        client_id:
-          type: integer
-          example: 1
         client_company:
           type: string
           example: 株式会社ABC
@@ -4879,7 +4860,6 @@ components:
         status:
           type: string
           enum:
-          - active
           - 進行中
           - 完了
           - 中止
@@ -4892,8 +4872,6 @@ components:
       properties:
         name:
           type: string
-        client_id:
-          type: integer
         client_company:
           type: string
         description:
@@ -4901,8 +4879,6 @@ components:
         status:
           type: string
           enum:
-          - active
-          - completed
           - 進行中
           - 完了
           - 中止
@@ -4976,20 +4952,13 @@ components:
       type: object
       required:
       - name
+      - filter_conditions
       properties:
         name:
           type: string
           example: IT企業_大手
-        filters:
-          type: object
-          additionalProperties: true
-          example:
-            industry: IT・ソフトウェア
-            employee_min: 300
-            revenue_min: 1000000000
         filter_conditions:
           type: object
-          additionalProperties: true
           example:
             industry: IT・ソフトウェア
             employee_min: 300

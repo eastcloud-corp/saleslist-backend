@@ -1,0 +1,1 @@
+paths: sed -n 31,119p openapi.yaml

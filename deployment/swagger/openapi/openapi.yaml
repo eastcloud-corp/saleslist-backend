@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info:
+  title: 営業リスト管理システムAPI
+  description: 企業リスト管理、案件管理、営業ステータス管理を行うシステムのAPI
+  version: 1.0.0
+  contact:
+    name: バジェットアドテクノロジー
+servers:
+- url: http://localhost:4010
+  description: Mock Server
+- url: http://localhost:8000
+  description: Development Server
+security:
+- bearerAuth: []
+tags:
+- name: Authentication
+  description: 認証関連のAPI
+- name: Companies
+  description: 企業管理のAPI
+- name: Projects
+  description: 案件管理のAPI
+- name: Clients
+  description: クライアント管理のAPI
+- name: Master
+  description: マスタデータのAPI
+
+# Note: このファイルは分割されたAPIの参照ポイントです
+# 実際のパス定義は paths/ ディレクトリ内の各ファイルに分割されています
+# デプロイ時は bundle.sh スクリプトで統合版を生成してください
+
+paths:
+  # Auth endpoints - defined in paths/auth.yaml
+  # Companies endpoints - defined in paths/companies/
+  # Projects endpoints - defined in paths/projects.yaml
+  # Clients endpoints - defined in paths/clients.yaml
+  # Master endpoints - defined in paths/master.yaml
+  
+  # $ref による参照は OpenAPI 3.0 の制限により
+  # paths レベルでは動作しないため、統合スクリプトを使用
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  # Schemas are defined in schemas/all.yaml

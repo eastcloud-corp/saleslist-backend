@@ -1,0 +1,605 @@
+# OpenAPI Schemas and Components
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CompanyList:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 株式会社サンプル
+        industry:
+          type: string
+          example: IT・ソフトウェア
+        employee_count:
+          type: integer
+          example: 150
+        revenue:
+          type: integer
+          example: 500000000
+        prefecture:
+          type: string
+          example: 東京都
+        city:
+          type: string
+          example: 渋谷区
+        established_year:
+          type: integer
+          example: 2010
+        website_url:
+          type: string
+          example: https://example.com
+        contact_email:
+          type: string
+          example: info@example.com
+        phone:
+          type: string
+          example: 03-1234-5678
+        notes:
+          type: string
+          example: 備考
+        is_global_ng:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01 10:00:00+00:00
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15 15:30:00+00:00
+        executives:
+          type: array
+          items:
+            $ref: '#/components/schemas/Executive'
+    CompanyDetail:
+      allOf:
+      - $ref: '#/components/schemas/CompanyList'
+      - type: object
+        properties:
+          ng_reason:
+            type: string
+            example: ''
+    CompanyCreate:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          example: 株式会社新規企業
+        industry:
+          type: string
+          example: 製造業
+        employee_count:
+          type: integer
+          example: 100
+        revenue:
+          type: integer
+          example: 300000000
+        prefecture:
+          type: string
+          example: 大阪府
+        city:
+          type: string
+          example: 大阪市
+        established_year:
+          type: integer
+          example: 2015
+        website_url:
+          type: string
+          example: https://newcompany.com
+        contact_email:
+          type: string
+          example: info@newcompany.com
+        phone:
+          type: string
+          example: 06-1234-5678
+        notes:
+          type: string
+          example: 新規登録企業
+    CompanyPartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        industry:
+          type: string
+        employee_count:
+          type: integer
+        revenue:
+          type: integer
+        prefecture:
+          type: string
+        city:
+          type: string
+        established_year:
+          type: integer
+        website_url:
+          type: string
+        contact_email:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: string
+    Executive:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 山田太郎
+        position:
+          type: string
+          example: 代表取締役
+        facebook_url:
+          type: string
+          example: https://facebook.com/yamada
+        other_sns_url:
+          type: string
+          example: ''
+        direct_email:
+          type: string
+          example: yamada@example.com
+        notes:
+          type: string
+          example: ''
+    ExecutiveCreate:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          example: 佐藤花子
+        position:
+          type: string
+          example: 取締役
+        facebook_url:
+          type: string
+          example: https://facebook.com/sato
+        other_sns_url:
+          type: string
+          example: https://linkedin.com/in/sato
+        direct_email:
+          type: string
+          example: sato@example.com
+        notes:
+          type: string
+          example: 営業担当
+    ExecutivePartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        position:
+          type: string
+        facebook_url:
+          type: string
+        other_sns_url:
+          type: string
+        direct_email:
+          type: string
+        notes:
+          type: string
+    ProjectList:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 人材会社向けDM案件
+        client_company:
+          type: string
+          example: 株式会社クライアント
+        description:
+          type: string
+          example: 人材業界向けの営業DM送信
+        status:
+          type: string
+          enum:
+          - 進行中
+          - 完了
+          - 中止
+          example: 進行中
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01 10:00:00+00:00
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15 15:30:00+00:00
+        company_count:
+          type: integer
+          example: 150
+    ProjectDetail:
+      allOf:
+      - $ref: '#/components/schemas/ProjectList'
+      - type: object
+        properties:
+          assigned_user:
+            type: string
+            example: 田中次郎
+    ProjectCreate:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          example: 新規案件
+        client_company:
+          type: string
+          example: 株式会社ABC
+        description:
+          type: string
+          example: IT企業向けの営業活動
+        status:
+          type: string
+          enum:
+          - 進行中
+          - 完了
+          - 中止
+          default: 進行中
+        assigned_user:
+          type: string
+          example: 鈴木三郎
+    ProjectPartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        client_company:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - 進行中
+          - 完了
+          - 中止
+        assigned_user:
+          type: string
+    ProjectCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        company:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: 株式会社サンプル
+            industry:
+              type: string
+              example: IT・ソフトウェア
+        status:
+          type: string
+          enum:
+          - 未接触
+          - DM送信予定
+          - DM送信済み
+          - 返信あり
+          - アポ獲得
+          - 成約
+          - NG
+          example: 未接触
+        contact_date:
+          type: string
+          format: date
+          nullable: true
+          example: null
+        notes:
+          type: string
+          example: ''
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-10 10:00:00+00:00
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-10 10:00:00+00:00
+    SavedFilter:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 人材会社_2025Q1
+        filter_conditions:
+          type: object
+          example:
+            industry: 人材・派遣
+            employee_min: 50
+            has_facebook: true
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01 10:00:00+00:00
+    SavedFilterCreate:
+      type: object
+      required:
+      - name
+      - filter_conditions
+      properties:
+        name:
+          type: string
+          example: IT企業_大手
+        filter_conditions:
+          type: object
+          example:
+            industry: IT・ソフトウェア
+            employee_min: 300
+            revenue_min: 1000000000
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 株式会社ABC商事
+        contact_person:
+          type: string
+          example: 山田太郎
+        email:
+          type: string
+          example: yamada@abc.co.jp
+        phone:
+          type: string
+          example: 03-1234-5678
+        industry:
+          type: string
+          example: IT・ソフトウェア
+        notes:
+          type: string
+          example: 大手IT企業向けの営業代行
+        is_active:
+          type: boolean
+          example: true
+        project_count:
+          type: integer
+          example: 3
+        active_project_count:
+          type: integer
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ClientCreate:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          example: 株式会社新規クライアント
+        contact_person:
+          type: string
+          example: 田中次郎
+        email:
+          type: string
+          example: tanaka@new-client.co.jp
+        phone:
+          type: string
+          example: 03-9999-8888
+        industry:
+          type: string
+          example: 製造業
+        notes:
+          type: string
+          example: 製造業向けの営業支援
+        is_active:
+          type: boolean
+          example: true
+    ClientNGCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+        client_id:
+          type: integer
+        company_name:
+          type: string
+        company_id:
+          type: integer
+          nullable: true
+        matched:
+          type: boolean
+        reason:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        client_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: サンプル案件
+        description:
+          type: string
+          example: 営業代行案件の説明
+        status:
+          type: string
+          enum: [進行中, 完了, 中断]
+          example: 進行中
+        start_date:
+          type: string
+          format: date
+          example: 2025-01-01
+        end_date:
+          type: string
+          format: date
+          example: 2025-12-31
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15T15:30:00Z
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        client_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: サンプル案件
+        description:
+          type: string
+          example: 営業代行案件の説明
+        status:
+          type: string
+          enum: [進行中, 完了, 中断]
+          example: 進行中
+        start_date:
+          type: string
+          format: date
+          example: 2025-01-01
+        end_date:
+          type: string
+          format: date
+          example: 2025-12-31
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15T15:30:00Z
+  responses:
+    BadRequest:
+      description: 不正なリクエスト
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: validation_error
+              message:
+                type: string
+                example: 入力データにエラーがあります
+              details:
+                type: object
+                example:
+                  name:
+                  - この項目は必須です
+    Unauthorized:
+      description: 認証エラー
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: unauthorized
+              message:
+                type: string
+                example: 認証が必要です
+    NotFound:
+      description: リソースが見つからない
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: not_found
+              message:
+                type: string
+                example: 指定されたリソースが見つかりません
+    InternalServerError:
+      description: サーバー内部エラー
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: internal_server_error
+              message:
+                type: string
+                example: サーバー内部エラーが発生しました
+  examples:
+    companiesWithNGStatus:
+      value:
+        count: 100
+        results:
+        - id: 1
+          name: 株式会社サンプルA
+          industry: IT・ソフトウェア
+          prefecture: 東京都
+          employee_count: "100-500"
+          ng_status:
+            is_ng: false
+            type: null
+            reason: null
+        - id: 2
+          name: 株式会社サンプルB
+          industry: 製造業
+          prefecture: 大阪府
+          employee_count: "50-100"
+          ng_status:
+            is_ng: true
+            type: client
+            reason: 競合他社のため営業対象外
+        - id: 3
+          name: 株式会社サンプルC
+          industry: 小売業
+          prefecture: 愛知県
+          employee_count: "10-50"
+          ng_status:
+            is_ng: true
+            type: global
+            reason: グローバルNG企業
