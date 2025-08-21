@@ -3839,6 +3839,68 @@ paths:
                       $ref: '#/components/schemas/ProjectCompany'
         '400':
           $ref: '#/components/responses/BadRequest'
+  /projects/{id}/available-companies:
+    get:
+      tags:
+      - Projects
+      summary: 案件に追加可能な企業一覧
+      description: 案件に追加可能な企業を取得。NG判定と追加済み判定を含む
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: industry
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 50
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      allOf:
+                      - $ref: '#/components/schemas/CompanyList'
+                      - type: object
+                        properties:
+                          ng_status:
+                            type: object
+                            properties:
+                              is_ng:
+                                type: boolean
+                              type:
+                                type: string
+                                enum: [global, client, project]
+                                nullable: true
+                              reason:
+                                type: string
+                                nullable: true
+                          in_project:
+                            type: boolean
+                            description: 既に案件に追加済みか
   /projects/{id}/bulk_update_status:
     post:
       tags:

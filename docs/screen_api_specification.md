@@ -152,7 +152,57 @@ Response: {
 }
 ```
 
-## 4. 案件詳細画面（/projects/{id}）
+## 4. 企業選択画面（/projects/{id}/add-companies）
+
+### 画面仕様
+- **役割**: 案件に企業を追加する選択画面
+- **特徴**: NG企業と追加済み企業の自動判定・表示
+
+### 使用API
+
+| エンドポイント | メソッド | 用途 |
+|-------------|---------|-----|
+| `/projects/{id}/available-companies` | GET | 追加可能企業一覧取得 |
+| `/projects/{id}/add-companies` | POST | 選択企業を案件に追加 |
+
+### リクエスト/レスポンス
+```typescript
+// GET /projects/{id}/available-companies
+Query params: {
+  search?: string
+  industry?: string
+  page?: number
+  limit?: number
+}
+
+Response: {
+  count: number
+  results: Array<{
+    id: number
+    name: string
+    industry: string
+    prefecture: string
+    employee_count: string
+    ng_status: {
+      is_ng: boolean
+      type: 'global' | 'client' | 'project' | null
+      reason: string | null
+    }
+    in_project: boolean  // 追加済みフラグ
+  }>
+}
+
+// POST /projects/{id}/add-companies
+Body: {
+  company_ids: number[]
+}
+Response: {
+  added_count: number
+  companies: ProjectCompany[]
+}
+```
+
+## 5. 案件詳細画面（/projects/{id}）
 
 ### 画面仕様
 - **タブ構成**: 営業進捗、統計、活動履歴
@@ -201,7 +251,7 @@ Body: {
 }
 ```
 
-## 5. 企業マスタ管理画面（/companies）※管理画面
+## 6. 企業マスタ管理画面（/companies）※管理画面
 
 ### 画面仕様
 - **役割**: マスタデータのメンテナンス
@@ -240,7 +290,7 @@ Response: {
 }
 ```
 
-## 6. 管理画面（/admin）
+## 7. 管理画面（/admin）
 
 ### 画面仕様
 - **機能**: システム設定、ユーザー管理、マスタデータ管理
