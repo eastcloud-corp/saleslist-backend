@@ -234,6 +234,10 @@ components:
           assigned_user:
             type: string
             example: 田中次郎
+          companies:
+            type: array
+            items:
+              $ref: '#/components/schemas/ProjectCompany'
     ProjectCreate:
       type: object
       required:
