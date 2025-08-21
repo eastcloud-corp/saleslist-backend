@@ -7,6 +7,6 @@ services:
     rootDir: deployment/swagger
     envVars:
       - key: PORT
-        value: 4010
+        value: 10000
     healthCheckPath: /companies
     region: singapore
