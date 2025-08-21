@@ -4313,8 +4313,7 @@ paths:
               schema:
                 type: array
                 items:
-                  ? ''
-                  : '#/components/schemas/Project'
+                  $ref: '#/components/schemas/Project'
   /clients/{id}/stats:
     get:
       tags:
@@ -5056,6 +5055,76 @@ components:
         updated_at:
           type: string
           format: date-time
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        client_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: サンプル案件
+        description:
+          type: string
+          example: 営業代行案件の説明
+        status:
+          type: string
+          enum: [進行中, 完了, 中断]
+          example: 進行中
+        start_date:
+          type: string
+          format: date
+          example: 2025-01-01
+        end_date:
+          type: string
+          format: date
+          example: 2025-12-31
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15T15:30:00Z
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        client_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: サンプル案件
+        description:
+          type: string
+          example: 営業代行案件の説明
+        status:
+          type: string
+          enum: [進行中, 完了, 中断]
+          example: 進行中
+        start_date:
+          type: string
+          format: date
+          example: 2025-01-01
+        end_date:
+          type: string
+          format: date
+          example: 2025-12-31
+        created_at:
+          type: string
+          format: date-time
+          example: 2025-01-01T10:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          example: 2025-01-15T15:30:00Z
   responses:
     BadRequest:
       description: 不正なリクエスト
