@@ -68,6 +68,39 @@ Response: {
 | 案件一覧 | `/projects?client_id={id}` | GET | 関連案件取得 |
 | | `/projects` | POST | 新規案件作成 |
 
+### 案件作成・更新
+```typescript
+// POST /projects (作成)
+Body: {
+  name: string           // 必須
+  client_id: number      // 必須
+  client_company?: string
+  description?: string
+  status?: 'active' | '進行中' | '完了' | '中止'
+  assigned_user?: string
+}
+
+// PUT /projects/{id} (更新)
+Body: {
+  name: string           // 必須
+  client_id: number      // 必須
+  client_company?: string
+  description?: string
+  status?: 'active' | '進行中' | '完了' | '中止'
+  assigned_user?: string
+}
+
+// PATCH /projects/{id} (部分更新)
+Body: {
+  name?: string
+  client_id?: number
+  client_company?: string
+  description?: string
+  status?: 'active' | 'completed' | '進行中' | '完了' | '中止'
+  assigned_user?: string
+}
+```
+
 ### NGリストタブ詳細
 ```typescript
 // GET /clients/{id}/ng-companies
@@ -240,6 +273,27 @@ Response: {
 | 統計 | `/projects/{id}/stats` | GET | 統計情報取得 |
 | 活動履歴 | `/projects/{id}/activities` | GET | 活動履歴取得 |
 | | `/projects/{id}/activities` | POST | 活動記録追加 |
+
+### 案件詳細情報
+```typescript
+// GET /projects/{id}
+Response: {
+  id: number
+  client_id: number  // クライアントID
+  name: string
+  client_company: string
+  description: string
+  status: '進行中' | '完了' | '中止'
+  start_date: string  // 開始日
+  end_date: string    // 終了日
+  created_at: string
+  updated_at: string
+  company_count: number      // 登録企業数
+  contacted_count: number    // 接触済み企業数
+  success_count: number      // 成約数
+  assigned_user: string
+}
+```
 
 ### 営業進捗管理
 ```typescript
