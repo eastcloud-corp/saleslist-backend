@@ -4173,8 +4173,7 @@ paths:
                   results:
                     type: array
                     items:
-                      ? ''
-                      : '#/components/schemas/Client'
+                      $ref: \'#/components/schemas/Client\'
               examples:
                 ClientListResponse:
                   value:
@@ -4227,8 +4226,7 @@ paths:
         content:
           application/json:
             schema:
-              ? ''
-              : '#/components/schemas/ClientCreate'
+              $ref: \'#/components/schemas/ClientCreate\'
       responses:
         '201':
           description: クライアント作成成功
@@ -4269,8 +4267,7 @@ paths:
         content:
           application/json:
             schema:
-              ? ''
-              : '#/components/schemas/ClientCreate'
+              $ref: \'#/components/schemas/ClientCreate\'
       responses:
         '200':
           description: クライアント更新成功
@@ -4370,8 +4367,7 @@ paths:
                   results:
                     type: array
                     items:
-                      ? ''
-                      : '#/components/schemas/ClientNGCompany'
+                      $ref: \'#/components/schemas/ClientNGCompany\'
               examples:
                 NGListResponse:
                   value:
@@ -4606,8 +4602,8 @@ paths:
                   updated_companies:
                     type: array
                     items:
-                      ? ''
-                      : '#/components/schemas/Company'
+                      $ref: \'#/components/schemas/Company\'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -4843,6 +4839,10 @@ components:
           assigned_user:
             type: string
             example: 田中次郎
+          companies:
+            type: array
+            items:
+              $ref: '#/components/schemas/ProjectCompany'
     ProjectCreate:
       type: object
       required:
