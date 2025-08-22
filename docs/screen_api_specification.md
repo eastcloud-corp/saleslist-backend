@@ -292,6 +292,19 @@ Response: {
   contacted_count: number    // 接触済み企業数
   success_count: number      // 成約数
   assigned_user: string
+  companies: Array<{      // 案件に紐づく企業リスト
+    id: number
+    company: {
+      id: number
+      name: string
+      industry: string
+    }
+    status: string
+    contact_date: string | null
+    notes: string
+    created_at: string
+    updated_at: string
+  }>
 }
 ```
 
