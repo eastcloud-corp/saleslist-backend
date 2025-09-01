@@ -24,21 +24,21 @@ node keep-alive.js
 
 ## 動作内容
 
-- **対象URL**: https://saleslist-mock-api.onrender.com/companies
+- **対象URL**: https://saleslist-mock-api.onrender.com/auth/login
 - **ping間隔**: 10分（600秒）
-- **動作**: APIへのGETリクエストを定期送信
+- **動作**: 認証APIへのPOSTリクエストを定期送信
 - **ログ**: ping結果とAPI応答をコンソールに表示
 
 ## 出力例
 
 ```
 [2025-08-21T03:30:00.000Z] 🚀 Keep-alive service starting...
-[2025-08-21T03:30:00.000Z] 🎯 Target URL: https://saleslist-mock-api.onrender.com/companies
+[2025-08-21T03:30:00.000Z] 🎯 Target URL: https://saleslist-mock-api.onrender.com/auth/login
 [2025-08-21T03:30:00.000Z] ⏱️ Ping interval: 10 minutes
 
 [2025-08-21T03:30:01.000Z] Sending ping to API...
 [2025-08-21T03:30:02.500Z] ✅ Ping successful (Status: 200)
-[2025-08-21T03:30:02.500Z] 📊 API returned 100 companies
+[2025-08-21T03:30:02.500Z] 🔐 Authentication successful
 [2025-08-21T03:30:02.500Z] ⏰ Next ping scheduled for: 8/21/2025, 3:40:02 AM
 ```
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: 営業リスト管理システムAPI
-  description: 企業リスト管理、案件管理、営業ステータス管理を行うシステムのAPI
+  title: ソーシャルナビゲーターAPI
+  description: B2B営業支援プラットフォーム - 企業リスト管理、案件管理、営業ステータス管理を行うシステムのAPI
   version: 1.0.0
   contact:
     name: バジェットアドテクノロジー
@@ -15,6 +15,8 @@ security:
 tags:
 - name: Auth
   description: 認証関連
+- name: Dashboard
+  description: ダッシュボード
 - name: Clients
   description: クライアント管理
 - name: Companies
@@ -98,6 +100,21 @@ paths:
                   message:
                     type: string
                     example: ログアウトしました
+  /auth/me:
+    get:
+      tags:
+      - Auth
+      summary: 現在のユーザー情報取得
+      description: 認証済みユーザーの詳細情報を取得します
+      responses:
+        '200':
+          description: ユーザー情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /auth/refresh:
     post:
       tags:
@@ -126,6 +143,169 @@ paths:
                     type: string
                   refresh_token:
                     type: string
+  /auth/users/:
+    get:
+      tags:
+      - Auth
+      summary: ユーザー一覧取得
+      responses:
+        '200':
+          description: ユーザー一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+  /auth/users/create/:
+    post:
+      tags:
+      - Auth
+      summary: 新規ユーザー作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - email
+              - role
+              - password
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, user, viewer]
+                password:
+                  type: string
+      responses:
+        '201':
+          description: ユーザー作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /auth/users/{id}/:
+    patch:
+      tags:
+      - Auth
+      summary: ユーザー情報更新・無効化
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, user, viewer]
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: ユーザー更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: ユーザーが見つかりません
+  /dashboard/stats:
+    get:
+      tags:
+      - Dashboard
+      summary: ダッシュボード統計データ取得
+      description: ダッシュボードに表示する統計データを取得します
+      responses:
+        '200':
+          description: 統計データ取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /dashboard/recent-projects:
+    get:
+      tags:
+      - Dashboard
+      summary: 最近のプロジェクト取得
+      description: ダッシュボードに表示する最近のプロジェクトを取得します
+      parameters:
+      - name: limit
+        in: query
+        description: 取得件数
+        required: false
+        schema:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 10
+      responses:
+        '200':
+          description: 最近のプロジェクト取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecentProject'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /dashboard/recent-companies:
+    get:
+      tags:
+      - Dashboard
+      summary: 最近の企業取得
+      description: ダッシュボードに表示する最近の企業を取得します
+      parameters:
+      - name: limit
+        in: query
+        description: 取得件数
+        required: false
+        schema:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 10
+      responses:
+        '200':
+          description: 最近の企業取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecentCompany'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /companies:
     get:
       tags:
@@ -4055,22 +4235,19 @@ paths:
       tags:
       - Master
       summary: 業界一覧取得
+      description: 業界マスターデータを取得します
       responses:
         '200':
           description: 業界一覧
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                example:
-                - IT・ソフトウェア
-                - 製造業
-                - 人材・派遣
-                - 金融・保険
-                - 不動産
-                - その他
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Industry'
   /master/prefectures:
     get:
       tags:
@@ -4105,23 +4282,27 @@ paths:
       tags:
       - Master
       summary: ステータス一覧取得
+      description: ステータスマスターデータを取得します
+      parameters:
+      - name: category
+        in: query
+        description: ステータスカテゴリ（company, project, contact）
+        required: false
+        schema:
+          type: string
+          enum: [company, project, contact]
       responses:
         '200':
           description: ステータス一覧
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                example:
-                - 未接触
-                - DM送信予定
-                - DM送信済み
-                - 返信あり
-                - アポ獲得
-                - 成約
-                - NG
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Status'
   /clients:
     get:
       tags:
@@ -4370,8 +4551,7 @@ paths:
                   results:
                     type: array
                     items:
-                      ? ''
-                      : '#/components/schemas/ClientNGCompany'
+                      $ref: '#/components/schemas/ClientNGCompany'
               examples:
                 NGListResponse:
                   value:
@@ -4615,6 +4795,130 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: 山田太郎
+        role:
+          type: string
+          enum: [admin, user, viewer]
+          example: user
+        is_active:
+          type: boolean
+          example: true
+        last_login_at:
+          type: string
+          format: date-time
+          example: "2025-08-30T10:30:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-15T09:00:00Z"
+    DashboardStats:
+      type: object
+      properties:
+        totalCompanies:
+          type: integer
+          example: 15420
+        activeProjects:
+          type: integer
+          example: 8
+        prospectCompanies:
+          type: integer
+          example: 1250
+        completedDeals:
+          type: integer
+          example: 45
+    RecentProject:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: IT企業向け営業リスト作成
+        status:
+          type: string
+          example: 進行中
+        companies:
+          type: integer
+          example: 85
+        client_name:
+          type: string
+          example: 株式会社ABC商事
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-08-30T15:30:00Z"
+    RecentCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1000
+        name:
+          type: string
+          example: 株式会社テクノロジー
+        industry:
+          type: string
+          example: IT・ソフトウェア
+        status:
+          type: string
+          example: 未接触
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-08-30T12:00:00Z"
+    Industry:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: IT・ソフトウェア
+        display_order:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: true
+    Status:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 未接触
+        category:
+          type: string
+          enum: [company, project, contact]
+          example: contact
+        display_order:
+          type: integer
+          example: 1
+        color_code:
+          type: string
+          example: "#6B7280"
+        description:
+          type: string
+          example: 営業活動未実施の状態
+        is_active:
+          type: boolean
+          example: true
     CompanyList:
       type: object
       properties:

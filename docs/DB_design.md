@@ -17,10 +17,12 @@
 8. **ng_import_logs** - NGリストインポート履歴
 9. **saved_filters** - 保存済みフィルタ
 10. **random_orders** - ランダム表示順序保持
+11. **industries** - 業界マスタ
+12. **statuses** - ステータスマスタ
+13. **users** - ユーザー管理
 
 ### 1.3 拡張予定テーブル（Phase 3+）
 - **tenants** - テナントマスタ（マルチテナント対応）
-- **users** - ユーザー管理（権限管理）
 - **external_api_logs** - 外部API連携ログ
 
 ---
@@ -56,22 +58,42 @@ CREATE INDEX idx_clients_industry ON clients(industry);
 - 1顧客から複数の案件を受注する可能性がある（1:N関係）
 - クライアント中心のビジネスフローの起点となるテーブル
 
-### 2.2 companies（企業マスタ）
+### 2.2 companies（企業マスタ）拡張版
 ```sql
 CREATE TABLE companies (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    industry VARCHAR(100),
-    employee_count INTEGER,
-    revenue BIGINT,                    -- 売上高（円）
-    prefecture VARCHAR(10),
-    city VARCHAR(100),
-    established_year INTEGER,
-    website_url VARCHAR(500),
-    contact_email VARCHAR(255),
-    phone VARCHAR(20),
-    notes TEXT,
-    is_global_ng BOOLEAN DEFAULT FALSE,  -- グローバルNG設定
+    -- 基本情報
+    name VARCHAR(255) NOT NULL,              -- 会社名
+    corporate_number VARCHAR(13),            -- 法人番号
+    industry VARCHAR(100),                   -- 業種
+    
+    -- 担当者情報  
+    contact_person_name VARCHAR(100),        -- 担当者名
+    contact_person_position VARCHAR(100),    -- 担当者役職
+    facebook_url VARCHAR(500),               -- Facebookリンク
+    
+    -- 事業情報
+    tob_toc_type VARCHAR(10),               -- toB/toC/Both
+    business_description TEXT,               -- 事業内容
+    
+    -- 所在地情報
+    prefecture VARCHAR(10),                  -- 都道府県
+    city VARCHAR(100),                       -- 所在地詳細
+    
+    -- 規模情報
+    employee_count INTEGER,                  -- 従業員数
+    revenue BIGINT,                         -- 売上規模（円）
+    capital BIGINT,                         -- 資本金（円）
+    established_year INTEGER,               -- 設立年
+    
+    -- 連絡先情報
+    website_url VARCHAR(500),               -- 会社HP
+    contact_email VARCHAR(255),             -- 連絡先メール
+    phone VARCHAR(20),                      -- 電話番号
+    
+    -- システム管理
+    notes TEXT,                             -- 備考
+    is_global_ng BOOLEAN DEFAULT FALSE,     -- グローバルNG設定
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -146,7 +168,7 @@ CREATE INDEX idx_projects_created_at ON projects(created_at);
 - 顧客（clients）との関連を持つ
 - ターゲット企業の条件も記録
 
-### 2.5 project_companies（案件企業リスト）
+### 2.5 project_companies（案件企業リスト）アポ実績管理拡張版
 ```sql
 CREATE TABLE project_companies (
     id SERIAL PRIMARY KEY,
@@ -156,6 +178,12 @@ CREATE TABLE project_companies (
     contact_date DATE,                      -- 最終接触日
     staff_name VARCHAR(100),                -- 担当者
     notes TEXT,                             -- 個別メモ
+    
+    -- アポ実績管理（新規追加）
+    appointment_count INTEGER DEFAULT 0,    -- アポ獲得数
+    last_appointment_date DATE,             -- 最終アポ日
+    appointment_result VARCHAR(20),         -- アポ結果（成約/継続検討/見送り）
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
@@ -310,6 +338,114 @@ CREATE INDEX idx_random_orders_project_id ON random_orders(project_id);
 **説明**
 - ユーザーごと・フィルタ条件ごとのランダム表示順序を保持
 - 同じ条件で再検索した際に同じ順序で表示
+
+### 2.12 industries（業界マスタ）
+```sql
+CREATE TABLE industries (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,      -- 業界名
+    display_order INTEGER DEFAULT 0,        -- 表示順序
+    is_active BOOLEAN DEFAULT TRUE,         -- アクティブ状態
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックス
+CREATE INDEX idx_industries_name ON industries(name);
+CREATE INDEX idx_industries_is_active ON industries(is_active);
+CREATE INDEX idx_industries_display_order ON industries(display_order);
+```
+
+**説明**
+- 業界選択肢の一元管理
+- フロントエンドでのハードコーディングを解消
+- display_orderで表示順序を制御可能
+
+### 2.13 statuses（ステータスマスタ）
+```sql
+CREATE TABLE statuses (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,              -- ステータス名
+    category VARCHAR(20) NOT NULL,          -- カテゴリ（company, project, contact）
+    display_order INTEGER DEFAULT 0,        -- 表示順序
+    color_code VARCHAR(7),                  -- 表示色（HEX形式）
+    description TEXT,                       -- ステータス説明
+    is_active BOOLEAN DEFAULT TRUE,         -- アクティブ状態
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    -- 複合ユニーク制約（同一カテゴリ内で同名不可）
+    UNIQUE(category, name)
+);
+
+-- インデックス
+CREATE INDEX idx_statuses_category ON statuses(category);
+CREATE INDEX idx_statuses_name ON statuses(name);
+CREATE INDEX idx_statuses_is_active ON statuses(is_active);
+CREATE INDEX idx_statuses_display_order ON statuses(display_order);
+```
+
+**ステータスカテゴリ**
+- `company` - 企業ステータス（アクティブ、非アクティブなど）
+- `project` - 案件ステータス（進行中、完了、中止など）
+- `contact` - 営業ステータス（未接触、DM送信済み、成約など）
+
+**説明**
+- 各種ステータスの一元管理
+- カテゴリ別でステータスを分離
+- 色分け表示に対応
+
+### 2.14 prefectures（都道府県マスタ）
+```sql
+CREATE TABLE prefectures (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(10) NOT NULL UNIQUE,       -- 都道府県名
+    region VARCHAR(10) NOT NULL,            -- 地方区分
+    display_order INTEGER DEFAULT 0,        -- 表示順序
+    is_active BOOLEAN DEFAULT TRUE,         -- アクティブ状態
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックス
+CREATE INDEX idx_prefectures_name ON prefectures(name);
+CREATE INDEX idx_prefectures_region ON prefectures(region);
+CREATE INDEX idx_prefectures_display_order ON prefectures(display_order);
+```
+
+**説明**
+- 47都道府県の完全マスターデータ
+- 地方区分での分類管理
+- 企業所在地選択での使用
+
+### 2.15 users（ユーザー管理）
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,     -- メールアドレス（ログインID）
+    name VARCHAR(100) NOT NULL,             -- ユーザー名
+    password_hash VARCHAR(255) NOT NULL,    -- パスワードハッシュ
+    role VARCHAR(20) DEFAULT 'user',        -- 権限レベル（admin, user）
+    is_active BOOLEAN DEFAULT TRUE,         -- アクティブ状態
+    last_login_at TIMESTAMP WITH TIME ZONE, -- 最終ログイン日時
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックス
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_is_active ON users(is_active);
+CREATE INDEX idx_users_last_login_at ON users(last_login_at);
+```
+
+**ユーザー権限**
+- `admin` - システム管理者（全権限）
+- `user` - 一般ユーザー（閲覧・操作権限）
+
+**説明**
+- 認証システムのベースとなるテーブル
+- フロントエンドの認証フックで使用
+- 将来的な権限管理の基盤
 
 ---
 

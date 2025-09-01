@@ -1,0 +1,62 @@
+[
+  {
+    "test": "Django認証API",
+    "status": "✅ PASS",
+    "message": "JWT認証成功",
+    "timestamp": "2025-08-31T03:29:01.625561"
+  },
+  {
+    "test": "v0問題解決: 認証システム",
+    "status": "✅ PASS",
+    "message": "/auth/me API実装 - モックユーザー問題解決",
+    "timestamp": "2025-08-31T03:29:01.655959"
+  },
+  {
+    "test": "v0問題解決: 企業作成API",
+    "status": "✅ PASS",
+    "message": "POST /companies 実装成功 - ID: None",
+    "timestamp": "2025-08-31T03:29:01.675716"
+  },
+  {
+    "test": "v0問題解決: 業界マスターAPI",
+    "status": "✅ PASS",
+    "message": "/master/industries 実装 - ハードコーディング解消 (11件)",
+    "timestamp": "2025-08-31T03:29:01.692942"
+  },
+  {
+    "test": "v0問題解決: ダッシュボード統計API",
+    "status": "✅ PASS",
+    "message": "/dashboard/stats 実装 - 動的統計データ (企業1社)",
+    "timestamp": "2025-08-31T03:29:01.713461"
+  },
+  {
+    "test": "API存在確認: クライアント一覧",
+    "status": "✅ PASS",
+    "message": "GET /clients/",
+    "timestamp": "2025-08-31T03:29:01.733633"
+  },
+  {
+    "test": "API存在確認: 企業一覧",
+    "status": "✅ PASS",
+    "message": "GET /companies/",
+    "timestamp": "2025-08-31T03:29:01.759604"
+  },
+  {
+    "test": "API存在確認: 案件一覧",
+    "status": "✅ PASS",
+    "message": "GET /projects/",
+    "timestamp": "2025-08-31T03:29:01.783103"
+  },
+  {
+    "test": "API存在確認: 業界マスター",
+    "status": "✅ PASS",
+    "message": "GET /master/industries/",
+    "timestamp": "2025-08-31T03:29:01.803482"
+  },
+  {
+    "test": "API存在確認: ステータスマスター",
+    "status": "✅ PASS",
+    "message": "GET /master/statuses/",
+    "timestamp": "2025-08-31T03:29:01.820839"
+  }
+]

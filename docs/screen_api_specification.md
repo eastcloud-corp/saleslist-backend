@@ -63,8 +63,14 @@ Response: {
 | 基本情報 | `/clients/{id}` | GET | クライアント詳細取得 |
 | | `/clients/{id}` | PUT | クライアント情報更新 |
 | NGリスト | `/clients/{id}/ng-companies` | GET | NGリスト取得 |
+| | `/clients/{id}/ng-companies/add` | POST | 企業検索からNG追加 |
 | | `/clients/{id}/ng-companies/import` | POST | CSVインポート |
 | | `/clients/{id}/ng-companies/{ng_id}` | DELETE | NG削除 |
+
+#### NGリスト機能強化（実装済み）
+- **企業検索機能**: 企業管理データから企業名検索してNG追加
+- **CSVインポート**: 従来通りのCSV一括インポート機能
+- **UI改善**: 企業検索セクションとCSVインポートボタン（右上配置）の併存
 | 案件一覧 | `/projects?client_id={id}` | GET | 関連案件取得 |
 | | `/projects` | POST | 新規案件作成 |
 
@@ -125,6 +131,21 @@ Response: {
 Body: {
   company_name: string
   reason?: string
+}
+
+// POST /clients/{id}/ng-companies/add (企業検索からNG追加)
+Body: {
+  company_id: number      // 必須 - 企業管理データのID
+  company_name: string    // 必須 - 企業名
+  reason: string          // 必須 - NG理由
+}
+Response: {
+  id: number
+  company_id?: number
+  company_name: string
+  reason: string
+  matched: boolean        // 企業管理データとマッチしたかどうか
+  created_at: string
 }
 
 // POST /clients/{id}/ng-companies/import
@@ -334,6 +355,7 @@ Body: {
   next_action?: string
   notes?: string
   staff_id?: number
+  is_active?: boolean        // 論理削除・有効化
 }
 
 // POST /projects/{id}/bulk_update_status
@@ -400,7 +422,78 @@ Response: {
 }
 ```
 
-## 7. フィルタ保存機能
+## 7. 営業先企業詳細画面（/projects/{project_id}/companies/{company_id}）
+
+### 画面仕様
+- **役割**: 案件における企業の営業進捗詳細管理
+- **コンテキスト**: 特定の案件での企業との営業活動記録
+- **表示項目**: 企業基本情報、営業履歴、ステータス変更、次回アクション
+
+### 使用API
+
+| 機能 | エンドポイント | メソッド | 用途 |
+|-----|-------------|---------|-----|
+| 基本情報 | `/companies/{company_id}` | GET | 企業基本情報取得 |
+| 営業情報 | `/projects/{project_id}/companies/{company_id}` | GET | 案件での営業情報取得 |
+| ステータス更新 | `/projects/{project_id}/companies/{company_id}` | PATCH | 営業ステータス更新 |
+| 営業履歴 | `/projects/{project_id}/companies/{company_id}/history` | GET | 営業履歴一覧取得 |
+| 履歴追加 | `/projects/{project_id}/companies/{company_id}/history` | POST | 営業履歴記録追加 |
+| 履歴編集 | `/projects/{project_id}/companies/{company_id}/history/{history_id}` | PUT | 営業履歴更新 |
+| 履歴削除 | `/projects/{project_id}/companies/{company_id}/history/{history_id}` | DELETE | 営業履歴削除 |
+
+### リクエスト/レスポンス
+```typescript
+// GET /projects/{project_id}/companies/{company_id}
+Response: {
+  id: number
+  project_id: number
+  company_id: number
+  company: Company              // 企業基本情報
+  status: string               // 現在の営業ステータス
+  contact_date?: string        // 最終接触日
+  next_action?: string         // 次回アクション
+  notes?: string              // 案件メモ
+  staff_id?: number           // 担当者ID
+  staff_name?: string         // 担当者名
+  added_at: string            // 案件追加日
+  updated_at: string          // 最終更新日
+}
+
+// GET /projects/{project_id}/companies/{company_id}/history
+Response: {
+  count: number
+  results: Array<{
+    id: number
+    status: string            // 営業ステータス
+    status_date: string       // ステータス日付
+    staff_name?: string       // 担当者
+    notes?: string           // 履歴メモ
+    created_at: string       // 記録日時
+  }>
+}
+
+// POST /projects/{project_id}/companies/{company_id}/history
+Body: {
+  status: string             // 必須 - 新ステータス
+  status_date: string        // 必須 - ステータス日付
+  staff_name?: string        // 担当者名
+  notes?: string            // 履歴メモ
+}
+
+// PUT /projects/{project_id}/companies/{company_id}/history/{history_id}
+Body: {
+  status?: string           // ステータス更新
+  status_date?: string      // 日付更新
+  staff_name?: string       // 担当者更新
+  notes?: string           // メモ更新
+}
+
+// DELETE /projects/{project_id}/companies/{company_id}/history/{history_id}
+Response: 204 No Content
+}
+```
+
+## 8. フィルタ保存機能
 
 ### 画面仕様
 - **機能**: 検索条件の保存・再利用
@@ -561,4 +654,87 @@ ws://api.example.com/ws
   type: 'project.updated' | 'company.status_changed' | 'ng_list.imported'
   data: any
 }
+```
+
+## 10. 設定画面（/settings）
+
+### 画面仕様
+- **役割**: ユーザー管理、システム設定
+- **表示項目**: ユーザー一覧、権限管理、システム設定タブ
+- **主要機能**: ユーザー作成、権限変更、設定変更
+
+### 使用API
+
+| タブ | エンドポイント | メソッド | 用途 |
+|-----|-------------|---------|-----|
+| ユーザー管理 | `/auth/users/` | GET | ユーザー一覧取得 |
+| | `/auth/users/create/` | POST | 新規ユーザー作成 |
+| | `/auth/users/{id}/` | PATCH | ユーザー情報更新・無効化 |
+| 全タブ | `/auth/me` | GET | 現在ユーザー情報 |
+
+### リクエスト/レスポンス
+```typescript
+// GET /auth/users/
+Response: {
+  count: number
+  results: User[]
+}
+
+// POST /auth/users/create/
+Body: {
+  name: string           // 必須
+  email: string          // 必須
+  role: "admin" | "user" // 必須
+  password: string       // 必須
+}
+
+Response: {
+  id: number
+  name: string
+  email: string
+  role: "admin" | "user"
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// PATCH /auth/users/{id}/ (ユーザー情報更新・無効化)
+Body: {
+  name?: string              // 名前更新
+  email?: string             // メールアドレス更新
+  role?: "admin" | "user" | "viewer"  // 権限変更
+  is_active?: boolean        // アクティブ状態変更（無効化）
+}
+
+Response: {
+  id: number
+  name: string
+  email: string
+  role: "admin" | "user" | "viewer"
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+#### 実装済み機能強化まとめ
+
+##### NGリスト管理強化
+- **企業検索機能**: 企業管理データから企業名検索してNG追加
+- **CSVインポート**: 従来通りのCSV一括インポート機能  
+- **UI改善**: 企業検索セクションとCSVインポートボタン（右上配置）の併存
+
+##### ユーザー管理機能強化
+- **ユーザー状態切り替え**: Switchコンポーネントでワンクリック有効化・無効化
+- **画面自動更新**: ユーザー作成・更新後の自動リフレッシュ機能
+- **双方向切り替え**: 無効化したユーザーの再有効化機能
+
+##### UI/UX改善
+- **案件カードレイアウト統一**: 高さ320px固定、ボタン位置統一
+- **ProjectCompanies統合**: 重複コンポーネント削除、インラインステータス編集
+- **NG企業表示改善**: API連携でリアルタイムNG情報表示・グレーアウト
+
+##### 営業先企業詳細機能
+- **案件コンテキスト**: プロジェクトID + 企業IDでの個別管理
+- **営業履歴管理**: ステータス変更履歴の記録・表示・追加機能
+- **URL構造**: `/projects/{project_id}/companies/{company_id}` で案件ごと管理
 ```

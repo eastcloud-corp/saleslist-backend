@@ -1,0 +1,360 @@
+{
+  "timestamp": "2025-08-31T15:04:47.801402",
+  "total_endpoints": 44,
+  "success_count": 40,
+  "success_rate": 90.9090909090909,
+  "results": [
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 572,
+      "has_data": false,
+      "method": "POST",
+      "endpoint": "/api/v1/auth/login"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 23,
+      "has_data": false,
+      "method": "POST",
+      "endpoint": "/api/v1/auth/logout"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 227,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/auth/me"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 501,
+      "has_data": false,
+      "method": "POST",
+      "endpoint": "/api/v1/auth/refresh"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 80,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/dashboard/stats"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 143,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/dashboard/recent-projects"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 551,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/dashboard/recent-companies"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 2291,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 201,
+      "size": 184,
+      "has_data": true,
+      "method": "POST",
+      "endpoint": "/api/v1/companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 682,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/companies/5/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 311,
+      "has_data": true,
+      "method": "PUT",
+      "endpoint": "/api/v1/companies/5/"
+    },
+    {
+      "status": "ERROR",
+      "code": 404,
+      "size": 48,
+      "has_data": false,
+      "method": "DELETE",
+      "endpoint": "/api/v1/companies/9/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 69,
+      "has_data": false,
+      "method": "POST",
+      "endpoint": "/api/v1/companies/5/toggle_ng/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 345,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/projects/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 382,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/projects/1/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 89,
+      "has_data": true,
+      "method": "POST",
+      "endpoint": "/api/v1/projects/1/add-companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 24,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/projects/1/companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 2255,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/projects/1/available-companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 783,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/clients/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 364,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/clients/1/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 131,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/clients/1/stats/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 62,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/clients/1/ng-companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 671,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/master/industries/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 1530,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/master/statuses/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 286,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/master/prefectures/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 272,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/companies/5/executives/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 248,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/executives/1/"
+    },
+    {
+      "status": "ERROR",
+      "code": 404,
+      "size": 30,
+      "has_data": false,
+      "method": "PUT",
+      "endpoint": "/api/v1/projects/1/companies/5/"
+    },
+    {
+      "status": "ERROR",
+      "code": 404,
+      "size": 30,
+      "has_data": false,
+      "method": "DELETE",
+      "endpoint": "/api/v1/projects/1/companies/5/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 65,
+      "has_data": true,
+      "method": "POST",
+      "endpoint": "/api/v1/projects/1/bulk_update_status/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 14,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/projects/1/export_csv/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 24,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/projects/1/ng_companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 26,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/ng-companies/template/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 69,
+      "has_data": true,
+      "method": "POST",
+      "endpoint": "/api/v1/ng-companies/match/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 856,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/saved_filters/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 201,
+      "size": 160,
+      "has_data": false,
+      "method": "POST",
+      "endpoint": "/api/v1/saved_filters/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 160,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/saved_filters/2/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 204,
+      "size": 0,
+      "has_data": false,
+      "method": "DELETE",
+      "endpoint": "/api/v1/saved_filters/4/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 317,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/clients/1/projects/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 89,
+      "has_data": true,
+      "method": "POST",
+      "endpoint": "/api/v1/clients/1/ng-companies/import/"
+    },
+    {
+      "status": "ERROR",
+      "code": 404,
+      "size": 24,
+      "has_data": false,
+      "method": "DELETE",
+      "endpoint": "/api/v1/clients/1/ng-companies/1/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 2227,
+      "has_data": true,
+      "method": "GET",
+      "endpoint": "/api/v1/clients/1/available-companies/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 49,
+      "has_data": true,
+      "method": "POST",
+      "endpoint": "/api/v1/companies/import_csv/"
+    },
+    {
+      "status": "SUCCESS",
+      "code": 200,
+      "size": 12,
+      "has_data": false,
+      "method": "GET",
+      "endpoint": "/api/v1/companies/export_csv/"
+    }
+  ]
+}

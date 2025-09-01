@@ -1,0 +1,112 @@
+{
+  "results": [
+    {
+      "id": 1,
+      "name": "未接触",
+      "category": "contact",
+      "display_order": 1,
+      "color_code": "#6B7280",
+      "description": "営業活動未実施の状態",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "name": "DM送信予定",
+      "category": "contact",
+      "display_order": 2,
+      "color_code": "#F59E0B",
+      "description": "DM送信準備中",
+      "is_active": true
+    },
+    {
+      "id": 3,
+      "name": "DM送信済み",
+      "category": "contact",
+      "display_order": 3,
+      "color_code": "#3B82F6",
+      "description": "DM送信完了",
+      "is_active": true
+    },
+    {
+      "id": 4,
+      "name": "返信あり",
+      "category": "contact",
+      "display_order": 4,
+      "color_code": "#8B5CF6",
+      "description": "相手から返信を受信",
+      "is_active": true
+    },
+    {
+      "id": 5,
+      "name": "アポ獲得",
+      "category": "contact",
+      "display_order": 5,
+      "color_code": "#10B981",
+      "description": "商談約束を取得",
+      "is_active": true
+    },
+    {
+      "id": 6,
+      "name": "成約",
+      "category": "contact",
+      "display_order": 6,
+      "color_code": "#059669",
+      "description": "契約成立",
+      "is_active": true
+    },
+    {
+      "id": 7,
+      "name": "NG",
+      "category": "contact",
+      "display_order": 7,
+      "color_code": "#DC2626",
+      "description": "対応不可・拒否",
+      "is_active": true
+    },
+    {
+      "id": 11,
+      "name": "進行中",
+      "category": "project",
+      "display_order": 1,
+      "color_code": "#3B82F6",
+      "description": "プロジェクト実行中",
+      "is_active": true
+    },
+    {
+      "id": 12,
+      "name": "完了",
+      "category": "project",
+      "display_order": 2,
+      "color_code": "#10B981",
+      "description": "プロジェクト完了",
+      "is_active": true
+    },
+    {
+      "id": 13,
+      "name": "中止",
+      "category": "project",
+      "display_order": 3,
+      "color_code": "#DC2626",
+      "description": "プロジェクト中止",
+      "is_active": true
+    },
+    {
+      "id": 21,
+      "name": "アクティブ",
+      "category": "company",
+      "display_order": 1,
+      "color_code": "#10B981",
+      "description": "営業対象として有効",
+      "is_active": true
+    },
+    {
+      "id": 22,
+      "name": "非アクティブ",
+      "category": "company",
+      "display_order": 2,
+      "color_code": "#6B7280",
+      "description": "営業対象外",
+      "is_active": true
+    }
+  ]
+}

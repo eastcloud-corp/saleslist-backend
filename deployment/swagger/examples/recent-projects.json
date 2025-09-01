@@ -1,0 +1,28 @@
+{
+  "results": [
+    {
+      "id": 1,
+      "name": "IT企業向け営業リスト作成",
+      "status": "進行中",
+      "companies": 85,
+      "client_name": "株式会社ABC商事",
+      "updated_at": "2025-08-30T15:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "人材会社向け営業支援",
+      "status": "進行中",
+      "companies": 42,
+      "client_name": "株式会社HRソリューション",
+      "updated_at": "2025-08-30T14:20:00Z"
+    },
+    {
+      "id": 3,
+      "name": "製造業向けソリューション提案",
+      "status": "完了",
+      "companies": 28,
+      "client_name": "株式会社インダストリアル",
+      "updated_at": "2025-08-30T12:00:00Z"
+    }
+  ]
+}

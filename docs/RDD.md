@@ -122,16 +122,21 @@
 ### 3.1 技術スタック
 - **フロントエンド**: React.js (Next.js)
 - **バックエンド**: Django REST Framework
-- **データベース**: Supabase (PostgreSQL)
-- **認証**: Supabase Auth
-- **インフラ**: さくらのクラウド
+- **データベース**: PostgreSQL (Docker Container on Sakura Cloud App Run)
+- **認証**: JWT Authentication
+- **インフラ**: さくらのクラウド App Run (Docker Container)
 - **その他**: Redis（キャッシュ）、Nginx（リバースプロキシ）
+
+### 3.1.1 リポジトリ構成
+- **saleslist-backend**: Django REST Framework API
+- **saleslist-front**: Next.js フロントエンド  
+- **saleslist-infra**: Docker・Terraform・GitHub Actionsインフラ設定
 
 ### 3.2 システム構成図
 ```
-[ユーザー] → [Nginx] → [Next.js] → [Django DRF] → [Supabase PostgreSQL]
-                                        ↓
-                                   [Redis Cache]
+[ユーザー] → [Load Balancer] → [Next.js Container] → [Django DRF Container] → [PostgreSQL Container]
+                                                              ↓
+                                                         [Redis Container]
 ```
 
 ### 3.3 データベース設計

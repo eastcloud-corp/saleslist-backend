@@ -1,7 +1,8 @@
 const https = require('https');
+const { URL } = require('url');
 
 // 設定
-const API_URL = 'https://saleslist-mock-api.onrender.com/companies';
+const API_URL = 'https://saleslist-mock-api.onrender.com/auth/login';
 const INTERVAL = 10 * 60 * 1000; // 10分（600秒）
 
 // ログ出力用の関数
@@ -14,7 +15,24 @@ function log(message) {
 function pingAPI() {
   log('Sending ping to API...');
   
-  https.get(API_URL, (res) => {
+  const url = new URL(API_URL);
+  const postData = JSON.stringify({
+    email: 'user@example.com',
+    password: 'password123'
+  });
+  
+  const options = {
+    hostname: url.hostname,
+    port: 443,
+    path: url.pathname,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData)
+    }
+  };
+  
+  const req = https.request(options, (res) => {
     let data = '';
     
     res.on('data', (chunk) => {
@@ -28,8 +46,8 @@ function pingAPI() {
         // レスポンスがJSONかどうかチェック
         try {
           const jsonData = JSON.parse(data);
-          if (jsonData.results && Array.isArray(jsonData.results)) {
-            log(`📊 API returned ${jsonData.results.length} companies`);
+          if (jsonData.access_token) {
+            log(`🔐 Authentication successful`);
           }
         } catch (e) {
           log('📄 API returned non-JSON response');
@@ -39,7 +57,9 @@ function pingAPI() {
       }
     });
     
-  }).on('error', (err) => {
+  });
+  
+  req.on('error', (err) => {
     log(`❌ Ping failed: ${err.message}`);
     
     // 接続エラーの場合の詳細情報
@@ -51,6 +71,9 @@ function pingAPI() {
       log('🔍 Request timed out - API might be slow to respond');
     }
   });
+  
+  req.write(postData);
+  req.end();
 }
 
 // 次回ping時刻を表示する関数
