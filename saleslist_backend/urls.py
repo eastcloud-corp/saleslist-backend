@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from .health_urls import health_check, db_health_check, cache_health_check
 
 urlpatterns = [
@@ -35,3 +37,8 @@ urlpatterns = [
     path('api/health/db', db_health_check, name='db_health_check'),
     path('api/health/cache', cache_health_check, name='cache_health_check'),
 ]
+
+# Static files serving (production only)
+if not settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
