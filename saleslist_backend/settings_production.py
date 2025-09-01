@@ -14,10 +14,16 @@ DATABASES = {
     }
 }
 
-ALLOWED_HOSTS = ['sales-navigator.east-cloud.jp', '153.120.128.27', 'localhost']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='sales-navigator.east-cloud.jp,localhost').split(',')
 
-CORS_ALLOWED_ORIGINS = [
-    "https://sales-navigator.east-cloud.jp",
-]
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='https://sales-navigator.east-cloud.jp').split(',')
 
 CORS_ALLOW_ALL_ORIGINS = False
+
+# Static files configuration
+STATIC_URL = '/static/'
+STATIC_ROOT = '/app/static'
+
+# Media files configuration  
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/app/media'
