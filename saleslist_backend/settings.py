@@ -99,7 +99,7 @@ DATABASES = {
         'NAME': config('DB_NAME', default='social_navigator'),
         'USER': config('DB_USER', default='social_navigator_user'),
         'PASSWORD': config('DB_PASSWORD', default='social_navigator_password'),
-        'HOST': config('DB_HOST', default='localhost'),  # localhost for direct run
+        'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5434'),
     }
 }
