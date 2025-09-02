@@ -42,3 +42,11 @@ MIDDLEWARE = [
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# CSRF settings for HTTPS
+CSRF_TRUSTED_ORIGINS = [
+    'https://sales-navigator.east-cloud.jp',
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_TZ = True
+
