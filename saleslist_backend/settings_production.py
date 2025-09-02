@@ -30,3 +30,4 @@ MEDIA_ROOT = '/app/media'
 
 # Static files serving
 STATICFILES_DIRS = []
+
