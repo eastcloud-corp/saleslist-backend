@@ -3,6 +3,9 @@ from .settings import *
 # Production overrides
 DEBUG = False
 
+# Enable static files serving in production
+from django.core.management.utils import get_random_secret_key
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -30,4 +33,12 @@ MEDIA_ROOT = '/app/media'
 
 # Static files serving
 STATICFILES_DIRS = []
+
+# Whitenoise for static files serving
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+] + MIDDLEWARE[1:]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
