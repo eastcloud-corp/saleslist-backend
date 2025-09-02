@@ -27,3 +27,6 @@ STATIC_ROOT = '/app/static'
 # Media files configuration  
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/app/media'
+
+# Static files serving
+STATICFILES_DIRS = []
