@@ -120,23 +120,30 @@
 ## 3. システム構成
 
 ### 3.1 技術スタック
-- **フロントエンド**: React.js (Next.js)
-- **バックエンド**: Django REST Framework
-- **データベース**: PostgreSQL (Docker Container on Sakura Cloud App Run)
-- **認証**: JWT Authentication
-- **インフラ**: さくらのクラウド App Run (Docker Container)
-- **その他**: Redis（キャッシュ）、Nginx（リバースプロキシ）
+- **フロントエンド**: React.js (Next.js 15)
+- **バックエンド**: Django REST Framework 3.16
+- **データベース**: PostgreSQL 15 (Docker Container)
+- **認証**: JWT Authentication (SimpleJWT)
+- **インフラ**: さくらのクラウド VPS (Phase 1) / App Run (Phase 2予定)
+- **プロキシ**: Nginx + Let's Encrypt SSL
+- **その他**: Redis（キャッシュ）、Whitenoise（静的ファイル配信）、Cloudflare（CDN/SSL）
 
 ### 3.1.1 リポジトリ構成
-- **saleslist-backend**: Django REST Framework API
-- **saleslist-front**: Next.js フロントエンド  
-- **saleslist-infra**: Docker・Terraform・GitHub Actionsインフラ設定
+- **eastcloud-corp/saleslist-backend**: Django REST Framework API
+- **eastcloud-corp/saleslist-front**: Next.js フロントエンド  
+- **eastcloud-corp/saleslist-infra**: Docker・Terraform・GitHub Actionsインフラ設定
 
-### 3.2 システム構成図
+### 3.2 現在のシステム構成図（Phase 1 - VPS構成）
 ```
-[ユーザー] → [Load Balancer] → [Next.js Container] → [Django DRF Container] → [PostgreSQL Container]
-                                                              ↓
-                                                         [Redis Container]
+[Internet] → [Cloudflare CDN/SSL] → [さくらVPS: Nginx:443] → [Frontend:3000]
+                                                           → [Backend:8000] → [PostgreSQL:5432]
+                                                                           → [Redis:6379]
+```
+
+### 3.3 将来のシステム構成図（Phase 2 - App Run移行予定）
+```
+[Internet] → [Cloudflare CDN] → [App Run Frontend] → [App Run Backend] → [App Run Database]
+                                                                       → [App Run Redis]
 ```
 
 ### 3.3 データベース設計
@@ -172,12 +179,54 @@
 - **認証方式**: Bearer Token (JWT)
 - **データ形式**: JSON
 
-### 5.2 主要エンドポイント
-- **企業関連**: `/companies/` (CRUD + 検索・フィルタ)
-- **案件関連**: `/projects/` (CRUD + 企業追加・ステータス管理)
-- **役員関連**: `/executives/` (CRUD)
-- **フィルタ関連**: `/saved_filters/` (保存・呼び出し)
-- **データ連携**: `/companies/import_csv/`, `/companies/export_csv/`
+### 5.2 実装済みAPIエンドポイント
+
+#### 認証関連（/auth/）
+- **POST /auth/login/**: JWT認証ログイン
+- **POST /auth/logout/**: ログアウト
+- **POST /auth/refresh/**: トークンリフレッシュ
+- **GET /auth/me/**: ユーザー情報取得
+- **POST /auth/register/**: ユーザー登録
+
+#### 企業管理（/companies/）
+- **GET/POST /companies/**: 企業一覧・作成
+- **GET/PUT/PATCH/DELETE /companies/{id}/**: 企業詳細操作
+- **GET /companies/search/**: 企業検索
+- **POST /companies/import/**: CSVインポート
+- **GET /companies/export/**: CSVエクスポート
+
+#### 案件管理（/projects/）
+- **GET/POST /projects/**: 案件一覧・作成
+- **GET/PUT/PATCH/DELETE /projects/{id}/**: 案件詳細操作
+- **GET/POST /projects/{id}/companies/**: 案件企業管理
+- **GET /projects/{id}/statistics/**: 案件統計情報
+
+#### 役員管理（/executives/）
+- **GET/POST /executives/**: 役員一覧・作成
+- **GET/PUT/PATCH/DELETE /executives/{id}/**: 役員詳細操作
+
+#### マスターデータ（/master/）
+- **GET /master/industries/**: 業界マスター
+- **GET /master/statuses/**: ステータスマスター
+- **GET /master/prefectures/**: 都道府県マスター
+
+#### フィルタ管理（/saved_filters/）
+- **GET/POST /saved_filters/**: 保存済みフィルタ
+- **GET/PUT/DELETE /saved_filters/{id}/**: フィルタ詳細操作
+
+#### NG企業管理（/ng-companies/）
+- **GET /ng-companies/template/**: テンプレートダウンロード
+- **POST /ng-companies/import/**: NGリストインポート
+
+#### ダッシュボード（/dashboard/）
+- **GET /dashboard/stats/**: 統計情報
+- **GET /dashboard/recent-projects/**: 最近の案件
+- **GET /dashboard/recent-companies/**: 最近の企業
+
+#### ヘルスチェック
+- **GET /health**: アプリケーション状態
+- **GET /api/health/db**: データベース接続状態
+- **GET /api/health/cache**: キャッシュ接続状態
 
 ---
 
@@ -201,21 +250,90 @@
 
 ---
 
-## 7. 将来拡張計画
+## 7. インフラ構成・将来計画
 
-### 7.1 次フェーズ予定機能
-- **Phase 2**: Facebook検索機能、自動クローリング
+### 7.1 Phase 1（現在）: VPS構成
+**技術構成**:
+- **VPS**: さくらのクラウド 2CPU/4GB/40GB SSD (約6,620円/月)
+- **OS**: Ubuntu 22.04 LTS
+- **Container**: Docker Compose
+- **SSL**: Let's Encrypt (無料)
+- **DNS**: Cloudflare (無料)
+- **ドメイン**: sales-navigator.east-cloud.jp
+
+**メリット**:
+- 低コスト運用
+- 完全な環境制御
+- Docker Compose運用ノウハウ蓄積
+
+**デメリット**:
+- サーバー管理が必要
+- スケーリング手動対応
+- 運用負荷大
+
+### 7.2 Phase 2（移行予定）: App Run構成
+**技術構成**:
+- **App Run**: Frontend/Backend/Database 分離
+- **Container Registry**: さくら (約1,000円/月追加)
+- **自動スケーリング**: トラフィック連動
+- **マネージドサービス**: 運用負荷軽減
+
+**移行メリット**:
+- 運用負荷大幅軽減
+- 自動スケーリング
+- 高可用性・信頼性向上
+- マネージドサービスの恩恵
+
+**移行コスト**:
+- **月額**: 6,620円 → 約11,000円（+4,380円）
+- **移行作業**: Terraform設定済み（数時間）
+
+### 7.3 App Run移行判定基準
+- **ユーザー数**: 50名以上
+- **アクセス数**: 月10万PV以上
+- **運用負荷**: VPS管理が困難になった時点
+- **予算**: 月額1万円以上の予算確保
+
+### 7.4 次フェーズ予定機能
+- **Phase 2**: Facebook検索機能、自動クローリング、App Run移行
 - **Phase 3**: マルチテナント対応、権限管理
 - **Phase 4**: AI活用、高度な分析機能
 
-### 7.2 拡張性考慮事項
+### 7.5 拡張性考慮事項
 - **マルチテナント対応**: 全テーブルに`tenant_id`追加予定
 - **外部API連携**: Facebook Graph API、メール送信API等
-- **スケーラビリティ**: マイクロサービス化、負荷分散対応
+- **スケーラビリティ**: App Run自動スケーリング、マイクロサービス化
 
 ---
 
-## 8. リスク・制約事項
+## 8. 運用情報（Phase 1）
+
+### 8.1 本番環境情報
+- **URL**: https://sales-navigator.east-cloud.jp
+- **管理画面**: https://sales-navigator.east-cloud.jp/admin/
+- **管理者アカウント**: budget_admin / Budget2025!
+- **サーバー**: Ubuntu@153.120.128.27 (ssh ubuntu@153.120.128.27)
+
+### 8.2 自動化機能
+- **自動デプロイ**: GitHub Actions (push → 自動デプロイ)
+- **自動バックアップ**: 毎日2時 (DB) → /var/log/salesnav/backup/database/YYYYMM/
+- **ログローテーション**: 毎日 → /var/log/salesnav/backup/log/YYYYMM/
+- **SSL更新**: 毎月1日 (Let's Encrypt自動更新)
+
+### 8.3 監視・ログ
+- **アプリケーションログ**: /var/log/salesnav/backend/, /var/log/salesnav/frontend/
+- **ヘルスチェック**: /health, /api/health/db, /api/health/cache
+- **アクセスログ**: Nginxアクセスログ (30日ローテーション)
+
+### 8.4 セキュリティ設定
+- **HTTPS**: Let's Encrypt + Cloudflare
+- **SSH**: 鍵認証のみ
+- **Django**: CSRF保護、XSS対策
+- **JWT**: 1時間有効期限、3日間リフレッシュ
+
+---
+
+## 9. リスク・制約事項
 
 ### 8.1 技術的リスク
 - **Facebook API制限**: 個人情報検索の制限強化の可能性
