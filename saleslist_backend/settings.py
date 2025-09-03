@@ -136,7 +136,7 @@ USE_I18N = True
 USE_TZ = True
 
 # Django URL設定
-APPEND_SLASH = False  # 末尾スラッシュを強制しない
+APPEND_SLASH = True   # 自動で末尾スラッシュを追加・リダイレクト
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
