@@ -50,5 +50,8 @@ CSRF_TRUSTED_ORIGINS = [
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_TZ = True
 
+# Django URL設定
+APPEND_SLASH = True  # 自動で末尾スラッシュ追加・リダイレクト
+
 # Logging disabled for now - using default console logging
 
