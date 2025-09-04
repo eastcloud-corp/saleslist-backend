@@ -186,16 +186,14 @@ class ClientViewSet(viewsets.ModelViewSet):
             imported_count = 0
             for row in csv_reader:
                 company_name = row.get('company_name', '').strip()
-                ng_reason = row.get('ng_reason', '').strip()
+                reason = row.get('reason', '').strip()
                 
                 if company_name:
                     ClientNGCompany.objects.get_or_create(
                         client=client,
                         company_name=company_name,
                         defaults={
-                            'ng_reason': ng_reason,
-                            'manager_name': request.user.name,
-                            'is_global_ng': False
+                            'reason': reason,
                         }
                     )
                     imported_count += 1

@@ -10,7 +10,7 @@ def template_view(request):
     """NGリストCSVテンプレート取得（OpenAPI仕様準拠）"""
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="ng_companies_template.csv"'
-    response.write('企業名,理由\n')
+    response.write('company_name,reason\n')
     response.write('例：株式会社サンプル,競合企業のため\n')
     return response
 
