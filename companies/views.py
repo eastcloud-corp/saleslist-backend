@@ -86,11 +86,46 @@ class CompanyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='import_csv')
     def import_csv(self, request):
         """企業CSVインポート（OpenAPI仕様準拠）"""
-        # 簡易実装：ファイルアップロード受付
-        return Response({
-            'message': 'CSVインポート機能は開発中です',
-            'imported_count': 0
-        }, status=status.HTTP_200_OK)
+        try:
+            uploaded_file = request.FILES.get('file')
+            if not uploaded_file:
+                return Response({
+                    'error': 'CSVファイルが必要です'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            import csv, io
+            csv_data = uploaded_file.read().decode('utf-8')
+            csv_reader = csv.DictReader(io.StringIO(csv_data))
+            
+            imported_count = 0
+            for row in csv_reader:
+                name = row.get('name', '').strip()
+                if name:
+                    Company.objects.get_or_create(
+                        name=name,
+                        defaults={
+                            'industry': row.get('industry', ''),
+                            'employee_count': int(row.get('employee_count', 0) or 0),
+                            'revenue': int(row.get('revenue', 0) or 0),
+                            'prefecture': row.get('prefecture', ''),
+                            'city': row.get('city', ''),
+                            'website_url': row.get('website_url', ''),
+                            'contact_email': row.get('contact_email', ''),
+                            'phone': row.get('phone', ''),
+                            'business_description': row.get('business_description', ''),
+                        }
+                    )
+                    imported_count += 1
+            
+            return Response({
+                'message': f'{imported_count}件の企業を登録しました',
+                'imported_count': imported_count
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'インポートに失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=False, methods=['get'], url_path='export_csv')  
     def export_csv(self, request):

@@ -170,12 +170,47 @@ class ClientViewSet(viewsets.ModelViewSet):
     def import_ng_companies(self, request, pk=None):
         """NGリストCSVインポート（OpenAPI仕様準拠）"""
         client = self.get_object()
-        return Response({
-            'message': 'NGリストインポート機能は開発中です',
-            'imported_count': 0,
-            'matched_count': 0,
-            'unmatched_count': 0
-        })
+        
+        try:
+            uploaded_file = request.FILES.get('file')
+            if not uploaded_file:
+                return Response({
+                    'error': 'CSVファイルが必要です'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # CSV読み込み・処理
+            import csv, io
+            csv_data = uploaded_file.read().decode('utf-8')
+            csv_reader = csv.DictReader(io.StringIO(csv_data))
+            
+            imported_count = 0
+            for row in csv_reader:
+                company_name = row.get('company_name', '').strip()
+                ng_reason = row.get('ng_reason', '').strip()
+                
+                if company_name:
+                    ClientNGCompany.objects.get_or_create(
+                        client=client,
+                        company_name=company_name,
+                        defaults={
+                            'ng_reason': ng_reason,
+                            'manager_name': request.user.name,
+                            'is_global_ng': False
+                        }
+                    )
+                    imported_count += 1
+            
+            return Response({
+                'message': f'{imported_count}件のNG企業を登録しました',
+                'imported_count': imported_count,
+                'matched_count': imported_count,
+                'unmatched_count': 0
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'インポートに失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['delete'], url_path='ng-companies/(?P<ng_id>[0-9]+)')
     def delete_ng_company(self, request, pk=None, ng_id=None):

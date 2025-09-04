@@ -163,6 +163,45 @@ class ProjectViewSet(viewsets.ModelViewSet):
             'status': new_status
         })
     
+    @action(detail=False, methods=['post'], url_path='import_csv')
+    def import_csv(self, request):
+        """案件CSVインポート"""
+        try:
+            uploaded_file = request.FILES.get('file')
+            if not uploaded_file:
+                return Response({
+                    'error': 'CSVファイルが必要です'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            import csv, io
+            csv_data = uploaded_file.read().decode('utf-8')
+            csv_reader = csv.DictReader(io.StringIO(csv_data))
+            
+            imported_count = 0
+            for row in csv_reader:
+                name = row.get('name', '').strip()
+                if name:
+                    Project.objects.get_or_create(
+                        name=name,
+                        defaults={
+                            'client_company': row.get('client_company', ''),
+                            'description': row.get('description', ''),
+                            'manager_name': row.get('manager_name', ''),
+                            'status': row.get('status', 'planning'),
+                        }
+                    )
+                    imported_count += 1
+            
+            return Response({
+                'message': f'{imported_count}件の案件を登録しました',
+                'imported_count': imported_count
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'インポートに失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['get'], url_path='export_csv')
     def export_csv(self, request, pk=None):
         """案件CSVエクスポート（OpenAPI仕様準拠）"""
@@ -170,7 +209,21 @@ class ProjectViewSet(viewsets.ModelViewSet):
         from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename="project_{project.id}.csv"'
-        response.write('企業名,ステータス,接触日\n')
+        
+        import csv
+        writer = csv.writer(response)
+        writer.writerow(['company_name', 'status', 'contact_date', 'notes'])
+        
+        # ProjectCompany データをエクスポート
+        from .models import ProjectCompany
+        for pc in ProjectCompany.objects.filter(project=project).select_related('company'):
+            writer.writerow([
+                pc.company.name,
+                pc.status,
+                pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
+                pc.notes,
+            ])
+        
         return response
     
     @action(detail=True, methods=['get'], url_path='ng_companies')
