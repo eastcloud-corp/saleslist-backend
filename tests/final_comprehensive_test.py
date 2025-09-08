@@ -11,7 +11,7 @@ from datetime import datetime
 class FinalComprehensiveTest:
     def __init__(self):
         self.base_url = "http://localhost:8006/api/v1"
-        self.frontend_url = "http://localhost:3007"
+        self.frontend_url = "http://localhost:3009"
         self.admin_token = None
         self.results = []
         
