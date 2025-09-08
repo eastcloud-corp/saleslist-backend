@@ -6,6 +6,8 @@ class Client(models.Model):
     name = models.CharField(max_length=255, verbose_name="顧客企業名")
     company_type = models.CharField(max_length=50, blank=True, verbose_name="企業タイプ")
     industry = models.CharField(max_length=100, blank=True, verbose_name="顧客の業界")
+    
+    # 連絡先情報
     contact_person = models.CharField(max_length=100, blank=True, verbose_name="担当者名")
     contact_email = models.EmailField(blank=True, verbose_name="連絡先メール")
     contact_phone = models.CharField(max_length=50, blank=True, verbose_name="連絡先電話")

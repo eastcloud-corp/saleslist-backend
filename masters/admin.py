@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Industry, Status, Prefecture
+from .models import (
+    Industry, Status, Prefecture, ProjectProgressStatus, 
+    MediaType, RegularMeetingStatus, ListAvailability, 
+    ListImportSource, ServiceType
+)
 
 
 @admin.register(Industry)
@@ -51,3 +55,123 @@ class PrefectureAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ('created_at',)
+
+
+@admin.register(ProjectProgressStatus)
+class ProjectProgressStatusAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'color_code', 'is_active', 'created_at')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('display_order', 'name')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description')
+        }),
+        ('表示設定', {
+            'fields': ('display_order', 'color_code', 'is_active')
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(MediaType)
+class MediaTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'is_active', 'created_at')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('display_order', 'name')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description')
+        }),
+        ('表示設定', {
+            'fields': ('display_order', 'is_active')
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(RegularMeetingStatus)
+class RegularMeetingStatusAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'is_active', 'created_at')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('display_order', 'name')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description')
+        }),
+        ('表示設定', {
+            'fields': ('display_order', 'is_active')
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(ListAvailability)
+class ListAvailabilityAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'is_active', 'created_at')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('display_order', 'name')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description')
+        }),
+        ('表示設定', {
+            'fields': ('display_order', 'is_active')
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(ListImportSource)
+class ListImportSourceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'is_active', 'created_at')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('display_order', 'name')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description')
+        }),
+        ('表示設定', {
+            'fields': ('display_order', 'is_active')
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(ServiceType)
+class ServiceTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_order', 'is_active', 'created_at')
+    list_editable = ('display_order', 'is_active')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('display_order', 'name')
+    
+    fieldsets = (
+        ('基本情報', {
+            'fields': ('name', 'description')
+        }),
+        ('表示設定', {
+            'fields': ('display_order', 'is_active')
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at')

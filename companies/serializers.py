@@ -56,9 +56,12 @@ class CompanyDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = [
-            'id', 'name', 'industry', 'employee_count', 'revenue',
-            'prefecture', 'city', 'established_year', 'website_url',
-            'contact_email', 'phone', 'notes', 'is_global_ng',
+            'id', 'name', 'corporate_number', 'industry',
+            'contact_person_name', 'contact_person_position', 'facebook_url',
+            'tob_toc_type', 'business_description',
+            'prefecture', 'city', 'employee_count', 'revenue', 'capital',
+            'established_year', 'website_url', 'contact_email', 'phone', 
+            'notes', 'is_global_ng',
             'created_at', 'updated_at', 'executives', 'ng_status'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

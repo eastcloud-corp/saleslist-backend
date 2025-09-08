@@ -1,14 +1,17 @@
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 
 
 class Project(models.Model):
-    """案件マスタ"""
+    """案件マスタ（拡張版）"""
     STATUS_CHOICES = [
         ('進行中', '進行中'),
         ('完了', '完了'),
         ('中止', '中止'),
     ]
     
+    # 基本情報
     client = models.ForeignKey(
         'clients.Client',
         on_delete=models.RESTRICT,
@@ -16,6 +19,99 @@ class Project(models.Model):
         verbose_name="クライアント"
     )
     name = models.CharField(max_length=255, verbose_name="案件名")
+    location_prefecture = models.CharField(max_length=10, blank=True, verbose_name="所在地(都道府県)")
+    industry = models.CharField(max_length=100, blank=True, verbose_name="業種")
+    service_type = models.ForeignKey(
+        'masters.ServiceType', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="サービス"
+    )
+    
+    # リンク情報
+    operation_sheet_link = models.URLField(blank=True, verbose_name="運用シートリンク")
+    report_link = models.URLField(blank=True, verbose_name="レポートリンク")
+    account_link = models.URLField(blank=True, verbose_name="アカウントリンク")
+    
+    # 媒体・制限情報
+    media_type = models.ForeignKey(
+        'masters.MediaType', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="媒体"
+    )
+    restrictions = models.TextField(blank=True, verbose_name="制限")
+    contact_info = models.TextField(blank=True, verbose_name="連絡先")
+    
+    # 数値データ
+    appointment_count = models.IntegerField(default=0, verbose_name="アポ数")
+    approval_count = models.IntegerField(default=0, verbose_name="承認数")
+    reply_count = models.IntegerField(default=0, verbose_name="返信数")
+    friends_count = models.IntegerField(default=0, verbose_name="友達数")
+    
+    # 状況・進行管理
+    situation = models.TextField(blank=True, verbose_name="状況")
+    progress_status = models.ForeignKey(
+        'masters.ProjectProgressStatus', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="進行状況"
+    )
+    
+    # チェック・タスク管理
+    reply_check_notes = models.TextField(blank=True, verbose_name="返信チェック(伊藤が朝消す)")
+    daily_tasks = models.TextField(blank=True, verbose_name="デイリータスク(当日行うべき業務を記載)")
+    progress_tasks = models.TextField(blank=True, verbose_name="進行タスク・ネクストタスク・期限")
+    remarks = models.TextField(blank=True, verbose_name="備考(現在の状態について記載)")
+    complaints_requests = models.TextField(blank=True, verbose_name="クレームor要望（20%上回ったものを最優先処理）")
+    
+    # NG・課題管理
+    client_ng_operational_barriers = models.TextField(blank=True, verbose_name="クライアントNG、運用障壁")
+    issues_improvements = models.TextField(blank=True, verbose_name="課題点＋改善点")
+    
+    # 担当者情報
+    director = models.CharField(max_length=100, blank=True, verbose_name="ディレクター")
+    operator = models.CharField(max_length=100, blank=True, verbose_name="運用者")
+    sales_person = models.CharField(max_length=100, blank=True, verbose_name="営業マン")
+    assignment_available = models.BooleanField(default=True, verbose_name="アサイン可否")
+    
+    # チェックボックス項目
+    director_login_available = models.BooleanField(default=False, verbose_name="Dがログインできるアカウント")
+    operator_group_invited = models.BooleanField(default=False, verbose_name="運用者グループ招待")
+    
+    # 契約・期間情報
+    contract_period = models.CharField(max_length=100, blank=True, verbose_name="契約期間")
+    entry_date_sales = models.DateField(null=True, blank=True, verbose_name="記載日(営業)")
+    operation_start_date = models.DateField(null=True, blank=True, verbose_name="運用開始日")
+    expected_end_date = models.DateField(null=True, blank=True, verbose_name="終了予定日")
+    period_extension = models.CharField(max_length=100, blank=True, verbose_name="期間延期")
+    
+    
+    # 定例会情報
+    regular_meeting_status = models.ForeignKey(
+        'masters.RegularMeetingStatus', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="定例会提示"
+    )
+    regular_meeting_date = models.DateField(null=True, blank=True, verbose_name="定例会実施日")
+    
+    # リスト情報
+    list_availability = models.ForeignKey(
+        'masters.ListAvailability', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="リスト有無"
+    )
+    list_import_source = models.ForeignKey(
+        'masters.ListImportSource', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL, 
+        verbose_name="リスト輸入先"
+    )
+    list_count = models.IntegerField(default=0, verbose_name="リスト数")
+    
+    # 旧フィールド（互換性維持のため残す）
     description = models.TextField(blank=True, verbose_name="案件概要")
     manager = models.CharField(max_length=100, blank=True, verbose_name="バジェット側担当者")
     assigned_user = models.CharField(max_length=100, blank=True, verbose_name="担当ユーザー")
@@ -25,6 +121,8 @@ class Project(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='進行中', verbose_name="ステータス")
     start_date = models.DateField(null=True, blank=True, verbose_name="開始日")
     end_date = models.DateField(null=True, blank=True, verbose_name="終了予定日")
+    
+    # システム管理
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")
 
@@ -260,3 +358,78 @@ class SalesHistory(models.Model):
 
     def __str__(self):
         return f"{self.project_company} - {self.status} ({self.status_date})"
+
+
+class ProjectEditLock(models.Model):
+    """案件編集ロック"""
+    project = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='edit_lock',
+        verbose_name="案件"
+    )
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        verbose_name="編集中ユーザー"
+    )
+    locked_at = models.DateTimeField(auto_now_add=True, verbose_name="ロック開始日時")
+    expires_at = models.DateTimeField(verbose_name="ロック期限")
+    
+    class Meta:
+        db_table = 'project_edit_locks'
+        verbose_name = "案件編集ロック"
+        verbose_name_plural = "案件編集ロック"
+        indexes = [
+            models.Index(fields=['project']),
+            models.Index(fields=['user']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=30)
+        super().save(*args, **kwargs)
+    
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+    
+    def __str__(self):
+        return f"Lock: {self.project.name} by {self.user.name}"
+
+
+class PageEditLock(models.Model):
+    """ページ単位編集ロック"""
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        verbose_name="編集中ユーザー"
+    )
+    page_number = models.IntegerField(verbose_name="ページ番号")
+    page_size = models.IntegerField(default=20, verbose_name="ページサイズ")
+    filter_hash = models.CharField(max_length=64, blank=True, verbose_name="フィルタハッシュ")
+    locked_at = models.DateTimeField(auto_now_add=True, verbose_name="ロック開始日時")
+    expires_at = models.DateTimeField(verbose_name="ロック期限")
+    
+    class Meta:
+        db_table = 'page_edit_locks'
+        verbose_name = "ページ編集ロック"
+        verbose_name_plural = "ページ編集ロック"
+        unique_together = ['page_number', 'filter_hash']
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['page_number']),
+            models.Index(fields=['expires_at']),
+            models.Index(fields=['filter_hash']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=30)
+        super().save(*args, **kwargs)
+    
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+    
+    def __str__(self):
+        return f"PageLock: Page {self.page_number} by {self.user.name}"

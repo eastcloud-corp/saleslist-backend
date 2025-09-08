@@ -3,8 +3,17 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Industry, Status
-from .serializers import IndustrySerializer, StatusSerializer
+from .models import (
+    Industry, Status, Prefecture, ProjectProgressStatus, 
+    MediaType, RegularMeetingStatus, ListAvailability, 
+    ListImportSource, ServiceType
+)
+from .serializers import (
+    IndustrySerializer, StatusSerializer,
+    ProjectProgressStatusSerializer, MediaTypeSerializer,
+    RegularMeetingStatusSerializer, ListAvailabilitySerializer,
+    ListImportSourceSerializer, ServiceTypeSerializer
+)
 
 
 class IndustryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -70,3 +79,75 @@ def sales_statuses_list(request):
     return Response({
         'results': serializer.data
     })
+
+
+class ProjectProgressStatusViewSet(viewsets.ReadOnlyModelViewSet):
+    """案件進行状況マスターViewSet"""
+    queryset = ProjectProgressStatus.objects.filter(is_active=True)
+    serializer_class = ProjectProgressStatusSerializer
+    ordering = ['display_order', 'name']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'results': serializer.data})
+
+
+class MediaTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    """媒体マスターViewSet"""
+    queryset = MediaType.objects.filter(is_active=True)
+    serializer_class = MediaTypeSerializer
+    ordering = ['display_order', 'name']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'results': serializer.data})
+
+
+class RegularMeetingStatusViewSet(viewsets.ReadOnlyModelViewSet):
+    """定例会ステータスマスターViewSet"""
+    queryset = RegularMeetingStatus.objects.filter(is_active=True)
+    serializer_class = RegularMeetingStatusSerializer
+    ordering = ['display_order', 'name']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'results': serializer.data})
+
+
+class ListAvailabilityViewSet(viewsets.ReadOnlyModelViewSet):
+    """リスト有無マスターViewSet"""
+    queryset = ListAvailability.objects.filter(is_active=True)
+    serializer_class = ListAvailabilitySerializer
+    ordering = ['display_order', 'name']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'results': serializer.data})
+
+
+class ListImportSourceViewSet(viewsets.ReadOnlyModelViewSet):
+    """リスト輸入先マスターViewSet"""
+    queryset = ListImportSource.objects.filter(is_active=True)
+    serializer_class = ListImportSourceSerializer
+    ordering = ['display_order', 'name']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'results': serializer.data})
+
+
+class ServiceTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    """サービスマスターViewSet"""
+    queryset = ServiceType.objects.filter(is_active=True)
+    serializer_class = ServiceTypeSerializer
+    ordering = ['display_order', 'name']
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'results': serializer.data})

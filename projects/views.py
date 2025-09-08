@@ -4,17 +4,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from .models import Project, ProjectCompany, ProjectNGCompany, SalesHistory
+from django.utils import timezone
+from django.db import transaction
+from .models import Project, ProjectCompany, ProjectNGCompany, SalesHistory, ProjectEditLock, PageEditLock
 from .serializers import (
     ProjectListSerializer, ProjectDetailSerializer, 
-    ProjectCreateSerializer, ProjectCompanySerializer
+    ProjectCreateSerializer, ProjectCompanySerializer,
+    ProjectManagementListSerializer, ProjectManagementDetailSerializer,
+    ProjectManagementUpdateSerializer
 )
 from companies.models import Company
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    """案件ViewSet"""
-    queryset = Project.objects.select_related('client').all()
+    """案件ViewSet（編集ロック機能付き）"""
+    queryset = Project.objects.select_related(
+        'client', 'service_type', 'media_type', 'progress_status', 
+        'regular_meeting_status', 'list_availability', 'list_import_source'
+    ).prefetch_related('edit_lock__user').all()
     serializer_class = ProjectListSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['client', 'status', 'manager']
@@ -23,11 +30,27 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     
     def get_serializer_class(self):
+        # 管理モード判定
+        management_mode = self.request.query_params.get('management_mode') == 'true'
+        
         if self.action == 'retrieve':
+            if management_mode:
+                return ProjectManagementDetailSerializer
             return ProjectDetailSerializer
         elif self.action == 'create':
             return ProjectCreateSerializer
-        return ProjectListSerializer
+        elif self.action in ['update', 'partial_update']:
+            # 管理モードでの更新は専用シリアライザーを使用
+            if management_mode:
+                return ProjectManagementUpdateSerializer
+            return ProjectDetailSerializer
+        elif self.action == 'list':
+            # 管理モード一覧は専用シリアライザーを使用
+            if management_mode:
+                return ProjectManagementListSerializer
+            return ProjectListSerializer
+        else:
+            return ProjectListSerializer
     
     @action(detail=True, methods=['get'])
     def companies(self, request, pk=None):
@@ -43,7 +66,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='add-companies')
     def add_companies(self, request, pk=None):
-        """案件に企業を追加"""
+        """案件に企業を追加（NG企業チェック付き）"""
         project = self.get_object()
         company_ids = request.data.get('company_ids', [])
         
@@ -52,12 +75,36 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 'error': '企業IDが指定されていません'
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        # クライアントNG企業IDとNG企業名を取得
+        client_ng_company_ids = list(project.client.ng_companies.filter(
+            matched=True,
+            company_id__isnull=False
+        ).values_list('company_id', flat=True))
+        
+        client_ng_company_names = list(project.client.ng_companies.filter(
+            matched=True
+        ).values_list('company_name', flat=True))
+        
         added_count = 0
         errors = []
         
         for company_id in company_ids:
             try:
                 company = Company.objects.get(id=company_id)
+                
+                # NG企業チェック
+                is_global_ng = company.is_global_ng
+                is_client_ng = (company_id in client_ng_company_ids or 
+                              company.name in client_ng_company_names)
+                
+                if is_global_ng:
+                    errors.append(f'{company.name}: グローバルNG企業のため追加できません')
+                    continue
+                
+                if is_client_ng:
+                    errors.append(f'{company.name}: クライアントNG企業のため追加できません')
+                    continue
+                
                 _, created = ProjectCompany.objects.get_or_create(
                     project=project,
                     company=company,
@@ -65,11 +112,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 )
                 if created:
                     added_count += 1
+                    
             except Company.DoesNotExist:
                 errors.append(f'企業ID {company_id} が見つかりません')
         
         return Response({
-            'message': f'{added_count}社を案件に追加しました',
+            'message': f'{added_count}社を案件に追加しました' + (f'（{len(errors)}件のエラーあり）' if errors else ''),
             'added_count': added_count,
             'errors': errors
         })
@@ -89,10 +137,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
             id__in=added_company_ids
         )
         
-        # クライアントのNG企業IDを取得
+        # クライアントのNG企業IDを取得（IDベース）
         client_ng_company_ids = list(project.client.ng_companies.filter(
-            matched=True
+            matched=True,
+            company_id__isnull=False
         ).values_list('company_id', flat=True))
+        
+        # クライアントのNG企業名を取得（名前ベース）
+        client_ng_company_names = list(project.client.ng_companies.filter(
+            matched=True
+        ).values_list('company_name', flat=True))
         
         # ページネーション対応
         page = self.paginate_queryset(available_companies)
@@ -103,10 +157,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
             # 各企業にNG情報を付与
             for company_data in companies_data:
                 company_id = company_data['id']
+                company_name = company_data['name']
                 
                 # NG状態の判定
                 is_global_ng = company_data.get('is_global_ng', False)
-                is_client_ng = company_id in client_ng_company_ids
+                is_client_ng = (company_id in client_ng_company_ids or 
+                              company_name in client_ng_company_names)
                 
                 company_data['ng_status'] = {
                     'is_ng': is_global_ng or is_client_ng,
@@ -246,6 +302,231 @@ class ProjectViewSet(viewsets.ModelViewSet):
             'count': ng_companies.count(),
             'results': results
         })
+    
+    @action(detail=True, methods=['post'], url_path='lock')
+    def acquire_lock(self, request, pk=None):
+        """編集ロック取得"""
+        project = self.get_object()
+        user = request.user
+        
+        # 期限切れロックを削除
+        ProjectEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
+        
+        try:
+            with transaction.atomic():
+                # 既存のロックをチェック
+                existing_lock = ProjectEditLock.objects.filter(project=project).first()
+                if existing_lock:
+                    if existing_lock.user == user:
+                        # 自分のロックなら期限を延長
+                        existing_lock.expires_at = timezone.now() + timezone.timedelta(minutes=30)
+                        existing_lock.save()
+                        return Response({
+                            'success': True,
+                            'locked_until': existing_lock.expires_at.isoformat()
+                        })
+                    else:
+                        # 他のユーザーのロック
+                        return Response({
+                            'success': False,
+                            'error': f'この案件は{existing_lock.user.name}が編集中です',
+                            'locked_by_name': existing_lock.user.name,
+                            'locked_until': existing_lock.expires_at.isoformat()
+                        }, status=status.HTTP_409_CONFLICT)
+                
+                # 新しいロックを作成
+                lock = ProjectEditLock.objects.create(
+                    project=project,
+                    user=user
+                )
+                
+                return Response({
+                    'success': True,
+                    'locked_until': lock.expires_at.isoformat()
+                })
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'ロック取得に失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['delete'], url_path='unlock')
+    def release_lock(self, request, pk=None):
+        """編集ロック解除"""
+        project = self.get_object()
+        user = request.user
+        
+        try:
+            lock = ProjectEditLock.objects.get(project=project)
+            
+            if lock.user != user:
+                return Response({
+                    'success': False,
+                    'error': 'このロックは解除できません'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            lock.delete()
+            
+            return Response({
+                'success': True
+            })
+            
+        except ProjectEditLock.DoesNotExist:
+            return Response({
+                'success': True
+            })
+    
+    def get_queryset(self):
+        """期限切れロックを自動削除してクエリセットを返す"""
+        ProjectEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
+        return super().get_queryset()
+    
+    def perform_update(self, serializer):
+        """更新時にロックチェック"""
+        project = serializer.instance
+        user = self.request.user
+        
+        # 期限切れロック削除
+        ProjectEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
+        
+        # ロック確認
+        lock = ProjectEditLock.objects.filter(project=project).first()
+        if lock and lock.user != user:
+            raise PermissionError(f'この案件は{lock.user.name}が編集中です')
+        
+        serializer.save()
+
+    @action(detail=False, methods=['patch'], url_path='bulk-update')
+    def bulk_update(self, request):
+        """一括編集"""
+        project_ids = request.data.get('project_ids', [])
+        update_data = request.data.get('update_data', {})
+        
+        if not project_ids or not update_data:
+            return Response({
+                'success': False,
+                'error': 'project_ids と update_data が必要です'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # プロジェクトの存在確認
+        projects = Project.objects.filter(id__in=project_ids)
+        if projects.count() != len(project_ids):
+            return Response({
+                'success': False,
+                'error': '指定された案件が見つかりません'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ロックされているプロジェクトをチェック
+        ProjectEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
+        locked_projects = ProjectEditLock.objects.filter(
+            project__in=projects
+        ).exclude(user=request.user)
+        
+        if locked_projects.exists():
+            locked_names = [lock.project.name for lock in locked_projects]
+            return Response({
+                'success': False,
+                'error': f'以下の案件が他のユーザーによって編集中です: {", ".join(locked_names)}'
+            }, status=status.HTTP_409_CONFLICT)
+        
+        # 一括更新実行
+        updated_count = 0
+        for project in projects:
+            serializer = ProjectManagementUpdateSerializer(
+                project, 
+                data=update_data, 
+                partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                updated_count += 1
+        
+        return Response({
+            'success': True,
+            'updated_count': updated_count,
+            'message': f'{updated_count}件の案件を更新しました'
+        })
+
+    @action(detail=False, methods=['post'], url_path='page-lock')
+    def acquire_page_lock(self, request):
+        """ページ編集ロック取得"""
+        page_number = request.data.get('page', 1)
+        page_size = request.data.get('page_size', 20)
+        filter_hash = request.data.get('filter_hash', '')
+        user = request.user
+
+        # 期限切れロックを削除
+        PageEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
+
+        try:
+            with transaction.atomic():
+                # 既存のロックをチェック
+                existing_lock = PageEditLock.objects.filter(
+                    page_number=page_number,
+                    filter_hash=filter_hash
+                ).first()
+                
+                if existing_lock:
+                    if existing_lock.user == user:
+                        # 自分のロックなら期限を延長
+                        existing_lock.expires_at = timezone.now() + timezone.timedelta(minutes=30)
+                        existing_lock.save()
+                        return Response({
+                            'success': True,
+                            'locked_until': existing_lock.expires_at.isoformat()
+                        })
+                    else:
+                        # 他のユーザーのロック
+                        return Response({
+                            'success': False,
+                            'error': f'このページは{existing_lock.user.name}が編集中です',
+                            'locked_by_name': existing_lock.user.name,
+                            'locked_until': existing_lock.expires_at.isoformat()
+                        }, status=status.HTTP_409_CONFLICT)
+
+                # 新しいロックを作成
+                lock = PageEditLock.objects.create(
+                    user=user,
+                    page_number=page_number,
+                    page_size=page_size,
+                    filter_hash=filter_hash
+                )
+
+                return Response({
+                    'success': True,
+                    'locked_until': lock.expires_at.isoformat()
+                })
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'ページロック取得に失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['delete'], url_path='page-unlock')
+    def release_page_lock(self, request):
+        """ページ編集ロック解除"""
+        page_number = request.query_params.get('page', 1)
+        filter_hash = request.query_params.get('filter_hash', '')
+        user = request.user
+
+        try:
+            lock = PageEditLock.objects.get(
+                page_number=page_number,
+                filter_hash=filter_hash,
+                user=user
+            )
+            lock.delete()
+
+            return Response({
+                'success': True
+            })
+
+        except PageEditLock.DoesNotExist:
+            return Response({
+                'success': True  # 既に存在しない場合も成功とする
+            })
 
 
 class ProjectCompanyViewSet(viewsets.ModelViewSet):
