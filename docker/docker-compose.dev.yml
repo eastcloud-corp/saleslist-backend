@@ -36,7 +36,7 @@ services:
       - SECRET_KEY=django-local-development-key-not-for-production
       - CORS_ALLOW_ALL_ORIGINS=True
     ports:
-      - "8080:8000"
+      - "8002:8000"
     depends_on:
       database:
         condition: service_healthy
@@ -58,7 +58,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: social-navigator-frontend-dev
     environment:
-      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8002/api/v1
       - NODE_ENV=development
     ports:
       - "3002:3000"
