@@ -81,9 +81,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             company_id__isnull=False
         ).values_list('company_id', flat=True))
         
-        client_ng_company_names = list(project.client.ng_companies.filter(
-            matched=True
-        ).values_list('company_name', flat=True))
+        client_ng_company_names = list(project.client.ng_companies.values_list('company_name', flat=True))
         
         added_count = 0
         errors = []
@@ -178,8 +176,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     company_data['ng_status']['types'].append('client')
                     # クライアントNG理由を取得
                     ng_record = project.client.ng_companies.filter(
-                        company_id=company_id, matched=True
+                        company_id=company_id
                     ).first()
+                    if not ng_record:
+                        ng_record = project.client.ng_companies.filter(
+                            company_name=company_name
+                        ).first()
                     if ng_record:
                         company_data['ng_status']['reasons']['client'] = {
                             'id': project.client.id,

@@ -31,18 +31,21 @@ class ClientCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
         fields = [
-            'name', 'company_type', 'industry', 'contact_person',
+            'id', 'name', 'company_type', 'industry', 'contact_person',
             'contact_email', 'contact_phone', 'address', 'website', 'notes'
         ]
+        read_only_fields = ['id']
 
 
 class ClientNGCompanySerializer(serializers.ModelSerializer):
     """クライアントNG企業用シリアライザー"""
+    client_id = serializers.IntegerField(source='client.id', read_only=True)
+    company_id = serializers.IntegerField(source='company.id', read_only=True)
     
     class Meta:
         model = ClientNGCompany
         fields = [
-            'id', 'client', 'company_name', 'company', 'matched',
+            'id', 'client', 'client_id', 'company_name', 'company', 'company_id', 'matched',
             'reason', 'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

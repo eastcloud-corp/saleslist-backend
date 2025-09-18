@@ -55,10 +55,11 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
-            'name', 'client_id', 'description', 'manager', 'assigned_user',
+            'id', 'name', 'client_id', 'description', 'manager', 'assigned_user',
             'target_industry', 'target_company_size', 'dm_template',
             'start_date', 'end_date'
         ]
+        read_only_fields = ['id']
     
     def create(self, validated_data):
         client_id = validated_data.pop('client_id')
@@ -170,6 +171,7 @@ class ProjectManagementDetailSerializer(serializers.ModelSerializer):
     list_availability_id = serializers.IntegerField(source='list_availability.id', read_only=True)
     list_import_source_id = serializers.IntegerField(source='list_import_source.id', read_only=True)
     company_count = serializers.SerializerMethodField()
+    companies = serializers.SerializerMethodField()
     
     class Meta:
         model = Project
@@ -197,7 +199,7 @@ class ProjectManagementDetailSerializer(serializers.ModelSerializer):
             # 定例会情報
             'regular_meeting_status', 'regular_meeting_date',
             # リスト情報
-            'list_availability', 'list_import_source', 'list_count', 'company_count',
+            'list_availability', 'list_import_source', 'list_count', 'company_count', 'companies',
             # 外部キーIDフィールド
             'progress_status_id', 'service_type_id', 'media_type_id', 
             'regular_meeting_status_id', 'list_availability_id', 'list_import_source_id',
@@ -209,6 +211,11 @@ class ProjectManagementDetailSerializer(serializers.ModelSerializer):
     def get_company_count(self, obj):
         """追加企業数を取得"""
         return obj.project_companies.count()
+
+    def get_companies(self, obj):
+        """関連企業一覧を取得"""
+        project_companies = obj.project_companies.select_related('company').all()
+        return ProjectCompanySerializer(project_companies, many=True).data
 
 
 class ProjectManagementUpdateSerializer(serializers.ModelSerializer):
@@ -278,3 +285,4 @@ class ProjectManagementUpdateSerializer(serializers.ModelSerializer):
         
         # 通常のフィールド更新
         return super().update(instance, validated_data)
+    companies = serializers.SerializerMethodField()
