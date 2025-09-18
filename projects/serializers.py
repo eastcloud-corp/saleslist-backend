@@ -285,4 +285,3 @@ class ProjectManagementUpdateSerializer(serializers.ModelSerializer):
         
         # 通常のフィールド更新
         return super().update(instance, validated_data)
-    companies = serializers.SerializerMethodField()
