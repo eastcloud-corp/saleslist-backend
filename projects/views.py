@@ -24,7 +24,17 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ).prefetch_related('edit_lock__user').all()
     serializer_class = ProjectListSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['client', 'status', 'manager']
+    filterset_fields = [
+        'client',
+        'status',
+        'manager',
+        'progress_status',
+        'service_type',
+        'media_type',
+        'list_availability',
+        'list_import_source',
+        'regular_meeting_status',
+    ]
     search_fields = ['name', 'description', 'client__name']
     ordering_fields = ['name', 'created_at', 'start_date']
     ordering = ['-created_at']
@@ -450,9 +460,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
             'message': f'{updated_count}件の案件を更新しました'
         })
 
-    @action(detail=False, methods=['post'], url_path='page-lock')
+    @action(detail=False, methods=['post', 'delete'], url_path='page-lock')
     def acquire_page_lock(self, request):
         """ページ編集ロック取得"""
+        if request.method == 'DELETE':
+            return self._release_page_lock_response(request)
+
         page_number = request.data.get('page', 1)
         page_size = request.data.get('page_size', 20)
         filter_hash = request.data.get('filter_hash', '')
@@ -506,9 +519,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 'error': f'ページロック取得に失敗しました: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['delete'], url_path='page-unlock')
-    def release_page_lock(self, request):
-        """ページ編集ロック解除"""
+    def _release_page_lock_response(self, request):
         page_number = request.query_params.get('page', 1)
         filter_hash = request.query_params.get('filter_hash', '')
         user = request.user
@@ -520,15 +531,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 user=user
             )
             lock.delete()
-
-            return Response({
-                'success': True
-            })
-
         except PageEditLock.DoesNotExist:
-            return Response({
-                'success': True  # 既に存在しない場合も成功とする
-            })
+            pass
+
+        return Response({'success': True})
+
+    @action(detail=False, methods=['delete'], url_path='page-unlock')
+    def release_page_lock(self, request):
+        """ページ編集ロック解除"""
+        return self._release_page_lock_response(request)
+
 
 
 class ProjectCompanyViewSet(viewsets.ModelViewSet):

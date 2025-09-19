@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from django.views.decorators.csrf import csrf_exempt
@@ -8,6 +10,9 @@ from django.contrib.auth import login, update_session_auth_hash
 from django.utils import timezone
 from .serializers import LoginSerializer, UserProfileSerializer
 from .models import User
+
+
+logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
@@ -51,14 +56,23 @@ def logout_view(request):
     try:
         refresh_token = request.data.get('refresh_token')
         if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+            try:
+                token = RefreshToken(refresh_token)
+                blacklist = getattr(token, 'blacklist', None)
+                if callable(blacklist):
+                    blacklist()
+                else:
+                    logger.debug('RefreshToken.blacklistが利用できないためブラックリスト処理をスキップしました。')
+            except Exception as token_error:
+                # ブラックリスト未使用の環境では例外が発生することがあるが、基本的には無視してよい
+                logger.warning('RefreshTokenの無効化に失敗しました: %s', token_error)
         
         return Response({
             'message': 'ログアウトしました'
         }, status=status.HTTP_200_OK)
     
     except Exception as e:
+        logger.exception('ログアウト処理中に例外が発生しました')
         return Response({
             'error': 'ログアウト処理でエラーが発生しました'
         }, status=status.HTTP_400_BAD_REQUEST)

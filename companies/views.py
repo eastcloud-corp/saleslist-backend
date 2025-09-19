@@ -4,7 +4,9 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
+from django.db import transaction
 from .models import Company, Executive
+from projects.models import Project, ProjectCompany
 from .serializers import (
     CompanyListSerializer, CompanyDetailSerializer, 
     CompanyCreateSerializer, ExecutiveSerializer
@@ -136,6 +138,119 @@ class CompanyViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = 'attachment; filename="companies.csv"'
         response.write('企業名,業界,従業員数\n')
         return response
+
+    @action(detail=False, methods=['post'], url_path='bulk-add-to-projects')
+    def bulk_add_to_projects(self, request):
+        """選択した企業を複数案件へ一括追加する"""
+        company_ids = request.data.get('company_ids', [])
+        project_ids = request.data.get('project_ids', [])
+
+        if not company_ids or not project_ids:
+            return Response({
+                'error': 'company_ids と project_ids の両方を指定してください。'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            company_ids = [int(cid) for cid in set(company_ids)]
+            project_ids = [int(pid) for pid in set(project_ids)]
+        except (TypeError, ValueError):
+            return Response({
+                'error': 'company_ids と project_ids は数値の配列で指定してください。'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        companies = Company.objects.filter(id__in=company_ids)
+        company_map = {company.id: company for company in companies}
+        missing_company_ids = sorted(set(company_ids) - set(company_map.keys()))
+
+        projects = Project.objects.filter(id__in=project_ids).select_related('client').prefetch_related('ng_companies')
+        project_map = {project.id: project for project in projects}
+        missing_project_ids = sorted(set(project_ids) - set(project_map.keys()))
+
+        if not project_map or not company_map:
+            return Response({
+                'error': '有効な企業または案件が見つかりません。',
+                'missing_company_ids': missing_company_ids,
+                'missing_project_ids': missing_project_ids,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        total_added = 0
+        project_results = []
+
+        with transaction.atomic():
+            for project in projects:
+                client = project.client
+                client_ng_ids = set(client.ng_companies.filter(
+                    matched=True,
+                    company_id__isnull=False
+                ).values_list('company_id', flat=True))
+                client_ng_names = set(client.ng_companies.filter(
+                    matched=True
+                ).values_list('company_name', flat=True))
+                project_ng_ids = set(project.ng_companies.values_list('company_id', flat=True))
+
+                existing_company_ids = set(ProjectCompany.objects.filter(
+                    project=project,
+                    company_id__in=company_map.keys()
+                ).values_list('company_id', flat=True))
+
+                project_summary = {
+                    'project_id': project.id,
+                    'project_name': project.name,
+                    'added_company_ids': [],
+                    'skipped': []
+                }
+
+                for company_id in company_ids:
+                    company = company_map.get(company_id)
+                    if not company:
+                        continue
+
+                    skip_reason = None
+
+                    if company.is_global_ng:
+                        skip_reason = 'グローバルNG企業のため追加できません'
+                    elif company_id in client_ng_ids or company.name in client_ng_names:
+                        ng_record = client.ng_companies.filter(company_id=company_id).first()
+                        if not ng_record:
+                            ng_record = client.ng_companies.filter(company_name=company.name).first()
+                        detail = f"（理由: {ng_record.reason}）" if ng_record and ng_record.reason else ''
+                        skip_reason = f'クライアントNG企業のため追加できません{detail}'
+                    elif company_id in project_ng_ids:
+                        ng_record = project.ng_companies.filter(company_id=company_id).first()
+                        detail = f"（理由: {ng_record.reason}）" if ng_record and ng_record.reason else ''
+                        skip_reason = f'案件NG企業のため追加できません{detail}'
+                    elif company_id in existing_company_ids or company_id in project_summary['added_company_ids']:
+                        skip_reason = '既に案件に追加済みです'
+
+                    if skip_reason:
+                        project_summary['skipped'].append({
+                            'company_id': company_id,
+                            'company_name': company.name,
+                            'reason': skip_reason
+                        })
+                        continue
+
+                    ProjectCompany.objects.create(
+                        project=project,
+                        company=company,
+                        status='未接触'
+                    )
+                    project_summary['added_company_ids'].append(company_id)
+                    existing_company_ids.add(company_id)
+                    total_added += 1
+
+                project_results.append(project_summary)
+
+        total_requested = len(company_map) * len(project_map)
+
+        return Response({
+            'message': f'{total_added}件の企業を案件に追加しました',
+            'total_requested': total_requested,
+            'total_added': total_added,
+            'missing_company_ids': missing_company_ids,
+            'missing_project_ids': missing_project_ids,
+            'projects': project_results,
+        })
 
 
 class ExecutiveViewSet(viewsets.ModelViewSet):

@@ -8,8 +8,9 @@ from datetime import timedelta
 from decimal import Decimal
 
 from masters.models import ProjectProgressStatus, MediaType, RegularMeetingStatus, ListAvailability, ListImportSource, ServiceType
-from clients.models import Client
-from projects.models import Project, ProjectEditLock
+from clients.models import Client, ClientNGCompany
+from companies.models import Company
+from projects.models import Project, ProjectEditLock, ProjectCompany, ProjectNGCompany
 from accounts.models import User
 
 
@@ -46,7 +47,19 @@ class TestDataFactory:
             'display_order': 0
         }
         defaults.update(kwargs)
-        return ProjectProgressStatus.objects.create(**defaults)
+        obj, created = ProjectProgressStatus.objects.get_or_create(
+            name=defaults['name'],
+            defaults=defaults
+        )
+        if not created:
+            updated = False
+            for key, value in defaults.items():
+                if getattr(obj, key, None) != value:
+                    setattr(obj, key, value)
+                    updated = True
+            if updated:
+                obj.save()
+        return obj
     
     @staticmethod
     def create_project(client=None, **kwargs):
@@ -67,6 +80,8 @@ class ProjectManagementModelTest(TestCase):
 
     def setUp(self):
         """テストデータセットアップ"""
+        ProjectProgressStatus.objects.all().delete()
+        MediaType.objects.all().delete()
         self.factory = TestDataFactory
         self.user1 = self.factory.create_user(email='user1@test.com', name='テストユーザー1')
         self.user2 = self.factory.create_user(email='user2@test.com', name='テストユーザー2')
@@ -86,17 +101,17 @@ class ProjectManagementModelTest(TestCase):
     def test_master_data_creation(self):
         """マスターデータ作成テスト"""
         # 進行状況マスター
-        progress = ProjectProgressStatus.objects.create(
+        progress, _ = ProjectProgressStatus.objects.get_or_create(
             name='未着手',
-            display_order=0
+            defaults={'display_order': 0}
         )
         self.assertEqual(progress.name, '未着手')
         self.assertTrue(progress.is_active)
         
         # 媒体マスター
-        media = MediaType.objects.create(
+        media, _ = MediaType.objects.get_or_create(
             name='Instagram',
-            display_order=2
+            defaults={'display_order': 2}
         )
         self.assertEqual(media.name, 'Instagram')
         self.assertTrue(media.is_active)
@@ -173,10 +188,12 @@ class ProjectManagementModelTest(TestCase):
     
     def test_master_data_ordering(self):
         """マスターデータ順序テスト"""
+        ProjectProgressStatus.objects.all().delete()
         # 複数の進行状況を作成
         status1 = self.factory.create_progress_status(name='状況A', display_order=2)
         status2 = self.factory.create_progress_status(name='状況B', display_order=0)  # 0に変更
         status3 = self.factory.create_progress_status(name='状況C', display_order=3)
+        base = self.factory.create_progress_status(name='運用中', display_order=1)
         
         # 順序通りに並んでいるか確認（既存の'運用中'は display_order=1）
         statuses = ProjectProgressStatus.objects.all().order_by('display_order')
@@ -207,6 +224,7 @@ class ProjectManagementAPITest(APITestCase):
     """プロジェクト管理APIのユニットテスト"""
 
     def setUp(self):
+        ProjectProgressStatus.objects.all().delete()
         self.factory = TestDataFactory
         self.user1 = self.factory.create_user(
             email='user1@test.com',
@@ -320,7 +338,95 @@ class ProjectManagementAPITest(APITestCase):
         )
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
+
+class CompanyBulkAddToProjectsAPITest(APITestCase):
+    """企業 -> 案件一括追加APIのテスト"""
+
+    def setUp(self):
+        ProjectProgressStatus.objects.all().delete()
+        self.factory = TestDataFactory
+        self.user = self.factory.create_user(email='bulk@test.com', name='一括追加ユーザー')
+
+        self.client_api = APIClient()
+        from rest_framework_simplejwt.tokens import RefreshToken
+        self.client_api.credentials(HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(self.user).access_token}")
+
+        self.client_obj = self.factory.create_client(name='一括追加クライアント')
+        self.progress_status = ProjectProgressStatus.objects.create(name='進行中', display_order=0)
+
+        self.project_a = Project.objects.create(
+            client=self.client_obj,
+            name='案件A',
+            progress_status=self.progress_status
+        )
+        self.project_b = Project.objects.create(
+            client=self.client_obj,
+            name='案件B',
+            progress_status=self.progress_status
+        )
+
+        self.company_ok = Company.objects.create(name='通常企業', industry='IT')
+        self.company_duplicate = Company.objects.create(name='重複企業', industry='IT')
+        self.company_global_ng = Company.objects.create(name='グローバルNG企業', industry='IT', is_global_ng=True)
+        self.company_client_ng = Company.objects.create(name='クライアントNG企業', industry='IT')
+
+        # 事前に案件Aへ重複企業を追加
+        ProjectCompany.objects.create(project=self.project_a, company=self.company_duplicate)
+
+        # クライアントNG設定（企業IDマッチ）
+        ClientNGCompany.objects.create(
+            client=self.client_obj,
+            company_name=self.company_client_ng.name,
+            company=self.company_client_ng,
+            matched=True,
+            reason='クライアント都合'
+        )
+
+    def test_bulk_add_companies_to_multiple_projects(self):
+        payload = {
+            'company_ids': [
+                self.company_ok.id,
+                self.company_duplicate.id,
+                self.company_global_ng.id,
+                self.company_client_ng.id,
+            ],
+            'project_ids': [self.project_a.id, self.project_b.id],
+        }
+
+        response = self.client_api.post('/api/v1/companies/bulk-add-to-projects/', payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data['total_requested'], 8)
+        self.assertEqual(data['total_added'], 3)
+        self.assertEqual(data['missing_company_ids'], [])
+        self.assertEqual(data['missing_project_ids'], [])
+
+        project_summary = {item['project_id']: item for item in data['projects']}
+        self.assertEqual(len(project_summary[self.project_a.id]['added_company_ids']), 1)
+        self.assertEqual(len(project_summary[self.project_b.id]['added_company_ids']), 2)
+
+        # 成功追加を確認
+        self.assertTrue(ProjectCompany.objects.filter(project=self.project_a, company=self.company_ok).exists())
+        self.assertTrue(ProjectCompany.objects.filter(project=self.project_b, company=self.company_ok).exists())
+        self.assertTrue(ProjectCompany.objects.filter(project=self.project_b, company=self.company_duplicate).exists())
+
+        # NG・重複は追加されていない
+        self.assertFalse(ProjectCompany.objects.filter(project=self.project_a, company=self.company_global_ng).exists())
+        self.assertFalse(ProjectCompany.objects.filter(project=self.project_a, company=self.company_client_ng).exists())
+
+    def test_bulk_add_requires_ids(self):
+        response = self.client_api.post('/api/v1/companies/bulk-add-to-projects/', {
+            'company_ids': [],
+            'project_ids': [self.project_a.id]
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client_api.post('/api/v1/companies/bulk-add-to-projects/', {
+            'company_ids': [self.company_ok.id],
+            'project_ids': []
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         # データベースでの更新確認
         self.project.refresh_from_db()
         self.assertTrue(self.project.director_login_available)

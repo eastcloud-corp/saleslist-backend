@@ -2,6 +2,7 @@ from typing import Dict, Iterable, List
 
 from django.db import transaction
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -147,7 +148,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='available-companies')
     def available_companies(self, request, pk=None):
         """クライアント用利用可能企業一覧（NG情報付き）"""
-        client = self.get_object()
+        client = get_object_or_404(Client, pk=pk)
         from companies.models import Company
 
         queryset = Company.objects.all()
