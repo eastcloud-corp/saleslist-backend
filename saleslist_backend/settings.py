@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-w&2!70w_2dm_ls^=ad9(k%0a%rx&vv%0$q)ij+xmdxric^p212
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'testserver',
+]
 
 
 # Application definition
@@ -96,11 +100,11 @@ from decouple import config
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='social_navigator'),
-        'USER': config('DB_USER', default='social_navigator_user'),
-        'PASSWORD': config('DB_PASSWORD', default='social_navigator_password'),
+        'NAME': config('DB_NAME', default='saleslist_dev'),
+        'USER': config('DB_USER', default='saleslist_user'),
+        'PASSWORD': config('DB_PASSWORD', default='saleslist_password'),
         'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5434'),
+        'PORT': config('DB_PORT', default='5433'),
     }
 }
 
@@ -206,6 +210,47 @@ CACHES = {
             'MAX_ENTRIES': 1000,
         }
     }
+}
+
+# Project snapshot retention (days)
+SNAPSHOT_RETENTION_DAYS = config('SNAPSHOT_RETENTION_DAYS', default=7, cast=int)
+
+configured_log_dir = config('PROJECT_LOG_DIR', default='')
+LOG_DIR = Path(configured_log_dir) if configured_log_dir else Path.home() / '.saleslist_logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'structured': {
+            'format': '%(asctime)s [%(levelname)s] %(message)s',
+        },
+        'console': {
+            'format': '[%(levelname)s] %(message)s',
+        },
+    },
+    'handlers': {
+        'projects_file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': str(LOG_DIR / 'projects.log'),
+            'when': 'midnight',
+            'backupCount': 14,
+            'encoding': 'utf-8',
+            'formatter': 'structured',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+        },
+    },
+    'loggers': {
+        'projects.activities': {
+            'handlers': ['projects_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
 
 # Session storage (データベース使用)

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -433,3 +434,50 @@ class PageEditLock(models.Model):
     
     def __str__(self):
         return f"PageLock: Page {self.page_number} by {self.user.name}"
+
+
+class ProjectSnapshot(models.Model):
+    """案件一括編集に備えるスナップショット"""
+
+    SOURCE_CHOICES = [
+        ("bulk_edit", "一括編集"),
+        ("undo", "取り消し"),
+        ("restore", "復元"),
+    ]
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="snapshots",
+        verbose_name="案件"
+    )
+    data = models.JSONField(verbose_name="スナップショットデータ")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_snapshots",
+        verbose_name="作成者"
+    )
+    reason = models.CharField(max_length=255, blank=True, verbose_name="理由")
+    source = models.CharField(
+        max_length=50,
+        choices=SOURCE_CHOICES,
+        default="bulk_edit",
+        verbose_name="生成元"
+    )
+
+    class Meta:
+        db_table = "project_snapshots"
+        verbose_name = "案件スナップショット"
+        verbose_name_plural = "案件スナップショット"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["project", "created_at"]),
+        ]
+
+    def __str__(self):
+        timestamp = self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else "unknown"
+        return f"Snapshot(Project={self.project_id}, at={timestamp})"

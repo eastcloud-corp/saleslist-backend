@@ -1,27 +1,58 @@
+import json
+import logging
+from datetime import date
+
+from django.db import transaction
+from django.db.models import Count
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
-from django.utils import timezone
-from django.db import transaction
-from .models import Project, ProjectCompany, ProjectNGCompany, SalesHistory, ProjectEditLock, PageEditLock
+from time import perf_counter
+
+from .models import (
+    Project,
+    ProjectCompany,
+    ProjectNGCompany,
+    SalesHistory,
+    ProjectEditLock,
+    PageEditLock,
+    ProjectSnapshot,
+)
 from .serializers import (
     ProjectListSerializer, ProjectDetailSerializer, 
     ProjectCreateSerializer, ProjectCompanySerializer,
     ProjectManagementListSerializer, ProjectManagementDetailSerializer,
-    ProjectManagementUpdateSerializer
+    ProjectManagementUpdateSerializer, ProjectSnapshotSerializer
 )
 from companies.models import Company
+from clients.models import Client
+
+logger = logging.getLogger('projects.activities')
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
     """案件ViewSet（編集ロック機能付き）"""
-    queryset = Project.objects.select_related(
-        'client', 'service_type', 'media_type', 'progress_status', 
-        'regular_meeting_status', 'list_availability', 'list_import_source'
-    ).prefetch_related('edit_lock__user').all()
+    lookup_value_regex = r"[0-9]+"
+    queryset = (
+        Project.objects.select_related(
+            'client',
+            'service_type',
+            'media_type',
+            'progress_status',
+            'regular_meeting_status',
+            'list_availability',
+            'list_import_source',
+            'edit_lock',
+            'edit_lock__user',
+        ).annotate(
+            project_company_count=Count('project_companies', distinct=True)
+        )
+    )
     serializer_class = ProjectListSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = [
@@ -38,6 +69,181 @@ class ProjectViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description', 'client__name']
     ordering_fields = ['name', 'created_at', 'start_date']
     ordering = ['-created_at']
+
+    SNAPSHOT_PROJECT_FIELDS = ProjectManagementUpdateSerializer.Meta.fields
+    SNAPSHOT_PROJECT_COMPANY_FIELDS = [
+        'id', 'company_id', 'status', 'contact_date', 'staff_name', 'notes',
+        'is_active', 'appointment_count', 'last_appointment_date', 'appointment_result'
+    ]
+
+    def _log_activity(self, user, action, **details):
+        context = {'action': action, **details}
+        if user and getattr(user, 'is_authenticated', False):
+            context['user_id'] = user.id
+            context['user_email'] = getattr(user, 'email', '')
+            context['user_name'] = getattr(user, 'name', '')
+        else:
+            context['user_id'] = None
+        logger.info(json.dumps(context, ensure_ascii=False))
+
+    def _log_performance(self, user, action, started_at, **details):
+        duration_ms = round((perf_counter() - started_at) * 1000, 2)
+        self._log_activity(user, action, duration_ms=duration_ms, **details)
+        return duration_ms
+
+    def list(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().list(request, *args, **kwargs)
+
+        query_filters = {}
+        for key, values in request.query_params.lists():
+            if key in ('page', 'limit'):
+                continue
+            if not values:
+                continue
+            query_filters[key] = values if len(values) > 1 else values[0]
+
+        result_count = None
+        try:
+            data = response.data
+            if isinstance(data, dict):
+                result_count = data.get('count')
+                if result_count is None and 'results' in data:
+                    results = data.get('results') or []
+                    result_count = len(results)
+            elif isinstance(data, list):
+                result_count = len(data)
+        except AttributeError:
+            result_count = None
+
+        self._log_performance(
+            request.user,
+            'perf.projects.list',
+            started_at,
+            management_mode=request.query_params.get('management_mode') == 'true',
+            page=request.query_params.get('page'),
+            limit=request.query_params.get('limit'),
+            filters=query_filters,
+            status_code=response.status_code,
+            result_count=result_count,
+        )
+
+        return response
+
+    @staticmethod
+    def _serialize_date(value):
+        if value is None:
+            return None
+        if hasattr(value, 'isoformat'):
+            return value.isoformat()
+        return value
+
+    @staticmethod
+    def _deserialize_date(value):
+        if value in (None, ''):
+            return None
+        if isinstance(value, date):
+            return value
+        try:
+            return date.fromisoformat(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _build_project_snapshot_payload(self, project: Project, project_companies=None) -> dict:
+        """案件および関連企業の状態をスナップショット用にシリアライズ"""
+        project_data = {}
+        for field in self.SNAPSHOT_PROJECT_FIELDS:
+            project_data[field] = self._serialize_date(getattr(project, field, None))
+
+        company_rows = []
+        companies = project_companies if project_companies is not None else project.project_companies.all()
+        for company in companies:
+            row = {}
+            for field in self.SNAPSHOT_PROJECT_COMPANY_FIELDS:
+                value = getattr(company, field, None)
+                row[field] = self._serialize_date(value)
+            company_rows.append(row)
+
+        return {
+            'project': project_data,
+            'project_companies': company_rows,
+        }
+
+    def _create_snapshot(self, project: Project, user, source: str = 'bulk_edit', reason: str = '', refresh: bool = True) -> ProjectSnapshot:
+        if refresh:
+            project_for_snapshot = Project.objects.get(pk=project.pk)
+            project_companies = list(project_for_snapshot.project_companies.all())
+        else:
+            project_for_snapshot = project
+            project_companies = list(project.project_companies.all())
+
+        payload = self._build_project_snapshot_payload(project_for_snapshot, project_companies=project_companies)
+        snapshot = ProjectSnapshot.objects.create(
+            project=project,
+            data=payload,
+            created_by=user if user.is_authenticated else None,
+            source=source,
+            reason=reason or ''
+        )
+        self._log_activity(
+            user,
+            'snapshot.create',
+            project_id=project.pk,
+            snapshot_id=snapshot.id,
+            source=source,
+            reason=reason or '',
+        )
+        return snapshot
+
+    def _apply_snapshot(self, project: Project, snapshot: ProjectSnapshot, user) -> None:
+        payload = snapshot.data or {}
+        project_payload = payload.get('project', {})
+        companies_payload = payload.get('project_companies', [])
+
+        if project_payload:
+            serializer = ProjectManagementUpdateSerializer(
+                project,
+                data=project_payload,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if companies_payload:
+            for company_data in companies_payload:
+                company_id = company_data.get('id')
+                project_company = None
+
+                if company_id:
+                    project_company = project.project_companies.filter(id=company_id).first()
+
+                if not project_company and company_data.get('company_id'):
+                    project_company = project.project_companies.filter(
+                        company_id=company_data['company_id']
+                    ).first()
+
+                if not project_company:
+                    # スナップショット時点では存在していたが、現在は削除済みの場合はスキップ
+                    continue
+
+                for field in self.SNAPSHOT_PROJECT_COMPANY_FIELDS:
+                    if field not in company_data or field in ('id', 'company_id'):
+                        continue
+                    value = company_data[field]
+                    if field in ('contact_date', 'last_appointment_date'):
+                        value = self._deserialize_date(value)
+                    project_company.__setattr__(field, value)
+                project_company.save()
+
+        project.refresh_from_db()
+        # 復元後の状態も履歴として保存
+        self._create_snapshot(
+            project,
+            user,
+            source='restore',
+            reason=f'Restored from snapshot #{snapshot.id}',
+            refresh=True
+        )
     
     def get_serializer_class(self):
         # 管理モード判定
@@ -244,27 +450,63 @@ class ProjectViewSet(viewsets.ModelViewSet):
             import csv, io
             csv_data = uploaded_file.read().decode('utf-8')
             csv_reader = csv.DictReader(io.StringIO(csv_data))
-            
+
             imported_count = 0
-            for row in csv_reader:
-                name = row.get('name', '').strip()
-                if name:
-                    Project.objects.get_or_create(
-                        name=name,
-                        defaults={
-                            'client_company': row.get('client_company', ''),
-                            'description': row.get('description', ''),
-                            'manager_name': row.get('manager_name', ''),
-                            'status': row.get('status', 'planning'),
-                        }
-                    )
-                    imported_count += 1
-            
+            created_count = 0
+            updated_count = 0
+
+            errors = []
+
+            for index, row in enumerate(csv_reader, start=2):
+                name = (row.get('name') or '').strip()
+                if not name:
+                    continue
+
+                client = None
+                client_id_value = (row.get('client_id') or '').strip()
+                client_name_value = (row.get('client_name') or '').strip()
+
+                if client_id_value:
+                    try:
+                        client = Client.objects.get(id=client_id_value)
+                    except Client.DoesNotExist:
+                        errors.append(f'{index}行目: client_id {client_id_value} が見つかりません')
+                        continue
+                elif client_name_value:
+                    client = Client.objects.filter(name=client_name_value).first()
+                    if not client:
+                        errors.append(f'{index}行目: クライアント名 "{client_name_value}" が見つかりません')
+                        continue
+                else:
+                    errors.append(f'{index}行目: クライアント情報が指定されていません')
+                    continue
+
+                defaults = {
+                    'description': row.get('description', ''),
+                    'manager': row.get('manager', ''),
+                    'status': row.get('status', '進行中'),
+                    'client': client,
+                }
+
+                project, created = Project.objects.update_or_create(
+                    name=name,
+                    defaults=defaults
+                )
+
+                imported_count += 1
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+
             return Response({
-                'message': f'{imported_count}件の案件を登録しました',
-                'imported_count': imported_count
+                'message': f'{imported_count}件の案件を登録・更新しました',
+                'imported_count': imported_count,
+                'created_count': created_count,
+                'updated_count': updated_count,
+                'errors': errors,
             })
-            
+
         except Exception as e:
             return Response({
                 'error': f'インポートに失敗しました: {str(e)}'
@@ -398,7 +640,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """更新時にロックチェック"""
         project = serializer.instance
         user = self.request.user
-        
+
         # 期限切れロック削除
         ProjectEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
         
@@ -406,8 +648,63 @@ class ProjectViewSet(viewsets.ModelViewSet):
         lock = ProjectEditLock.objects.filter(project=project).first()
         if lock and lock.user != user:
             raise PermissionError(f'この案件は{lock.user.name}が編集中です')
-        
+
+        updated_fields = serializer.context.get('updated_fields') or sorted(serializer.validated_data.keys())
+        snapshot = serializer.context.get('pre_snapshot')
+        if snapshot is None:
+            reason = 'Project detail update'
+            if updated_fields:
+                reason = f"{reason}: {', '.join(updated_fields)}"
+            snapshot = self._create_snapshot(
+                project,
+                user,
+                source='update',
+                reason=reason
+            )
+
         serializer.save()
+        self._log_activity(
+            user,
+            'project.partial_update.applied',
+            project_id=project.id,
+            updated_fields=updated_fields,
+        )
+        serializer.context['last_snapshot'] = snapshot
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        updated_fields = sorted(serializer.validated_data.keys())
+        reason = 'Project detail update'
+        if updated_fields:
+            reason = f"{reason}: {', '.join(updated_fields)}"
+
+        snapshot = self._create_snapshot(
+            instance,
+            request.user,
+            source='update',
+            reason=reason
+        )
+
+        serializer.context['pre_snapshot'] = snapshot
+        serializer.context['updated_fields'] = updated_fields
+
+        try:
+            self.perform_update(serializer)
+        except PermissionError as exc:
+            return Response(
+                {
+                    'success': False,
+                    'error': str(exc),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        response_data = serializer.data.copy()
+        response_data['snapshot_id'] = snapshot.id
+        return Response(response_data)
 
     @action(detail=False, methods=['patch'], url_path='bulk-update')
     def bulk_update(self, request):
@@ -444,32 +741,243 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         # 一括更新実行
         updated_count = 0
+        errors = {}
+        reason = request.data.get('reason', '')
+        snapshot_records = []
+
         for project in projects:
             serializer = ProjectManagementUpdateSerializer(
-                project, 
-                data=update_data, 
+                project,
+                data=update_data,
                 partial=True
             )
-            if serializer.is_valid():
+
+            if not serializer.is_valid():
+                errors[project.id] = serializer.errors
+                self._log_activity(
+                    request.user,
+                    'project.bulk_update.error',
+                    project_id=project.id,
+                    errors=serializer.errors,
+                )
+                continue
+
+            with transaction.atomic():
+                fields = sorted(serializer.validated_data.keys())
+                snapshot_reason = reason or 'Bulk update'
+                if fields:
+                    snapshot_reason = f"{snapshot_reason}: {', '.join(fields)}"
+                snapshot = self._create_snapshot(
+                    project,
+                    request.user,
+                    source='bulk_edit',
+                    reason=snapshot_reason
+                )
+                self._log_activity(
+                    request.user,
+                    'project.bulk_update.before',
+                    project_id=project.id,
+                    snapshot_id=snapshot.id,
+                    updated_fields=fields,
+                )
+
                 serializer.save()
                 updated_count += 1
-        
-        return Response({
+
+                self._log_activity(
+                    request.user,
+                    'project.bulk_update.applied',
+                    project_id=project.id,
+                    updated_fields=fields,
+                )
+                snapshot_records.append({
+                    'project_id': project.id,
+                    'snapshot_id': snapshot.id,
+                })
+
+        response_payload = {
             'success': True,
             'updated_count': updated_count,
             'message': f'{updated_count}件の案件を更新しました'
+        }
+
+        if errors:
+            response_payload['errors'] = errors
+        if snapshot_records:
+            response_payload['snapshots'] = snapshot_records
+
+        return Response(response_payload)
+
+    @action(detail=False, methods=['post'], url_path='bulk-partial-update')
+    def bulk_partial_update(self, request):
+        """案件ごとの差分をまとめて更新"""
+        items = request.data.get('items')
+        if not isinstance(items, list) or not items:
+            return Response({
+                'success': False,
+                'error': 'items は1件以上の配列で指定してください'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        ProjectEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
+
+        updated_count = 0
+        success_records = []
+        errors = {}
+        started_at = perf_counter()
+
+        for index, item in enumerate(items):
+            project_id = item.get('project_id')
+            update_data = item.get('data') or {}
+            reason = item.get('reason') or 'Bulk partial update'
+
+            if not project_id or not isinstance(update_data, dict) or len(update_data) == 0:
+                key = project_id or f'item_{index}'
+                errors[str(key)] = 'project_id と data を指定してください'
+                continue
+
+            project = Project.objects.filter(id=project_id).first()
+            if not project:
+                errors[str(project_id)] = '指定された案件が見つかりません'
+                continue
+
+            lock = ProjectEditLock.objects.filter(project=project).first()
+            if lock:
+                if lock.is_expired():
+                    lock.delete()
+                elif lock.user != request.user:
+                    errors[str(project_id)] = f'{lock.user.name} が編集中です'
+                    continue
+
+            serializer = ProjectManagementUpdateSerializer(
+                project,
+                data=update_data,
+                partial=True
+            )
+
+            if not serializer.is_valid():
+                errors[str(project_id)] = serializer.errors
+                self._log_activity(
+                    request.user,
+                    'project.bulk_partial_update.error',
+                    project_id=project.id,
+                    errors=serializer.errors,
+                )
+                continue
+
+            with transaction.atomic():
+                fields = sorted(serializer.validated_data.keys())
+                snapshot_reason = reason
+                if fields:
+                    snapshot_reason = f"{snapshot_reason}: {', '.join(fields)}"
+
+                snapshot = self._create_snapshot(
+                    project,
+                    request.user,
+                    source='bulk_edit',
+                    reason=snapshot_reason
+                )
+
+                serializer.save()
+                updated_count += 1
+
+                self._log_activity(
+                    request.user,
+                    'project.bulk_partial_update.applied',
+                    project_id=project.id,
+                    updated_fields=fields,
+                    snapshot_id=snapshot.id,
+                )
+
+                success_records.append({
+                    'project_id': project.id,
+                    'snapshot_id': snapshot.id,
+                    'updated_fields': fields,
+                })
+
+        duration_ms = self._log_performance(
+            request.user,
+            'perf.projects.bulk_partial_update',
+            started_at,
+            updated_count=updated_count,
+            total_requested=len(items),
+            error_count=len(errors),
+        )
+
+        status_code = status.HTTP_200_OK
+        if updated_count == 0:
+            status_code = status.HTTP_400_BAD_REQUEST
+        elif errors:
+            status_code = status.HTTP_207_MULTI_STATUS
+
+        response_payload = {
+            'success': updated_count > 0,
+            'updated_count': updated_count,
+            'snapshots': success_records,
+            'errors': errors if errors else None,
+            'duration_ms': duration_ms,
+        }
+
+        return Response(response_payload, status=status_code)
+
+    @action(detail=True, methods=['get'], url_path='snapshots')
+    def list_snapshots(self, request, pk=None):
+        """案件スナップショット一覧"""
+        project = self.get_object()
+        queryset = project.snapshots.select_related('created_by').all()
+
+        page = self.paginate_queryset(queryset)
+        serializer = ProjectSnapshotSerializer(page, many=True) if page is not None else ProjectSnapshotSerializer(queryset, many=True)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+
+        return Response({
+            'count': queryset.count(),
+            'results': serializer.data
+        })
+
+    @action(detail=True, methods=['post'], url_path='snapshots/(?P<snapshot_id>[0-9]+)/restore')
+    def restore_snapshot(self, request, pk=None, snapshot_id=None):
+        """スナップショットから案件を復元"""
+        project = self.get_object()
+        snapshot = get_object_or_404(ProjectSnapshot, project=project, id=snapshot_id)
+
+        with transaction.atomic():
+            # 復元前の状態を保持
+            self._create_snapshot(
+                project,
+                request.user,
+                source='undo',
+                reason=f'Before restore of snapshot #{snapshot.id}'
+            )
+
+            self._apply_snapshot(project, snapshot, request.user)
+
+        self._log_activity(
+            request.user,
+            'project.snapshot.restore',
+            project_id=project.id,
+            snapshot_id=snapshot.id,
+        )
+
+        return Response({
+            'success': True,
+            'restored_snapshot_id': snapshot.id
         })
 
     @action(detail=False, methods=['post', 'delete'], url_path='page-lock')
     def acquire_page_lock(self, request):
         """ページ編集ロック取得"""
         if request.method == 'DELETE':
-            return self._release_page_lock_response(request)
+            started_at = perf_counter()
+            return self._release_page_lock_response(request, started_at=started_at)
 
         page_number = request.data.get('page', 1)
         page_size = request.data.get('page_size', 20)
         filter_hash = request.data.get('filter_hash', '')
         user = request.user
+
+        started_at = perf_counter()
 
         # 期限切れロックを削除
         PageEditLock.objects.filter(expires_at__lt=timezone.now()).delete()
@@ -487,18 +995,42 @@ class ProjectViewSet(viewsets.ModelViewSet):
                         # 自分のロックなら期限を延長
                         existing_lock.expires_at = timezone.now() + timezone.timedelta(minutes=30)
                         existing_lock.save()
-                        return Response({
+                        response = Response({
                             'success': True,
                             'locked_until': existing_lock.expires_at.isoformat()
                         })
+                        self._log_performance(
+                            user,
+                            'perf.projects.page_lock.acquire',
+                            started_at,
+                            page_number=page_number,
+                            page_size=page_size,
+                            filter_hash=filter_hash,
+                            status_code=response.status_code,
+                            success=True,
+                            reused_lock=True,
+                        )
+                        return response
                     else:
                         # 他のユーザーのロック
-                        return Response({
+                        response = Response({
                             'success': False,
                             'error': f'このページは{existing_lock.user.name}が編集中です',
                             'locked_by_name': existing_lock.user.name,
                             'locked_until': existing_lock.expires_at.isoformat()
                         }, status=status.HTTP_409_CONFLICT)
+                        self._log_performance(
+                            user,
+                            'perf.projects.page_lock.acquire',
+                            started_at,
+                            page_number=page_number,
+                            page_size=page_size,
+                            filter_hash=filter_hash,
+                            status_code=response.status_code,
+                            success=False,
+                            locked_by_id=existing_lock.user.id,
+                        )
+                        return response
 
                 # 新しいロックを作成
                 lock = PageEditLock.objects.create(
@@ -508,18 +1040,42 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     filter_hash=filter_hash
                 )
 
-                return Response({
+                response = Response({
                     'success': True,
                     'locked_until': lock.expires_at.isoformat()
                 })
+                self._log_performance(
+                    user,
+                    'perf.projects.page_lock.acquire',
+                    started_at,
+                    page_number=page_number,
+                    page_size=page_size,
+                    filter_hash=filter_hash,
+                    status_code=response.status_code,
+                    success=True,
+                    reused_lock=False,
+                )
+                return response
 
         except Exception as e:
-            return Response({
+            response = Response({
                 'success': False,
                 'error': f'ページロック取得に失敗しました: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            self._log_performance(
+                user,
+                'perf.projects.page_lock.acquire',
+                started_at,
+                page_number=page_number,
+                page_size=page_size,
+                filter_hash=filter_hash,
+                status_code=response.status_code,
+                success=False,
+                error=str(e),
+            )
+            return response
 
-    def _release_page_lock_response(self, request):
+    def _release_page_lock_response(self, request, started_at=None, action_label='perf.projects.page_lock.release'):
         page_number = request.query_params.get('page', 1)
         filter_hash = request.query_params.get('filter_hash', '')
         user = request.user
@@ -533,13 +1089,24 @@ class ProjectViewSet(viewsets.ModelViewSet):
             lock.delete()
         except PageEditLock.DoesNotExist:
             pass
-
-        return Response({'success': True})
+        response = Response({'success': True})
+        if started_at is not None:
+            self._log_performance(
+                user,
+                action_label,
+                started_at,
+                page_number=page_number,
+                filter_hash=filter_hash,
+                status_code=response.status_code,
+                success=True,
+            )
+        return response
 
     @action(detail=False, methods=['delete'], url_path='page-unlock')
     def release_page_lock(self, request):
         """ページ編集ロック解除"""
-        return self._release_page_lock_response(request)
+        started_at = perf_counter()
+        return self._release_page_lock_response(request, started_at=started_at)
 
 
 

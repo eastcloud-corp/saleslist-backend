@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, ProjectCompany, ProjectNGCompany, ProjectEditLock
+from .models import Project, ProjectCompany, ProjectNGCompany, ProjectEditLock, ProjectSnapshot
 from companies.serializers import CompanyListSerializer
 
 
@@ -18,6 +18,9 @@ class ProjectListSerializer(serializers.ModelSerializer):
     
     def get_company_count(self, obj):
         """関連企業数を取得"""
+        annotated = getattr(obj, 'project_company_count', None)
+        if annotated is not None:
+            return annotated
         return obj.project_companies.count()
 
 
@@ -86,6 +89,73 @@ class ProjectCompanySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class ProjectSnapshotSerializer(serializers.ModelSerializer):
+    """案件スナップショット一覧用シリアライザー"""
+
+    created_by_name = serializers.CharField(source='created_by.name', read_only=True)
+    source_label = serializers.SerializerMethodField()
+    changed_fields = serializers.SerializerMethodField()
+    project_overview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectSnapshot
+        fields = [
+            'id',
+            'project',
+            'created_at',
+            'created_by',
+            'created_by_name',
+            'reason',
+            'source',
+            'source_label',
+            'changed_fields',
+            'project_overview',
+        ]
+        read_only_fields = fields
+
+    def get_source_label(self, obj):
+        mapping = {
+            'bulk_edit': '一括編集',
+            'undo': '取り消し',
+            'restore': '復元',
+            'update': '単体編集',
+        }
+        return mapping.get(obj.source, obj.source)
+
+    def get_changed_fields(self, obj):
+        if not obj.reason:
+            return []
+        parts = obj.reason.split(':', 1)
+        if len(parts) < 2:
+            return []
+        return [item.strip() for item in parts[1].split(',') if item.strip()]
+
+    def get_project_overview(self, obj):
+        data = (obj.data or {}).get('project', {}) or {}
+        overview_keys = [
+            'name',
+            'client_name',
+            'progress_status',
+            'service_type',
+            'media_type',
+            'director',
+            'operator',
+            'sales_person',
+            'appointment_count',
+            'approval_count',
+            'reply_count',
+            'friends_count',
+            'expected_end_date',
+            'operation_start_date',
+            'situation',
+        ]
+        overview = {}
+        for key in overview_keys:
+            if key in data and data[key] not in (None, ''):
+                overview[key] = data[key]
+        return overview
+
+
 class ProjectManagementListSerializer(serializers.ModelSerializer):
     """案件管理一覧用シリアライザー（新機能対応）"""
     client_name = serializers.CharField(source='client.name', read_only=True)
@@ -100,22 +170,32 @@ class ProjectManagementListSerializer(serializers.ModelSerializer):
     locked_by = serializers.SerializerMethodField()
     locked_by_name = serializers.SerializerMethodField()
     locked_until = serializers.SerializerMethodField()
-    
+    progress_status_id = serializers.IntegerField(read_only=True, allow_null=True)
+    service_type_id = serializers.IntegerField(read_only=True, allow_null=True)
+    media_type_id = serializers.IntegerField(read_only=True, allow_null=True)
+    regular_meeting_status_id = serializers.IntegerField(read_only=True, allow_null=True)
+    list_availability_id = serializers.IntegerField(read_only=True, allow_null=True)
+    list_import_source_id = serializers.IntegerField(read_only=True, allow_null=True)
+
     class Meta:
         model = Project
         fields = [
-            'id', 'name', 'client_name', 'service_type', 'media_type',
+            'id', 'name', 'client_name',
+            'service_type', 'service_type_id',
+            'media_type', 'media_type_id',
             'director', 'operator', 'sales_person',
             'operation_start_date', 'expected_end_date',
-            'regular_meeting_status', 'regular_meeting_date', 'list_availability', 'list_import_source',
-            'progress_status', 'entry_date_sales',
+            'regular_meeting_status', 'regular_meeting_status_id', 'regular_meeting_date',
+            'list_availability', 'list_availability_id',
+            'list_import_source', 'list_import_source_id',
+            'progress_status', 'progress_status_id', 'entry_date_sales',
             'progress_tasks', 'daily_tasks', 'reply_check_notes', 'remarks', 'complaints_requests',
             'director_login_available', 'operator_group_invited',
             'appointment_count', 'approval_count', 'reply_count', 'friends_count',
             'situation', 'company_count', 'is_locked', 'locked_by', 'locked_by_name', 'locked_until',
             'created_at', 'updated_at'
         ]
-    
+
     def get_is_locked(self, obj):
         """ロック状態を取得"""
         try:
@@ -147,9 +227,12 @@ class ProjectManagementListSerializer(serializers.ModelSerializer):
             return lock.expires_at.isoformat() if not lock.is_expired() else None
         except:
             return None
-    
+
     def get_company_count(self, obj):
         """追加企業数を取得"""
+        annotated = getattr(obj, 'project_company_count', None)
+        if annotated is not None:
+            return annotated
         return obj.project_companies.count()
 
 
@@ -210,6 +293,9 @@ class ProjectManagementDetailSerializer(serializers.ModelSerializer):
     
     def get_company_count(self, obj):
         """追加企業数を取得"""
+        annotated = getattr(obj, 'project_company_count', None)
+        if annotated is not None:
+            return annotated
         return obj.project_companies.count()
 
     def get_companies(self, obj):
@@ -220,12 +306,12 @@ class ProjectManagementDetailSerializer(serializers.ModelSerializer):
 
 class ProjectManagementUpdateSerializer(serializers.ModelSerializer):
     """案件管理更新用シリアライザー（全編集項目対応）"""
-    progress_status_id = serializers.IntegerField(write_only=True, required=False)
-    service_type_id = serializers.IntegerField(write_only=True, required=False)
-    media_type_id = serializers.IntegerField(write_only=True, required=False)
-    regular_meeting_status_id = serializers.IntegerField(write_only=True, required=False)
-    list_availability_id = serializers.IntegerField(write_only=True, required=False)
-    list_import_source_id = serializers.IntegerField(write_only=True, required=False)
+    progress_status_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    service_type_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    media_type_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    regular_meeting_status_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    list_availability_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    list_import_source_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     
     class Meta:
         model = Project
