@@ -95,30 +95,140 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     'error': 'CSVファイルが必要です'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            import csv, io
+            import csv, io, re
+
+            def normalize_header(header: str) -> str:
+                if not header:
+                    return ''
+
+                direct_map = {
+                    '名前': 'name',
+                    '会社名': 'name',
+                    '企業名': 'name',
+                    '業種': 'industry',
+                    '従業員数': 'employee_count',
+                    '従業員数(あれば)': 'employee_count',
+                    '売上規模': 'revenue',
+                    '売上規模(あれば)': 'revenue',
+                    '所在地(都道府県)': 'prefecture',
+                    '所在地': 'location',
+                    '会社HP': 'website_url',
+                    'メールアドレス': 'contact_email',
+                    '電話番号': 'phone',
+                    '事業内容': 'business_description',
+                }
+
+                header_stripped = header.strip()
+                if header_stripped in direct_map:
+                    return direct_map[header_stripped]
+
+                normalized = re.sub(r"[^a-z0-9]", "_", header_stripped.lower())
+                header_map = {
+                    'company_name': 'name',
+                    'company': 'name',
+                    'name': 'name',
+                    'industry': 'industry',
+                    'employee_count': 'employee_count',
+                    'employees': 'employee_count',
+                    'revenue': 'revenue',
+                    'prefecture': 'prefecture',
+                    'city': 'city',
+                    'location': 'location',
+                    'website_url': 'website_url',
+                    'website': 'website_url',
+                    'contact_email': 'contact_email',
+                    'email': 'contact_email',
+                    'phone': 'phone',
+                    'telephone': 'phone',
+                    'business_description': 'business_description',
+                    'description': 'business_description',
+                }
+                return header_map.get(normalized, normalized)
+
+            def parse_int(value: str, field_key: str, field_label: str) -> int:
+                if value is None:
+                    return 0
+                cleaned = value.strip()
+                if cleaned in {'', '-', 'ー', '—'}:
+                    return 0
+                cleaned = cleaned.replace(',', '')
+                if not re.fullmatch(r"-?\d+", cleaned):
+                    raise ValueError(field_key, cleaned, f"{field_label}は数値で入力してください")
+                return int(cleaned)
+
             csv_data = uploaded_file.read().decode('utf-8')
             csv_reader = csv.DictReader(io.StringIO(csv_data))
-            
+
+            if not csv_reader.fieldnames:
+                return Response({
+                    'error': 'CSVのヘッダーが確認できません'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            header_map = {header: normalize_header(header) for header in csv_reader.fieldnames}
+
+            if 'name' not in header_map.values():
+                return Response({
+                    'error': '企業名に対応するヘッダーが見つかりません。"name" または "会社名" 列を追加してください。'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            errors = []
+            rows_to_create = []
+
+            for index, row in enumerate(csv_reader, start=2):
+                normalized_row = {}
+                for original_header, value in row.items():
+                    normalized_key = header_map.get(original_header, original_header)
+                    if normalized_key:
+                        normalized_row[normalized_key] = (value or '').strip()
+
+                raw_name = normalized_row.get('name', '')
+                name = raw_name.strip() if raw_name else ''
+                if not name:
+                    name = f"インポート企業（行{index}）"
+
+                try:
+                    employee_count = parse_int(normalized_row.get('employee_count', ''), 'employee_count', '従業員数')
+                    revenue = parse_int(normalized_row.get('revenue', ''), 'revenue', '売上規模')
+                except ValueError as exc:
+                    field_key, value, message = exc.args
+                    errors.append({
+                        'row': index,
+                        'field': field_key,
+                        'value': value,
+                        'message': message,
+                    })
+                    continue
+
+                rows_to_create.append({
+                    'name': name,
+                    'defaults': {
+                        'industry': normalized_row.get('industry', ''),
+                        'employee_count': employee_count,
+                        'revenue': revenue,
+                        'prefecture': normalized_row.get('prefecture', ''),
+                        'city': normalized_row.get('city', ''),
+                        'website_url': normalized_row.get('website_url', ''),
+                        'contact_email': normalized_row.get('contact_email', ''),
+                        'phone': normalized_row.get('phone', ''),
+                        'business_description': normalized_row.get('business_description', ''),
+                    }
+                })
+
+            if errors:
+                return Response({
+                    'error': 'CSV内容にエラーが見つかりました。該当行を修正してください。',
+                    'errors': errors,
+                }, status=status.HTTP_400_BAD_REQUEST)
+
             imported_count = 0
-            for row in csv_reader:
-                name = row.get('name', '').strip()
-                if name:
-                    Company.objects.get_or_create(
-                        name=name,
-                        defaults={
-                            'industry': row.get('industry', ''),
-                            'employee_count': int(row.get('employee_count', 0) or 0),
-                            'revenue': int(row.get('revenue', 0) or 0),
-                            'prefecture': row.get('prefecture', ''),
-                            'city': row.get('city', ''),
-                            'website_url': row.get('website_url', ''),
-                            'contact_email': row.get('contact_email', ''),
-                            'phone': row.get('phone', ''),
-                            'business_description': row.get('business_description', ''),
-                        }
-                    )
+            for entry in rows_to_create:
+                _, created = Company.objects.get_or_create(
+                    name=entry['name'],
+                    defaults=entry['defaults'],
+                )
+                if created:
                     imported_count += 1
-            
+
             return Response({
                 'message': f'{imported_count}件の企業を登録しました',
                 'imported_count': imported_count
