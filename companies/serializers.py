@@ -98,3 +98,7 @@ class CompanyCreateSerializer(serializers.ModelSerializer):
             'established_year', 'website_url', 'contact_email', 'phone', 'notes'
         ]
         read_only_fields = ['id']
+
+    def validate_corporate_number(self, value):
+        sanitized = ''.join(ch for ch in (value or '').strip() if ch.isdigit())
+        return sanitized

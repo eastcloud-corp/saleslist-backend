@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
 from django.db import transaction
+from rest_framework.exceptions import APIException
 from .models import Company, Executive
 from projects.models import Project, ProjectCompany
 from .serializers import (
@@ -39,6 +40,14 @@ class CompanyFilter(filters.FilterSet):
         return queryset
 
 
+class ConflictError(APIException):
+    """409 Conflict を表す例外"""
+
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = '既存データと競合しました'
+    default_code = 'conflict'
+
+
 class CompanyViewSet(viewsets.ModelViewSet):
     """企業ViewSet"""
     queryset = Company.objects.all()
@@ -55,7 +64,54 @@ class CompanyViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             return CompanyCreateSerializer
         return CompanyListSerializer
-    
+
+    def _normalize_corporate_number(self, value):
+        """法人番号の余分な空白を取り除く"""
+        if value is None:
+            return ''
+        return value.strip()
+
+    def _raise_if_duplicate_corporate_number(self, corporate_number, *, exclude_id=None):
+        if not corporate_number:
+            return
+
+        queryset = Company.objects.filter(corporate_number=corporate_number)
+        if exclude_id is not None:
+            queryset = queryset.exclude(id=exclude_id)
+
+        existing = queryset.first()
+        if existing:
+            raise ConflictError(detail={
+                'message': f'法人番号「{corporate_number}」は既に企業「{existing.name}」(ID: {existing.id})で使用されています。',
+                'duplicate_with': existing.id,
+                'duplicate_name': existing.name,
+            })
+
+    def perform_create(self, serializer):
+        corporate_number = self._normalize_corporate_number(
+            serializer.validated_data.get('corporate_number')
+        )
+        serializer.validated_data['corporate_number'] = corporate_number
+        self._raise_if_duplicate_corporate_number(corporate_number)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if 'corporate_number' in serializer.validated_data:
+            corporate_number = self._normalize_corporate_number(
+                serializer.validated_data.get('corporate_number')
+            )
+        else:
+            corporate_number = self._normalize_corporate_number(
+                getattr(serializer.instance, 'corporate_number', '')
+            )
+
+        serializer.validated_data['corporate_number'] = corporate_number
+        self._raise_if_duplicate_corporate_number(
+            corporate_number,
+            exclude_id=getattr(serializer.instance, 'id', None)
+        )
+        serializer.save()
+
     @action(detail=True, methods=['post'], url_path='toggle_ng')
     def toggle_ng(self, request, pk=None):
         """企業のグローバルNG状態切り替え（OpenAPI仕様準拠）"""
@@ -116,6 +172,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     'メールアドレス': 'contact_email',
                     '電話番号': 'phone',
                     '事業内容': 'business_description',
+                    '法人番号': 'corporate_number',
                 }
 
                 header_stripped = header.strip()
@@ -142,6 +199,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     'telephone': 'phone',
                     'business_description': 'business_description',
                     'description': 'business_description',
+                    'corporate_number': 'corporate_number',
                 }
                 return header_map.get(normalized, normalized)
 
@@ -186,6 +244,9 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 if not name:
                     name = f"インポート企業（行{index}）"
 
+                raw_corporate_number = normalized_row.get('corporate_number', '').strip()
+                corporate_number = re.sub(r'[^0-9]', '', raw_corporate_number)
+
                 try:
                     employee_count = parse_int(normalized_row.get('employee_count', ''), 'employee_count', '従業員数')
                     revenue = parse_int(normalized_row.get('revenue', ''), 'revenue', '売上規模')
@@ -200,8 +261,10 @@ class CompanyViewSet(viewsets.ModelViewSet):
                     continue
 
                 rows_to_create.append({
-                    'name': name,
-                    'defaults': {
+                    'row_number': index,
+                    'data': {
+                        'name': name,
+                        'corporate_number': corporate_number,
                         'industry': normalized_row.get('industry', ''),
                         'employee_count': employee_count,
                         'revenue': revenue,
@@ -221,17 +284,66 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             imported_count = 0
+            duplicate_entries = []
+            missing_corporate_number_count = 0
+
+            corporate_numbers_in_csv = {
+                entry['data']['corporate_number']
+                for entry in rows_to_create
+                if entry['data']['corporate_number']
+            }
+
+            existing_companies = Company.objects.filter(
+                corporate_number__in=corporate_numbers_in_csv
+            )
+            existing_map = {
+                company.corporate_number: company for company in existing_companies
+            }
+
+            seen_corporate_numbers = set()
+
             for entry in rows_to_create:
-                _, created = Company.objects.get_or_create(
-                    name=entry['name'],
-                    defaults=entry['defaults'],
-                )
-                if created:
-                    imported_count += 1
+                company_data = entry['data']
+                corporate_number = company_data.get('corporate_number', '')
+
+                if corporate_number:
+                    if corporate_number in seen_corporate_numbers:
+                        duplicate_entries.append({
+                            'row': entry['row_number'],
+                            'type': 'csv_duplicate',
+                            'corporate_number': corporate_number,
+                            'name': company_data['name'],
+                            'reason': '同じCSV内で同一の法人番号が複数回指定されています。'
+                        })
+                        continue
+
+                    existing = existing_map.get(corporate_number)
+                    if existing:
+                        duplicate_entries.append({
+                            'row': entry['row_number'],
+                            'type': 'existing',
+                            'corporate_number': corporate_number,
+                            'name': company_data['name'],
+                            'existing_company_id': existing.id,
+                            'existing_company_name': existing.name,
+                            'reason': f'既存企業「{existing.name}」(ID: {existing.id})と法人番号が重複しています。'
+                        })
+                        continue
+
+                    seen_corporate_numbers.add(corporate_number)
+                else:
+                    missing_corporate_number_count += 1
+
+                Company.objects.create(**company_data)
+                imported_count += 1
 
             return Response({
                 'message': f'{imported_count}件の企業を登録しました',
-                'imported_count': imported_count
+                'imported_count': imported_count,
+                'total_rows': len(rows_to_create),
+                'duplicate_count': len(duplicate_entries),
+                'duplicates': duplicate_entries,
+                'missing_corporate_number_count': missing_corporate_number_count,
             })
             
         except Exception as e:
