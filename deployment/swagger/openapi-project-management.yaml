@@ -445,7 +445,7 @@ components:
           example: "有（我々提供）"
         list_import_source:
           type: string
-          example: "セールスナビゲーター"
+          example: "ソーシャルナビゲーター"
         list_count:
           type: integer
           example: 1000
@@ -618,7 +618,7 @@ components:
           example: "有（我々提供）"
         list_import_source:
           type: string
-          example: "セールスナビゲーター"
+          example: "ソーシャルナビゲーター"
         list_count:
           type: integer
           minimum: 0

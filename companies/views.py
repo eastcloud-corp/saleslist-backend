@@ -16,6 +16,7 @@ from .serializers import (
 
 class CompanyFilter(filters.FilterSet):
     """企業フィルター"""
+    industry = filters.CharFilter(method='filter_industry')
     employee_min = filters.NumberFilter(field_name='employee_count', lookup_expr='gte')
     employee_max = filters.NumberFilter(field_name='employee_count', lookup_expr='lte')
     revenue_min = filters.NumberFilter(field_name='revenue', lookup_expr='gte')
@@ -28,7 +29,22 @@ class CompanyFilter(filters.FilterSet):
     class Meta:
         model = Company
         fields = ['industry', 'prefecture', 'is_global_ng']
-    
+
+    def _get_query_values(self, name, fallback_value=None):
+        request = getattr(self, 'request', None)
+        values = []
+        if request is not None:
+            values = [value for value in request.query_params.getlist(name) if value]
+        if not values and fallback_value:
+            values = [fallback_value]
+        return values
+
+    def filter_industry(self, queryset, name, value):
+        values = self._get_query_values(name, value)
+        if values:
+            return queryset.filter(industry__in=values)
+        return queryset
+
     def filter_has_facebook(self, queryset, name, value):
         if value:
             return queryset.filter(executives__facebook_url__isnull=False).distinct()
