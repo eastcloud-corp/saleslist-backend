@@ -54,4 +54,6 @@ USE_TZ = True
 APPEND_SLASH = True  # 自動で末尾スラッシュ追加・リダイレクト
 
 # Logging disabled for now - using default console logging
-
+# Upload limits (increase for large CSV imports)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
