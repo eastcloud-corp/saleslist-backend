@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,11 +9,15 @@ from django_filters import rest_framework as filters
 from django.db import transaction
 from rest_framework.exceptions import APIException
 from .models import Company, Executive
+from .importers import import_companies_csv
 from projects.models import Project, ProjectCompany
 from .serializers import (
     CompanyListSerializer, CompanyDetailSerializer, 
     CompanyCreateSerializer, ExecutiveSerializer
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class CompanyFilter(filters.FilterSet):
@@ -160,209 +166,20 @@ class CompanyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='import_csv')
     def import_csv(self, request):
         """企業CSVインポート（OpenAPI仕様準拠）"""
-        try:
-            uploaded_file = request.FILES.get('file')
-            if not uploaded_file:
-                return Response({
-                    'error': 'CSVファイルが必要です'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            import csv, io, re
-
-            def normalize_header(header: str) -> str:
-                if not header:
-                    return ''
-
-                direct_map = {
-                    '名前': 'name',
-                    '会社名': 'name',
-                    '企業名': 'name',
-                    '業種': 'industry',
-                    '従業員数': 'employee_count',
-                    '従業員数(あれば)': 'employee_count',
-                    '売上規模': 'revenue',
-                    '売上規模(あれば)': 'revenue',
-                    '所在地(都道府県)': 'prefecture',
-                    '所在地': 'location',
-                    '会社HP': 'website_url',
-                    'メールアドレス': 'contact_email',
-                    '電話番号': 'phone',
-                    '事業内容': 'business_description',
-                    '法人番号': 'corporate_number',
-                }
-
-                header_stripped = header.strip()
-                if header_stripped in direct_map:
-                    return direct_map[header_stripped]
-
-                normalized = re.sub(r"[^a-z0-9]", "_", header_stripped.lower())
-                header_map = {
-                    'company_name': 'name',
-                    'company': 'name',
-                    'name': 'name',
-                    'industry': 'industry',
-                    'employee_count': 'employee_count',
-                    'employees': 'employee_count',
-                    'revenue': 'revenue',
-                    'prefecture': 'prefecture',
-                    'city': 'city',
-                    'location': 'location',
-                    'website_url': 'website_url',
-                    'website': 'website_url',
-                    'contact_email': 'contact_email',
-                    'email': 'contact_email',
-                    'phone': 'phone',
-                    'telephone': 'phone',
-                    'business_description': 'business_description',
-                    'description': 'business_description',
-                    'corporate_number': 'corporate_number',
-                }
-                return header_map.get(normalized, normalized)
-
-            def parse_int(value: str, field_key: str, field_label: str) -> int:
-                if value is None:
-                    return 0
-                cleaned = value.strip()
-                if cleaned in {'', '-', 'ー', '—'}:
-                    return 0
-                cleaned = cleaned.replace(',', '')
-                if not re.fullmatch(r"-?\d+", cleaned):
-                    raise ValueError(field_key, cleaned, f"{field_label}は数値で入力してください")
-                return int(cleaned)
-
-            csv_data = uploaded_file.read().decode('utf-8')
-            csv_reader = csv.DictReader(io.StringIO(csv_data))
-
-            if not csv_reader.fieldnames:
-                return Response({
-                    'error': 'CSVのヘッダーが確認できません'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            header_map = {header: normalize_header(header) for header in csv_reader.fieldnames}
-
-            if 'name' not in header_map.values():
-                return Response({
-                    'error': '企業名に対応するヘッダーが見つかりません。"name" または "会社名" 列を追加してください。'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            errors = []
-            rows_to_create = []
-
-            for index, row in enumerate(csv_reader, start=2):
-                normalized_row = {}
-                for original_header, value in row.items():
-                    normalized_key = header_map.get(original_header, original_header)
-                    if normalized_key:
-                        normalized_row[normalized_key] = (value or '').strip()
-
-                raw_name = normalized_row.get('name', '')
-                name = raw_name.strip() if raw_name else ''
-                if not name:
-                    name = f"インポート企業（行{index}）"
-
-                raw_corporate_number = normalized_row.get('corporate_number', '').strip()
-                corporate_number = re.sub(r'[^0-9]', '', raw_corporate_number)
-
-                try:
-                    employee_count = parse_int(normalized_row.get('employee_count', ''), 'employee_count', '従業員数')
-                    revenue = parse_int(normalized_row.get('revenue', ''), 'revenue', '売上規模')
-                except ValueError as exc:
-                    field_key, value, message = exc.args
-                    errors.append({
-                        'row': index,
-                        'field': field_key,
-                        'value': value,
-                        'message': message,
-                    })
-                    continue
-
-                rows_to_create.append({
-                    'row_number': index,
-                    'data': {
-                        'name': name,
-                        'corporate_number': corporate_number,
-                        'industry': normalized_row.get('industry', ''),
-                        'employee_count': employee_count,
-                        'revenue': revenue,
-                        'prefecture': normalized_row.get('prefecture', ''),
-                        'city': normalized_row.get('city', ''),
-                        'website_url': normalized_row.get('website_url', ''),
-                        'contact_email': normalized_row.get('contact_email', ''),
-                        'phone': normalized_row.get('phone', ''),
-                        'business_description': normalized_row.get('business_description', ''),
-                    }
-                })
-
-            if errors:
-                return Response({
-                    'error': 'CSV内容にエラーが見つかりました。該当行を修正してください。',
-                    'errors': errors,
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            imported_count = 0
-            duplicate_entries = []
-            missing_corporate_number_count = 0
-
-            corporate_numbers_in_csv = {
-                entry['data']['corporate_number']
-                for entry in rows_to_create
-                if entry['data']['corporate_number']
-            }
-
-            existing_companies = Company.objects.filter(
-                corporate_number__in=corporate_numbers_in_csv
-            )
-            existing_map = {
-                company.corporate_number: company for company in existing_companies
-            }
-
-            seen_corporate_numbers = set()
-
-            for entry in rows_to_create:
-                company_data = entry['data']
-                corporate_number = company_data.get('corporate_number', '')
-
-                if corporate_number:
-                    if corporate_number in seen_corporate_numbers:
-                        duplicate_entries.append({
-                            'row': entry['row_number'],
-                            'type': 'csv_duplicate',
-                            'corporate_number': corporate_number,
-                            'name': company_data['name'],
-                            'reason': '同じCSV内で同一の法人番号が複数回指定されています。'
-                        })
-                        continue
-
-                    existing = existing_map.get(corporate_number)
-                    if existing:
-                        duplicate_entries.append({
-                            'row': entry['row_number'],
-                            'type': 'existing',
-                            'corporate_number': corporate_number,
-                            'name': company_data['name'],
-                            'existing_company_id': existing.id,
-                            'existing_company_name': existing.name,
-                            'reason': f'既存企業「{existing.name}」(ID: {existing.id})と法人番号が重複しています。'
-                        })
-                        continue
-
-                    seen_corporate_numbers.add(corporate_number)
-                else:
-                    missing_corporate_number_count += 1
-
-                Company.objects.create(**company_data)
-                imported_count += 1
-
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
             return Response({
-                'message': f'{imported_count}件の企業を登録しました',
-                'imported_count': imported_count,
-                'total_rows': len(rows_to_create),
-                'duplicate_count': len(duplicate_entries),
-                'duplicates': duplicate_entries,
-                'missing_corporate_number_count': missing_corporate_number_count,
-            })
-            
+                'error': 'CSVファイルが必要です'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            result, error_payload = import_companies_csv(uploaded_file)
+            if error_payload:
+                return Response(error_payload, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(result)
         except Exception as e:
+            logger.exception('CSV import failed')
             return Response({
                 'error': f'インポートに失敗しました: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

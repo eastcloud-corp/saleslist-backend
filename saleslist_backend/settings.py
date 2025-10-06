@@ -67,6 +67,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'saleslist_backend.middleware.RequestContextMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -95,7 +96,7 @@ WSGI_APPLICATION = 'saleslist_backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 import os
-from decouple import config
+from decouple import Csv, config
 
 DATABASES = {
     'default': {
@@ -174,6 +175,19 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter', 
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': config('DRF_THROTTLE_ANON', default='60/min'),
+        'user': config('DRF_THROTTLE_USER', default='600/min'),
+        'auth_login': config('DRF_THROTTLE_LOGIN', default='10/min'),
+        'auth_refresh': config('DRF_THROTTLE_REFRESH', default='30/min'),
+        'health': config('DRF_THROTTLE_HEALTH', default='120/min'),
+    },
+    'EXCEPTION_HANDLER': 'saleslist_backend.api_exception_handler.custom_exception_handler',
 }
 
 # JWT settings
@@ -193,7 +207,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # 開発環境では全オリジン許可
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -224,10 +238,15 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'structured': {
-            'format': '%(asctime)s [%(levelname)s] %(message)s',
+            '()': 'saleslist_backend.logging_utils.JsonFormatter',
         },
         'console': {
             'format': '[%(levelname)s] %(message)s',
+        },
+    },
+    'filters': {
+        'request_context': {
+            '()': 'saleslist_backend.logging_utils.RequestContextFilter',
         },
     },
     'handlers': {
@@ -238,10 +257,30 @@ LOGGING = {
             'backupCount': 14,
             'encoding': 'utf-8',
             'formatter': 'structured',
+            'filters': ['request_context'],
+        },
+        'security_file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': str(LOG_DIR / 'security.log'),
+            'when': 'midnight',
+            'backupCount': 30,
+            'encoding': 'utf-8',
+            'formatter': 'structured',
+            'filters': ['request_context'],
+        },
+        'health_file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': str(LOG_DIR / 'health.log'),
+            'when': 'midnight',
+            'backupCount': 14,
+            'encoding': 'utf-8',
+            'formatter': 'structured',
+            'filters': ['request_context'],
         },
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
+            'filters': ['request_context'],
         },
     },
     'loggers': {
@@ -250,11 +289,38 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'security.auth': {
+            'handlers': ['security_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'security.rate_limit': {
+            'handlers': ['security_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'saleslist.health': {
+            'handlers': ['health_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
 # Session storage (データベース使用)
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+X_FRAME_OPTIONS = 'DENY'
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:3000,http://localhost:3002',
+    cast=Csv(),
+)
 
 # Redis Configuration (Phase 2: 運用改善時)
 # CACHES = {
