@@ -97,6 +97,7 @@ WSGI_APPLICATION = 'saleslist_backend.wsgi.application'
 
 import os
 from decouple import Csv, config
+from celery.schedules import crontab
 
 DATABASES = {
     'default': {
@@ -105,7 +106,7 @@ DATABASES = {
         'USER': config('DB_USER', default='saleslist_user'),
         'PASSWORD': config('DB_PASSWORD', default='saleslist_password'),
         'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5433'),
+        'PORT': config('DB_PORT', default='5442'),
     }
 }
 
@@ -198,6 +199,26 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
+# Celery settings
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/1')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=CELERY_BROKER_URL)
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = 'Asia/Tokyo'
+CELERY_TASK_TIME_LIMIT = config('CELERY_TASK_TIME_LIMIT', default=1800, cast=int)
+CELERY_TASK_DEFAULT_QUEUE = config('CELERY_TASK_DEFAULT_QUEUE', default='default')
+CELERY_BEAT_SCHEDULE = {
+    'sync-facebook-activity': {
+        'task': 'companies.tasks.dispatch_facebook_sync',
+        'schedule': crontab(hour=2, minute=0, timezone='Asia/Tokyo'),
+    },
+}
+
+# Facebook API settings
+FACEBOOK_GRAPH_API_VERSION = config('FACEBOOK_GRAPH_API_VERSION', default='v19.0')
+FACEBOOK_ACCESS_TOKEN = config('FACEBOOK_ACCESS_TOKEN', default='')
+FACEBOOK_GRAPH_API_TIMEOUT = config('FACEBOOK_GRAPH_API_TIMEOUT', default=10, cast=int)
+FACEBOOK_SYNC_CHUNK_SIZE = config('FACEBOOK_SYNC_CHUNK_SIZE', default=500, cast=int)
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -259,6 +280,15 @@ LOGGING = {
             'formatter': 'structured',
             'filters': ['request_context'],
         },
+        'companies_import_file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': str(LOG_DIR / 'companies_import.log'),
+            'when': 'midnight',
+            'backupCount': 14,
+            'encoding': 'utf-8',
+            'formatter': 'structured',
+            'filters': ['request_context'],
+        },
         'security_file': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': str(LOG_DIR / 'security.log'),
@@ -277,6 +307,15 @@ LOGGING = {
             'formatter': 'structured',
             'filters': ['request_context'],
         },
+        'error_file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': str(LOG_DIR / 'error.log'),
+            'when': 'midnight',
+            'backupCount': 30,
+            'encoding': 'utf-8',
+            'formatter': 'structured',
+            'filters': ['request_context'],
+        },
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
@@ -286,6 +325,11 @@ LOGGING = {
     'loggers': {
         'projects.activities': {
             'handlers': ['projects_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'companies.import': {
+            'handlers': ['companies_import_file', 'console'],
             'level': 'INFO',
             'propagate': False,
         },
@@ -302,6 +346,16 @@ LOGGING = {
         'saleslist.health': {
             'handlers': ['health_file', 'console'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['error_file', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['error_file', 'console'],
+            'level': 'ERROR',
             'propagate': False,
         },
     },

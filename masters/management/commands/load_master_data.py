@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from masters.models import (
-    ProjectProgressStatus, ServiceType, MediaType,
+    Industry, ProjectProgressStatus, ServiceType, MediaType,
     RegularMeetingStatus, ListAvailability, ListImportSource
 )
 
@@ -10,7 +10,28 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write('🗄️ マスターデータ投入開始...')
-        
+        # Industry
+        if not Industry.objects.exists():
+            industries = [
+                ('IT・ソフトウェア', 1),
+                ('マーケティング・広告', 2),
+                ('製造業', 3),
+                ('人材・派遣', 4),
+                ('金融・保険', 5),
+                ('不動産', 6),
+                ('小売・EC', 7),
+                ('飲食・宿泊', 8),
+                ('医療・介護', 9),
+                ('教育・学習支援', 10),
+                ('その他', 99),
+            ]
+            for name, order in industries:
+                Industry.objects.get_or_create(
+                    name=name,
+                    defaults={'display_order': order}
+                )
+            self.stdout.write(f'✅ Industry: {len(industries)}件作成')
+
         # ProjectProgressStatus
         if not ProjectProgressStatus.objects.exists():
             statuses = [

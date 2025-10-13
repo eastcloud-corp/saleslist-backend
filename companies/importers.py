@@ -1,10 +1,14 @@
 import csv
 import io
+import logging
 import re
 from collections import defaultdict
 from typing import IO, Any, Dict, Tuple, Optional
 
 from .models import Company, Executive
+
+
+logger = logging.getLogger('companies.import')
 
 
 def import_companies_csv(file_obj: IO[bytes]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
@@ -17,6 +21,13 @@ def import_companies_csv(file_obj: IO[bytes]) -> Tuple[Optional[Dict[str, Any]],
             csv_text = raw_data.decode('utf-8')
         else:
             csv_text = raw_data
+        logger.info(
+            'companies_csv_import_started',
+            extra={
+                'event': 'companies_csv_import_started',
+                'file_size_bytes': len(raw_data) if raw_data else 0,
+            },
+        )
     finally:
         try:
             file_obj.seek(0)
@@ -155,6 +166,10 @@ def import_companies_csv(file_obj: IO[bytes]) -> Tuple[Optional[Dict[str, Any]],
     header_map = {header: normalize_header(header) for header in csv_reader.fieldnames}
 
     if 'name' not in header_map.values():
+        logger.warning(
+            'companies_csv_import_missing_name_header',
+            extra={'event': 'companies_csv_import_missing_name_header'},
+        )
         return None, {
             'error': '企業名に対応するヘッダーが見つかりません。"name" または "会社名" 列を追加してください。'
         }
@@ -250,6 +265,13 @@ def import_companies_csv(file_obj: IO[bytes]) -> Tuple[Optional[Dict[str, Any]],
         })
 
     if errors:
+        logger.warning(
+            'companies_csv_import_validation_failed',
+            extra={
+                'event': 'companies_csv_import_validation_failed',
+                'error_count': len(errors),
+            },
+        )
         return None, {
             'error': 'CSV内容にエラーが見つかりました。該当行を修正してください。',
             'errors': errors,
@@ -380,5 +402,19 @@ def import_companies_csv(file_obj: IO[bytes]) -> Tuple[Optional[Dict[str, Any]],
         'executive_created_count': executive_created_count,
         'executive_updated_count': executive_updated_count,
     }
+
+    logger.info(
+        'companies_csv_import_completed',
+        extra={
+            'event': 'companies_csv_import_completed',
+            'imported_count': imported_count,
+            'updated_count': company_updated_count,
+            'total_rows': len(rows_to_import),
+            'duplicate_count': len(duplicate_entries),
+            'missing_corporate_number_count': missing_corporate_number_count,
+            'executive_created_count': executive_created_count,
+            'executive_updated_count': executive_updated_count,
+        },
+    )
 
     return result_payload, None

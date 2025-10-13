@@ -22,11 +22,13 @@ class CompanyListSerializer(serializers.ModelSerializer):
         model = Company
         fields = [
             'id', 'name', 'corporate_number', 'industry',
-            'contact_person_name', 'contact_person_position', 'facebook_url',
+            'contact_person_name', 'contact_person_position', 'facebook_url', 'facebook_page_id',
             'tob_toc_type', 'business_description',
             'prefecture', 'city', 'employee_count', 'revenue', 'capital',
             'established_year', 'website_url', 'contact_email', 'phone',
-            'is_global_ng', 'created_at', 'updated_at', 'ng_status'
+            'is_global_ng', 'facebook_friend_count', 'facebook_latest_post_at',
+            'facebook_data_synced_at', 'latest_activity_at',
+            'created_at', 'updated_at', 'ng_status'
         ]
     
     def get_ng_status(self, obj):
@@ -57,14 +59,19 @@ class CompanyDetailSerializer(serializers.ModelSerializer):
         model = Company
         fields = [
             'id', 'name', 'corporate_number', 'industry',
-            'contact_person_name', 'contact_person_position', 'facebook_url',
+            'contact_person_name', 'contact_person_position', 'facebook_url', 'facebook_page_id',
             'tob_toc_type', 'business_description',
             'prefecture', 'city', 'employee_count', 'revenue', 'capital',
             'established_year', 'website_url', 'contact_email', 'phone', 
-            'notes', 'is_global_ng',
+            'notes', 'is_global_ng', 'facebook_friend_count', 'facebook_latest_post_at',
+            'facebook_data_synced_at', 'latest_activity_at',
             'created_at', 'updated_at', 'executives', 'ng_status'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'facebook_friend_count', 'facebook_latest_post_at',
+            'facebook_data_synced_at', 'latest_activity_at',
+            'created_at', 'updated_at'
+        ]
     
     def get_ng_status(self, obj):
         """NG状態情報を取得（OpenAPI仕様準拠）"""
@@ -92,7 +99,7 @@ class CompanyCreateSerializer(serializers.ModelSerializer):
         model = Company
         fields = [
             'id', 'name', 'corporate_number', 'industry',
-            'contact_person_name', 'contact_person_position', 'facebook_url',
+            'contact_person_name', 'contact_person_position', 'facebook_url', 'facebook_page_id',
             'tob_toc_type', 'business_description',
             'prefecture', 'city', 'employee_count', 'revenue', 'capital',
             'established_year', 'website_url', 'contact_email', 'phone', 'notes'

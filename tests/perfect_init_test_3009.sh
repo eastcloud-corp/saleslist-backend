@@ -7,7 +7,7 @@ set -e  # エラー時に即座停止
 
 # === 設定 ===
 BACKEND_URL="http://localhost:8006"
-FRONTEND_URL="http://localhost:3009"
+FRONTEND_URL="http://localhost:3010"
 API_BASE="$BACKEND_URL/api/v1"
 TEST_RESULTS_FILE="/tmp/perfect_init_test_results.json"
 TEST_START_TIME=$(date +%s)

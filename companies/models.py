@@ -12,6 +12,7 @@ class Company(models.Model):
     contact_person_name = models.CharField(max_length=100, blank=True, verbose_name="担当者名")
     contact_person_position = models.CharField(max_length=100, blank=True, verbose_name="担当者役職")
     facebook_url = models.URLField(max_length=500, blank=True, verbose_name="Facebookリンク")
+    facebook_page_id = models.CharField(max_length=128, blank=True, verbose_name="FacebookページID")
     
     # 事業情報
     tob_toc_type = models.CharField(
@@ -40,6 +41,10 @@ class Company(models.Model):
     # システム管理
     notes = models.TextField(blank=True, verbose_name="備考")
     is_global_ng = models.BooleanField(default=False, verbose_name="グローバルNG設定")
+    facebook_friend_count = models.IntegerField(null=True, blank=True, verbose_name="Facebook友だち数")
+    facebook_latest_post_at = models.DateTimeField(null=True, blank=True, verbose_name="Facebook最新投稿日時")
+    facebook_data_synced_at = models.DateTimeField(null=True, blank=True, verbose_name="Facebook同期日時")
+    latest_activity_at = models.DateTimeField(null=True, blank=True, verbose_name="最新アクティビティ時刻")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")
 
@@ -55,10 +60,40 @@ class Company(models.Model):
             models.Index(fields=['employee_count']),
             models.Index(fields=['is_global_ng']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['latest_activity_at']),
         ]
 
     def __str__(self):
         return self.name
+
+
+class CompanyFacebookSnapshot(models.Model):
+    """Facebookメトリクスの取得履歴"""
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='facebook_snapshots',
+        verbose_name="企業"
+    )
+    friend_count = models.IntegerField(null=True, blank=True, verbose_name="友だち数")
+    friend_count_fetched_at = models.DateTimeField(null=True, blank=True, verbose_name="友だち数取得時刻")
+    latest_posted_at = models.DateTimeField(null=True, blank=True, verbose_name="最新投稿時刻")
+    latest_post_fetched_at = models.DateTimeField(null=True, blank=True, verbose_name="最新投稿取得時刻")
+    source = models.CharField(max_length=50, default="celery", verbose_name="取得元")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")
+
+    class Meta:
+        db_table = 'company_facebook_snapshots'
+        verbose_name = "Facebookスナップショット"
+        verbose_name_plural = "Facebookスナップショット"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.company.name} snapshot @ {self.created_at:%Y-%m-%d %H:%M}"
 
 
 class Executive(models.Model):
