@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
 from django.db import transaction
+from django.db.models import Q
 from rest_framework.exceptions import APIException
 from .models import Company, Executive
 from .importers import import_companies_csv
@@ -20,6 +21,48 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
+ROLE_CATEGORY_DEFINITIONS = {
+    'leadership': {
+        'label': '代表・CEO',
+        'keywords': [
+            '代表取締役', '代表取締役社長', '代表', '代表者', 'CEO', 'ＣＥＯ', '社長', '会長', 'President',
+            'プレジデント', 'オーナー', 'Founder', '創業者'
+        ],
+    },
+    'board': {
+        'label': '取締役・ボード',
+        'keywords': [
+            '取締役', '取締役会', '常務取締役', '専務取締役', '副社長', '社外取締役', '監査役',
+            '非常勤取締役', '取締役会長', '取締役副社長', 'Director'
+        ],
+    },
+    'executive': {
+        'label': '執行役員・本部長',
+        'keywords': [
+            '執行役員', '上席執行役員', '本部長', '事業部長', '支店長', 'ゼネラルマネージャー',
+            'General Manager', 'ジェネラルマネージャー'
+        ],
+    },
+    'c_suite': {
+        'label': 'CxO・経営陣',
+        'keywords': [
+            'COO', 'ＣＯＯ', 'CFO', 'ＣＦＯ', 'CTO', 'ＣＴＯ', 'CIO', 'ＣＩＯ', 'CSO', 'ＣＳＯ',
+            'CMO', 'ＣＭＯ', 'CHRO', 'ＣＨＲＯ', 'CPO', 'ＣＰＯ', 'CXO', 'ＣＸＯ'
+        ],
+    },
+    'advisor': {
+        'label': '顧問・アドバイザー',
+        'keywords': [
+            '顧問', 'アドバイザー', '相談役', '顧問弁護士', '顧問税理士', 'Advisor'
+        ],
+    },
+    'other': {
+        'label': 'その他',
+        'keywords': [],
+    },
+}
+
+
 class CompanyFilter(filters.FilterSet):
     """企業フィルター"""
     industry = filters.CharFilter(method='filter_industry')
@@ -31,10 +74,14 @@ class CompanyFilter(filters.FilterSet):
     established_year_max = filters.NumberFilter(field_name='established_year', lookup_expr='lte')
     has_facebook = filters.BooleanFilter(method='filter_has_facebook')
     exclude_ng = filters.BooleanFilter(method='filter_exclude_ng')
+    role_category = filters.MultipleChoiceFilter(
+        method='filter_role_category',
+        choices=[(key, value['label']) for key, value in ROLE_CATEGORY_DEFINITIONS.items()],
+    )
     
     class Meta:
         model = Company
-        fields = ['industry', 'prefecture', 'is_global_ng']
+        fields = ['industry', 'prefecture', 'is_global_ng', 'role_category']
 
     def _get_query_values(self, name, fallback_value=None):
         request = getattr(self, 'request', None)
@@ -60,6 +107,48 @@ class CompanyFilter(filters.FilterSet):
         if value:
             return queryset.filter(is_global_ng=False)
         return queryset
+
+    def filter_role_category(self, queryset, name, value):
+        values = [item.lower() for item in self._get_query_values(name)]
+        if not values:
+            return queryset
+
+        combined_query = Q()
+        known_keywords = [
+            keyword
+            for key, definition in ROLE_CATEGORY_DEFINITIONS.items()
+            if key != 'other'
+            for keyword in definition.get('keywords', [])
+        ]
+
+        for category in values:
+            definition = ROLE_CATEGORY_DEFINITIONS.get(category)
+            if not definition:
+                continue
+
+            keywords = definition.get('keywords', [])
+
+            category_query = Q()
+            for keyword in keywords:
+                category_query |= Q(executives__position__icontains=keyword)
+                category_query |= Q(contact_person_position__icontains=keyword)
+
+            combined_query |= category_query
+
+        if 'other' in values:
+            other_query = (
+                (Q(executives__position__isnull=False) & ~Q(executives__position__exact="")) |
+                (Q(contact_person_position__isnull=False) & ~Q(contact_person_position__exact=""))
+            )
+            for keyword in known_keywords:
+                other_query &= ~Q(executives__position__icontains=keyword)
+                other_query &= ~Q(contact_person_position__icontains=keyword)
+            combined_query |= other_query
+
+        if not combined_query:
+            return queryset
+
+        return queryset.filter(combined_query).distinct()
 
 
 class ConflictError(APIException):

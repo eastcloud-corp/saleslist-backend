@@ -209,7 +209,7 @@ CELERY_TASK_DEFAULT_QUEUE = config('CELERY_TASK_DEFAULT_QUEUE', default='default
 CELERY_BEAT_SCHEDULE = {
     'sync-facebook-activity': {
         'task': 'companies.tasks.dispatch_facebook_sync',
-        'schedule': crontab(hour=2, minute=0, timezone='Asia/Tokyo'),
+        'schedule': crontab(hour=2, minute=0),
     },
 }
 
