@@ -177,3 +177,14 @@ class CompanyViewSetBusinessTests(APITestCase):
         self.assertEqual(company.contact_person_name, "山田 太郎")
         self.assertEqual(company.contact_person_position, "代表取締役")
         self.assertEqual(company.facebook_url, "https://facebook.com/example")
+
+    def test_industry_filter_supports_partial_match(self):
+        Company.objects.create(name="複合業界社", industry="マーケティング・IT、不動産")
+        Company.objects.create(name="製造業社", industry="製造業")
+
+        response = self.client.get(f"{self.list_url}?industry=不動産")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data.get("results", [])
+        self.assertTrue(any(company["name"] == "複合業界社" for company in results))
+        self.assertFalse(any(company["name"] == "製造業社" for company in results))

@@ -93,10 +93,19 @@ class CompanyFilter(filters.FilterSet):
         return values
 
     def filter_industry(self, queryset, name, value):
-        values = self._get_query_values(name, value)
-        if values:
-            return queryset.filter(industry__in=values)
-        return queryset
+        values = [
+            item.strip()
+            for item in self._get_query_values(name, value)
+            if isinstance(item, str) and item.strip()
+        ]
+        if not values:
+            return queryset
+
+        industry_query = Q()
+        for item in values:
+            industry_query |= Q(industry__icontains=item)
+
+        return queryset.filter(industry_query)
 
     def filter_has_facebook(self, queryset, name, value):
         if value:
