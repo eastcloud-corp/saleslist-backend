@@ -1,3 +1,6 @@
+import csv
+import io
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -6,6 +9,7 @@ from rest_framework.test import APIClient
 from accounts.models import User
 from clients.models import Client, ClientNGCompany
 from companies.models import Company
+from projects.models import Project, ProjectCompany
 
 
 class ClientNGImportTests(TestCase):
@@ -228,3 +232,40 @@ class ClientAvailableCompaniesTests(TestCase):
         self.assertFalse(normal_status['is_ng'])
         self.assertEqual(normal_status['types'], [])
         self.assertEqual(normal_status['reasons'], {})
+
+
+class ClientExportCompaniesTests(TestCase):
+    """クライアント企業CSVエクスポートのテスト"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='exporter@example.com',
+            password='password123',
+            username='exporter@example.com',
+            name='輸出ユーザー'
+        )
+        self.client_obj = Client.objects.create(name='CSVクライアント')
+        self.api_client = APIClient()
+        self.api_client.force_authenticate(self.user)
+
+        self.project = Project.objects.create(client=self.client_obj, name='案件A')
+        self.company_a = Company.objects.create(name='企業A', industry='IT')
+        self.company_b = Company.objects.create(name='企業B', industry='不動産')
+        ProjectCompany.objects.create(project=self.project, company=self.company_a, status='未接触')
+        ProjectCompany.objects.create(project=self.project, company=self.company_b, status='DM送信済み', is_active=False)
+
+    def test_export_companies_returns_csv_content(self):
+        url = reverse('client-export-companies', kwargs={'pk': self.client_obj.pk})
+        response = self.api_client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv; charset=utf-8')
+        self.assertIn(f'client_{self.client_obj.id}_companies.csv', response['Content-Disposition'])
+
+        rows = list(csv.reader(io.StringIO(response.content.decode('utf-8'))))
+        self.assertGreaterEqual(len(rows), 3)  # header + 2 data rows
+        header = rows[0]
+        self.assertIn('client_name', header)
+        data_names = {row[4] for row in rows[1:]}
+        self.assertIn('企業A', data_names)
+        self.assertIn('企業B', data_names)

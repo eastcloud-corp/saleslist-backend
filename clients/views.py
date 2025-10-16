@@ -1,7 +1,9 @@
+import csv
 from typing import Dict, Iterable, List
 
 from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
@@ -195,6 +197,60 @@ class ClientViewSet(viewsets.ModelViewSet):
             'count': len(companies),
             'results': data
         })
+
+    @action(detail=True, methods=['get'], url_path='export-companies')
+    def export_companies(self, request, pk=None):
+        """クライアント配下の案件企業をCSVエクスポート"""
+        client = self.get_object()
+
+        from projects.models import ProjectCompany
+
+        project_companies = (
+            ProjectCompany.objects.filter(project__client=client)
+            .select_related('project', 'company')
+            .order_by('project__id', 'company__name')
+        )
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename=\"client_{client.id}_companies.csv\"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'client_name',
+            'project_id',
+            'project_name',
+            'company_id',
+            'company_name',
+            'industry',
+            'status',
+            'contact_date',
+            'staff_name',
+            'is_active',
+            'notes',
+            'created_at',
+            'updated_at',
+        ])
+
+        for pc in project_companies:
+            company = pc.company
+            project = pc.project
+            writer.writerow([
+                client.name,
+                project.id,
+                project.name,
+                company.id,
+                company.name,
+                company.industry,
+                pc.status,
+                pc.contact_date.isoformat() if pc.contact_date else '',
+                pc.staff_name or '',
+                '1' if pc.is_active else '0',
+                pc.notes or '',
+                pc.created_at.isoformat() if pc.created_at else '',
+                pc.updated_at.isoformat() if pc.updated_at else '',
+            ])
+
+        return response
     
     @action(detail=True, methods=['post'], url_path='ng-companies/import')
     def import_ng_companies(self, request, pk=None):

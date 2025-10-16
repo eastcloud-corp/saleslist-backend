@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import date
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -301,6 +302,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         added_count = 0
         errors = []
+
+        existing_company_ids = set(
+            ProjectCompany.objects.filter(project=project).values_list('company_id', flat=True)
+        )
+
+        client_company_limit = getattr(settings, 'CLIENT_COMPANY_LIMIT', 7200)
+        current_client_company_count = ProjectCompany.objects.filter(
+            project__client=project.client
+        ).count()
+        remaining_slots = max(0, client_company_limit - current_client_company_count)
         
         for company_id in company_ids:
             try:
@@ -318,14 +329,24 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 if is_client_ng:
                     errors.append(f'{company.name}: クライアントNG企業のため追加できません')
                     continue
+
+                if company_id in existing_company_ids:
+                    errors.append(f'{company.name}: 既に案件に追加済みです')
+                    continue
+
+                if remaining_slots <= 0:
+                    errors.append(f'{company.name}: クライアントの登録上限({client_company_limit}件)を超えるため追加できません')
+                    continue
                 
-                _, created = ProjectCompany.objects.get_or_create(
+                project_company, created = ProjectCompany.objects.get_or_create(
                     project=project,
                     company=company,
                     defaults={'status': '未接触'}
                 )
                 if created:
                     added_count += 1
+                    remaining_slots -= 1
+                    existing_company_ids.add(company.id)
                     
             except Company.DoesNotExist:
                 errors.append(f'企業ID {company_id} が見つかりません')

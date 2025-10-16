@@ -4,7 +4,7 @@ import io
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
 from django.utils import timezone
@@ -393,6 +393,30 @@ class ProjectAddCompaniesTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn('企業IDが指定されていません', response.data['error'])
+
+    @override_settings(CLIENT_COMPANY_LIMIT=3)
+    def test_add_companies_respects_client_limit(self):
+        """クライアントの登録上限を超える場合はエラーメッセージを返す"""
+        existing_one = Company.objects.create(name='既存企業1', industry='IT')
+        existing_two = Company.objects.create(name='既存企業2', industry='IT')
+        ProjectCompany.objects.create(project=self.project, company=existing_one)
+        ProjectCompany.objects.create(project=self.project, company=existing_two)
+
+        url = reverse('project-add-companies', kwargs={'pk': self.project.id})
+        response = self.api_client.post(
+            url,
+            {'company_ids': [self.normal_company.id, self.other_company.id]},
+            format='json'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['added_count'], 1)
+        self.assertEqual(
+            ProjectCompany.objects.filter(project=self.project).count(),
+            3
+        )
+        error_text = ' '.join(response.data['errors'])
+        self.assertIn('クライアントの登録上限(3件)', error_text)
 
 
 class ProjectPageLockTests(TestCase):
