@@ -9,5 +9,5 @@ gunicorn==22.0.0
 redis==5.0.4
 django-redis==5.4.0
 whitenoise==6.6.0
-celery==5.4.0
+celery==5.5.3
 requests==2.32.3
