@@ -65,7 +65,7 @@ class DataCollectionTaskLoggingTests(TestCase):
         self.assertEqual(run.skipped_count, 6)
         self.assertEqual(run.status, DataCollectionRun.Status.SUCCESS)
 
-    @mock.patch('data_collection.tracker.compute_next_schedules', return_value={'clone.ai_stub': None, 'earliest': None})
+    @mock.patch('data_collection.tracker.compute_next_schedules', return_value={'ai.enrich': None, 'clone.ai_stub': None, 'earliest': None})
     def test_ai_stub_creates_run(self, mock_schedule):
         result = run_ai_ingestion_stub.run(payload={'foo': 'bar'})
         self.assertEqual(result, 'accepted')

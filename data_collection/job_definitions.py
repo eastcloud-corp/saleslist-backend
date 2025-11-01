@@ -35,6 +35,12 @@ DATA_COLLECTION_JOBS: Dict[str, JobDefinition] = {
         default_sources=["facebook"],
         beat_schedule_key="sync-facebook-activity",
     ),
+    "ai.enrich": JobDefinition(
+        name="ai.enrich",
+        task_path="ai_enrichment.tasks.run_ai_enrich",
+        default_sources=["powerplexy"],
+        beat_schedule_key="run-ai-enrich",
+    ),
     "clone.ai_stub": JobDefinition(
         name="clone.ai_stub",
         task_path="companies.tasks.run_ai_ingestion_stub",

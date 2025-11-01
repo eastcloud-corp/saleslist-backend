@@ -45,6 +45,7 @@ class DataCollectionRunAPITests(APITestCase):
             "clone.facebook_sync": now + datetime.timedelta(hours=5),
             "clone.corporate_number": None,
             "clone.opendata": None,
+            "ai.enrich": None,
             "clone.ai_stub": None,
             "earliest": now + datetime.timedelta(hours=5),
         }
@@ -70,6 +71,7 @@ class DataCollectionRunAPITests(APITestCase):
             "clone.facebook_sync": None,
             "clone.corporate_number": None,
             "clone.opendata": None,
+            "ai.enrich": None,
             "clone.ai_stub": None,
             "earliest": None,
         }
@@ -100,6 +102,7 @@ class DataCollectionRunAPITests(APITestCase):
             "clone.facebook_sync": None,
             "clone.corporate_number": None,
             "clone.opendata": None,
+            "ai.enrich": None,
             "clone.ai_stub": None,
             "earliest": None,
         }
