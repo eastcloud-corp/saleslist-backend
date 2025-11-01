@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from celery import shared_task
 from django.conf import settings
@@ -41,13 +41,15 @@ def _normalize_candidate_value(field: str, value: object) -> str:
     return str(value).strip()
 
 
-def _companies_requiring_update(limit: int) -> List[Company]:
+def _companies_requiring_update(limit: int, company_ids: Optional[Sequence[int]] = None) -> List[Company]:
     queryset = Company.objects.all()
+    if company_ids:
+        queryset = queryset.filter(id__in=company_ids)
     targets: List[Company] = []
     for company in queryset.iterator():
         if detect_missing_fields(company):
             targets.append(company)
-        if len(targets) >= limit:
+        if limit and len(targets) >= limit:
             break
     return targets
 
@@ -58,6 +60,20 @@ def run_ai_enrich(self, payload: Optional[dict] = None) -> dict:
     daily_limit = payload.get(
         "limit", getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", DEFAULT_DAILY_LIMIT)
     )
+
+    raw_company_ids = payload.get("company_ids")
+    company_ids: Optional[List[int]] = None
+    if raw_company_ids is not None:
+        if isinstance(raw_company_ids, (int, str)):
+            raw_company_ids = [raw_company_ids]
+        cleaned: List[int] = []
+        for value in raw_company_ids:
+            try:
+                cleaned.append(int(str(value).strip()))
+            except (TypeError, ValueError):
+                logger.warning("Invalid company_id provided to AI enrichment: %s", value)
+        if cleaned:
+            company_ids = cleaned
 
     tracker = UsageTracker()
     usage_snapshot = tracker.snapshot()
@@ -78,7 +94,7 @@ def run_ai_enrich(self, payload: Optional[dict] = None) -> dict:
         notify_error("PowerPlexyの設定が不完全なためAI補完をスキップ", extra={"error": str(exc)})
         return {"status": "skipped", "reason": "missing_api_key"}
 
-    companies = _companies_requiring_update(daily_limit)
+    companies = _companies_requiring_update(daily_limit, company_ids)
     if not companies:
         logger.info("No companies require AI enrichment")
         return {"status": "ok", "processed": 0, "created_candidates": 0}

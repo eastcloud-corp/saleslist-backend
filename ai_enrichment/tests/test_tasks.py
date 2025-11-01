@@ -44,6 +44,39 @@ class RunAIEnrichTaskTests(TestCase):
         company = Company.objects.get(id=self.company.id)
         self.assertIsNotNone(company.ai_last_enriched_at)
 
+    @mock.patch('ai_enrichment.tasks.PowerplexyClient')
+    @mock.patch('ai_enrichment.tasks.UsageTracker')
+    def test_task_filters_by_company_ids(self, mock_tracker, mock_client_cls):
+        tracker_instance = mock_tracker.return_value
+        tracker_instance.snapshot.side_effect = [UsageSnapshot(calls=0, cost=0.0), UsageSnapshot(calls=1, cost=0.004)]
+        tracker_instance.can_execute.return_value = True
+
+        client_instance = mock_client_cls.return_value
+        client_instance.extract_json.return_value = {
+            '担当者名': '田中 太郎',
+        }
+
+        other = Company.objects.create(
+            name="別会社",
+            website_url="https://other.example.com",
+        )
+
+        run_ai_enrich({"company_ids": [self.company.id]})
+
+        self.assertTrue(
+            CompanyUpdateCandidate.objects.filter(
+                company=self.company,
+                source_type=CompanyUpdateCandidate.SOURCE_AI,
+            ).exists()
+        )
+        self.assertFalse(
+            CompanyUpdateCandidate.objects.filter(
+                company=other,
+                source_type=CompanyUpdateCandidate.SOURCE_AI,
+            ).exists()
+        )
+        client_instance.extract_json.assert_called_once()
+
     @mock.patch('ai_enrichment.tasks.UsageTracker')
     def test_task_skips_when_limit_reached(self, mock_tracker):
         tracker_instance = mock_tracker.return_value

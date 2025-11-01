@@ -40,6 +40,7 @@ DATA_COLLECTION_JOBS: Dict[str, JobDefinition] = {
         task_path="ai_enrichment.tasks.run_ai_enrich",
         default_sources=["powerplexy"],
         beat_schedule_key="run-ai-enrich",
+        supports_company_options=True,
     ),
     "clone.ai_stub": JobDefinition(
         name="clone.ai_stub",
