@@ -1,8 +1,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
+from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import mixins, status, viewsets
@@ -14,6 +15,31 @@ from .job_definitions import get_job_definition, list_job_names
 from .models import DataCollectionRun
 from .serializers import DataCollectionRunSerializer
 from .services import compute_next_schedules, enqueue_job, has_active_run
+from ai_enrichment.redis_usage import UsageTracker
+
+
+def _build_ai_usage() -> Optional[Dict[str, Any]]:
+    try:
+        tracker = UsageTracker()
+    except Exception:  # pragma: no cover - 予期せぬ初期化失敗時は非表示
+        return None
+
+    try:
+        usage = tracker.snapshot()
+        remaining = tracker.remaining()
+    except Exception:  # pragma: no cover
+        return None
+
+    return {
+        "calls_this_month": usage.calls,
+        "cost_this_month": usage.cost,
+        "remaining_calls": remaining.calls,
+        "remaining_cost": remaining.cost,
+        "call_limit": tracker.call_limit,
+        "cost_limit": tracker.cost_limit,
+        "cost_per_request": tracker.cost_per_call,
+        "daily_record_limit": tracker.daily_limit,
+    }
 
 
 def _to_iso(value):
@@ -65,6 +91,7 @@ class DataCollectionRunViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
             "next": response.data["next"],
             "previous": response.data["previous"],
             "results": response.data["results"],
+            "ai_usage": _build_ai_usage(),
         }
         return response
 
@@ -102,6 +129,7 @@ class DataCollectionTriggerView(APIView):
                 "next_scheduled_for": _to_iso(earliest_dt),
                 "run": serializer.data,
                 "schedules": schedule_response,
+                "ai_usage": _build_ai_usage(),
             },
             status=status.HTTP_202_ACCEPTED,
         )

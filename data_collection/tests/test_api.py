@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
+from ai_enrichment.redis_usage import UsageSnapshot
 from data_collection.models import DataCollectionRun
 
 
@@ -24,8 +25,16 @@ class DataCollectionRunAPITests(APITestCase):
         )
         self.client.force_authenticate(self.admin)
 
+    @mock.patch('data_collection.views.UsageTracker')
     @mock.patch('data_collection.views.compute_next_schedules')
-    def test_list_runs_returns_expected_payload(self, mock_compute):
+    def test_list_runs_returns_expected_payload(self, mock_compute, mock_usage):
+        tracker = mock_usage.return_value
+        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.04)
+        tracker.remaining.return_value = UsageSnapshot(calls=4990, cost=19.96)
+        tracker.call_limit = 5000
+        tracker.cost_limit = 20.0
+        tracker.cost_per_call = 0.004
+        tracker.daily_limit = 500
         now = timezone.now()
         run1 = DataCollectionRun.objects.create(
             job_name="clone.corporate_number",
@@ -60,11 +69,22 @@ class DataCollectionRunAPITests(APITestCase):
         expected_iso = (now + datetime.timedelta(hours=5)).astimezone(timezone.get_current_timezone()).isoformat()
         self.assertEqual(body['next_scheduled_for'], expected_iso)
         self.assertIn('clone.facebook_sync', body['schedules'])
+        self.assertIn('ai_usage', body)
+        self.assertEqual(body['ai_usage']['calls_this_month'], 10)
+        self.assertEqual(body['ai_usage']['call_limit'], 5000)
 
     @mock.patch('data_collection.views.enqueue_job')
     @mock.patch('data_collection.views.has_active_run')
     @mock.patch('data_collection.views.compute_next_schedules')
-    def test_trigger_enqueues_job(self, mock_compute, mock_active, mock_enqueue):
+    @mock.patch('data_collection.views.UsageTracker')
+    def test_trigger_enqueues_job(self, mock_usage, mock_compute, mock_active, mock_enqueue):
+        tracker = mock_usage.return_value
+        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.04)
+        tracker.remaining.return_value = UsageSnapshot(calls=4990, cost=19.96)
+        tracker.call_limit = 5000
+        tracker.cost_limit = 20.0
+        tracker.cost_per_call = 0.004
+        tracker.daily_limit = 500
         mock_active.return_value = False
         now = timezone.now()
         mock_compute.return_value = {
@@ -92,11 +112,21 @@ class DataCollectionRunAPITests(APITestCase):
         body = response.json()
         self.assertEqual(body['execution_uuid'], str(run.execution_uuid))
         self.assertEqual(body['task_id'], "task-123")
+        self.assertIn('ai_usage', body)
+        self.assertEqual(body['ai_usage']['calls_this_month'], 10)
 
     @mock.patch('data_collection.views.enqueue_job')
     @mock.patch('data_collection.views.has_active_run')
     @mock.patch('data_collection.views.compute_next_schedules')
-    def test_trigger_opendata_accepts_company_ids(self, mock_compute, mock_active, mock_enqueue):
+    @mock.patch('data_collection.views.UsageTracker')
+    def test_trigger_opendata_accepts_company_ids(self, mock_usage, mock_compute, mock_active, mock_enqueue):
+        tracker = mock_usage.return_value
+        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.04)
+        tracker.remaining.return_value = UsageSnapshot(calls=4990, cost=19.96)
+        tracker.call_limit = 5000
+        tracker.cost_limit = 20.0
+        tracker.cost_per_call = 0.004
+        tracker.daily_limit = 500
         mock_active.return_value = False
         mock_compute.return_value = {
             "clone.facebook_sync": None,
@@ -120,6 +150,9 @@ class DataCollectionRunAPITests(APITestCase):
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, 202)
         mock_enqueue.assert_called_once_with(job_name="clone.opendata", options={"company_ids": [42]})
+        body = response.json()
+        self.assertIn('ai_usage', body)
+        self.assertEqual(body['execution_uuid'], str(run.execution_uuid))
 
     @mock.patch('data_collection.views.has_active_run')
     def test_trigger_rejects_active_job(self, mock_active):

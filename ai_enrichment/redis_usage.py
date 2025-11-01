@@ -64,6 +64,7 @@ class UsageTracker:
         self.cost_limit = cost_limit if cost_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_COST_LIMIT", DEFAULT_COST_LIMIT)
         self.call_limit = call_limit if call_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_CALL_LIMIT", DEFAULT_CALL_LIMIT)
         self.cost_per_call = cost_per_call if cost_per_call is not None else getattr(settings, "POWERPLEXY_COST_PER_REQUEST", DEFAULT_COST_PER_REQUEST)
+        self.daily_limit = getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", DEFAULT_DAILY_LIMIT)
 
     @property
     def client(self):
