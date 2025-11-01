@@ -1,5 +1,6 @@
 import logging
 from urllib.parse import urlparse
+from typing import Iterable
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -13,7 +14,7 @@ from django.utils import timezone
 from django.conf import settings
 from .serializers import LoginSerializer, UserProfileSerializer
 from .models import User
-from typing import Iterable
+from . import mfa
 
 
 def _get_client_ip(request):
@@ -81,29 +82,28 @@ def login_view(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
 
-        # JWTトークンを生成
-        refresh = RefreshToken.for_user(user)
-        access_token = refresh.access_token
+        try:
+            pending_auth_id, _ = mfa.create_pending_auth(user)
+        except mfa.MFAEmailError:
+            logger.error('login.mfa_send_failed', extra={
+                'client_ip': client_ip,
+                'user_id': user.id,
+                'user_email': user.email,
+            })
+            return Response({'error': '確認コードの送信に失敗しました'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # 最終ログイン時刻を更新
-        user.last_login_at = timezone.now()
-        user.save(update_fields=['last_login_at'])
-
-        logger.info('login.success', extra={
+        logger.info('login.mfa_pending', extra={
             'client_ip': client_ip,
             'user_id': user.id,
             'user_email': user.email,
         })
 
         return Response({
-            'access_token': str(access_token),
-            'refresh_token': str(refresh),
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'name': user.name,
-                'role': user.role,
-            }
+            'mfa_required': True,
+            'pending_auth_id': pending_auth_id,
+            'email': user.email,
+            'expires_in': settings.MFA_TOKEN_TTL_SECONDS,
+            'resend_interval': settings.MFA_RESEND_INTERVAL_SECONDS,
         }, status=status.HTTP_200_OK)
 
     logger.warning('login.failure', extra={
@@ -113,6 +113,114 @@ def login_view(request):
         'origins': origin_candidates,
     })
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([ScopedRateThrottle])
+def mfa_resend_view(request):
+    """MFA確認コードの再送API"""
+    pending_auth_id = request.data.get('pending_auth_id')
+    client_ip = _get_client_ip(request)
+
+    if not pending_auth_id:
+        return Response({'error': 'pending_auth_id が必要です'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        mfa.resend_token(pending_auth_id)
+    except mfa.PendingAuthNotFound:
+        logger.warning('mfa.resend.not_found', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+        })
+        return Response({'error': '確認コードを再送できません。再度ログインしてください。'}, status=status.HTTP_410_GONE)
+    except mfa.PendingAuthExpired:
+        logger.warning('mfa.resend.expired', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+        })
+        return Response({'error': '確認コードの有効期限が切れています。ログインからやり直してください。'}, status=status.HTTP_410_GONE)
+    except mfa.ResendNotAllowed as exc:
+        reason = str(exc)
+        logger.warning('mfa.resend.rejected', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+            'reason': reason,
+        })
+        if reason == 'RESEND_TOO_SOON':
+            return Response({'error': '確認コードの再送はしばらくお待ちください'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        return Response({'error': '確認コードの再送制限に達しています'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    except mfa.MFAEmailError:
+        logger.error('mfa.resend.send_failed', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+        })
+        return Response({'error': '確認コードの送信に失敗しました'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    logger.info('mfa.resend.success', extra={
+        'client_ip': client_ip,
+        'pending_auth_id': pending_auth_id,
+    })
+    return Response({'message': '確認コードを再送しました'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([ScopedRateThrottle])
+def mfa_verify_view(request):
+    """MFA確認コードの検証API"""
+    pending_auth_id = request.data.get('pending_auth_id')
+    token = request.data.get('token')
+    client_ip = _get_client_ip(request)
+
+    if not pending_auth_id or not token:
+        return Response({'error': 'pending_auth_id と token は必須です'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        pending = mfa.verify_token(pending_auth_id, token)
+    except (mfa.PendingAuthNotFound, mfa.PendingAuthExpired):
+        logger.warning('mfa.verify.expired', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+        })
+        return Response({'error': '確認コードの有効期限が切れています。ログインからやり直してください。'}, status=status.HTTP_410_GONE)
+    except mfa.TokenMismatch:
+        logger.warning('mfa.verify.mismatch', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+        })
+        return Response({'error': '確認コードが一致しません'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.filter(id=pending.get('user_id')).first()
+    if not user or not user.is_active:
+        logger.warning('mfa.verify.user_missing', extra={
+            'client_ip': client_ip,
+            'pending_auth_id': pending_auth_id,
+        })
+        return Response({'error': 'ユーザーが見つかりません'}, status=status.HTTP_404_NOT_FOUND)
+
+    refresh = RefreshToken.for_user(user)
+    access_token = refresh.access_token
+
+    user.last_login_at = timezone.now()
+    user.save(update_fields=['last_login_at'])
+
+    logger.info('login.success', extra={
+        'client_ip': client_ip,
+        'user_id': user.id,
+        'user_email': user.email,
+    })
+
+    return Response({
+        'access_token': str(access_token),
+        'refresh_token': str(refresh),
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'name': user.name,
+            'role': user.role,
+        }
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -247,8 +355,14 @@ def update_user_view(request, user_id):
 
 
 login_view.throttle_scope = 'auth_login'
+mfa_resend_view.throttle_scope = 'auth_mfa_resend'
+mfa_verify_view.throttle_scope = 'auth_mfa_verify'
 refresh_view.throttle_scope = 'auth_refresh'
 if hasattr(login_view, 'cls'):
     login_view.cls.throttle_scope = 'auth_login'
+if hasattr(mfa_resend_view, 'cls'):
+    mfa_resend_view.cls.throttle_scope = 'auth_mfa_resend'
+if hasattr(mfa_verify_view, 'cls'):
+    mfa_verify_view.cls.throttle_scope = 'auth_mfa_verify'
 if hasattr(refresh_view, 'cls'):
     refresh_view.cls.throttle_scope = 'auth_refresh'

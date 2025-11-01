@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
+from django.core.cache import cache, caches
 from django.urls import reverse
 from django.utils import timezone
-from django.core.cache import caches
+from django.conf import settings
 from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -12,6 +15,7 @@ User = get_user_model()
 
 class AuthAPITests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.password = "Secret123!"
         self.user = User.objects.create_user(
             username="admin@example.com",
@@ -20,63 +24,119 @@ class AuthAPITests(APITestCase):
             role="admin",
             password=self.password,
         )
+        self.login_url = reverse("login")
+        self.verify_url = reverse("mfa_verify")
+        self.resend_url = reverse("mfa_resend")
+        self.refresh_url = reverse("token_refresh")
 
-    def test_login_success_updates_last_login_and_returns_tokens(self):
-        response = self.client.post(
-            reverse("login"),
-            {"email": self.user.email, "password": self.password},
+    def _perform_login(self, token="123456"):
+        with patch("accounts.mfa.generate_token", return_value=token):
+            response = self.client.post(
+                self.login_url,
+                {"email": self.user.email, "password": self.password},
+                format="json",
+            )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response
+
+    def _verify_token(self, pending_auth_id, token="123456"):
+        return self.client.post(
+            self.verify_url,
+            {"pending_auth_id": pending_auth_id, "token": token},
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access_token", response.data)
-        self.assertIn("refresh_token", response.data)
+    def test_login_success_returns_pending_auth_id(self):
+        response = self._perform_login()
+        self.assertTrue(response.data.get("mfa_required"))
+        self.assertIn("pending_auth_id", response.data)
+        self.assertEqual(response.data.get("email"), self.user.email)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.last_login_at)
+
+    def test_login_with_invalid_credentials_returns_400(self):
+        response = self.client.post(
+            self.login_url,
+            {"email": self.user.email, "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.data)
+
+    def test_mfa_verify_success_returns_tokens_and_updates_last_login(self):
+        login_response = self._perform_login()
+        pending_auth_id = login_response.data["pending_auth_id"]
+        verify_response = self._verify_token(pending_auth_id)
+        self.assertEqual(verify_response.status_code, status.HTTP_200_OK)
+        self.assertIn("access_token", verify_response.data)
+        self.assertIn("refresh_token", verify_response.data)
         self.user.refresh_from_db()
         self.assertIsNotNone(self.user.last_login_at)
         self.assertTrue(timezone.now() - self.user.last_login_at < timezone.timedelta(minutes=1))
 
-    def test_login_with_invalid_credentials_returns_400(self):
-        response = self.client.post(
-            reverse("login"),
-            {"email": self.user.email, "password": "wrong"},
-            format="json",
-        )
-
+    def test_mfa_verify_with_invalid_token_returns_400(self):
+        login_response = self._perform_login()
+        pending_auth_id = login_response.data["pending_auth_id"]
+        response = self._verify_token(pending_auth_id, token="000000")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("non_field_errors", response.data)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.last_login_at)
+
+    def test_mfa_verify_returns_410_when_session_missing(self):
+        login_response = self._perform_login()
+        pending_auth_id = login_response.data["pending_auth_id"]
+        cache.delete(f"pending_auth:{pending_auth_id}")
+        response = self._verify_token(pending_auth_id)
+        self.assertEqual(response.status_code, status.HTTP_410_GONE)
+
+    def test_mfa_resend_blocks_when_called_too_soon(self):
+        login_response = self._perform_login()
+        pending_auth_id = login_response.data["pending_auth_id"]
+        response = self.client.post(self.resend_url, {"pending_auth_id": pending_auth_id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_mfa_resend_succeeds_after_interval(self):
+        login_response = self._perform_login()
+        pending_auth_id = login_response.data["pending_auth_id"]
+        cache_key = f"pending_auth:{pending_auth_id}"
+        data = cache.get(cache_key)
+        self.assertIsNotNone(data)
+        data["last_sent_at"] = (
+            timezone.now() - timezone.timedelta(seconds=settings.MFA_RESEND_INTERVAL_SECONDS + 1)
+        ).isoformat()
+        cache.set(cache_key, data, timeout=settings.MFA_TOKEN_TTL_SECONDS)
+        response = self.client.post(self.resend_url, {"pending_auth_id": pending_auth_id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("message"), "確認コードを再送しました")
 
     def test_refresh_requires_token(self):
-        response = self.client.post(reverse("token_refresh"), {}, format="json")
+        response = self.client.post(self.refresh_url, {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data.get("error"), "refresh_token が必要です")
 
     def test_refresh_returns_new_tokens(self):
-        login_response = self.client.post(
-            reverse("login"),
-            {"email": self.user.email, "password": self.password},
-            format="json",
-        )
-        refresh_token = login_response.data["refresh_token"]
-
+        login_response = self._perform_login()
+        pending_auth_id = login_response.data["pending_auth_id"]
+        verify_response = self._verify_token(pending_auth_id)
+        refresh_token = verify_response.data["refresh_token"]
         response = self.client.post(
-            reverse("token_refresh"),
+            self.refresh_url,
             {"refresh_token": refresh_token},
             format="json",
         )
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", response.data)
 
-    @override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
     def test_login_rate_limit_blocks_after_threshold(self):
-        caches['default'].clear()
+        caches["default"].clear()
         payload = {"email": self.user.email, "password": "wrong"}
 
         for _ in range(10):
-            response = self.client.post(reverse("login"), payload, format="json")
+            response = self.client.post(self.login_url, payload, format="json")
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        response = self.client.post(reverse("login"), payload, format="json")
+        response = self.client.post(self.login_url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     def test_logout_succeeds_even_with_invalid_refresh_token(self):

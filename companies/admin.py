@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Company, Executive
+from .models import (
+    Company,
+    Executive,
+    CompanyUpdateCandidate,
+    CompanyReviewBatch,
+    CompanyReviewItem,
+    CompanyUpdateHistory,
+)
 
 
 class ExecutiveInline(admin.TabularInline):
@@ -66,3 +73,35 @@ class ExecutiveAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(CompanyUpdateCandidate)
+class CompanyUpdateCandidateAdmin(admin.ModelAdmin):
+    list_display = ('company', 'field', 'candidate_value', 'source_type', 'confidence', 'status', 'collected_at')
+    list_filter = ('status', 'source_type', 'confidence', 'collected_at')
+    search_fields = ('company__name', 'field', 'candidate_value')
+    ordering = ('-created_at',)
+
+
+@admin.register(CompanyReviewBatch)
+class CompanyReviewBatchAdmin(admin.ModelAdmin):
+    list_display = ('company', 'status', 'assigned_to', 'created_at', 'updated_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('company__name',)
+    ordering = ('-created_at',)
+
+
+@admin.register(CompanyReviewItem)
+class CompanyReviewItemAdmin(admin.ModelAdmin):
+    list_display = ('batch', 'field', 'decision', 'confidence', 'decided_by', 'decided_at')
+    list_filter = ('decision', 'confidence')
+    search_fields = ('batch__company__name', 'field', 'candidate_value')
+    ordering = ('-created_at',)
+
+
+@admin.register(CompanyUpdateHistory)
+class CompanyUpdateHistoryAdmin(admin.ModelAdmin):
+    list_display = ('company', 'field', 'source_type', 'approved_by', 'approved_at', 'created_at')
+    list_filter = ('field', 'source_type', 'approved_at')
+    search_fields = ('company__name', 'field', 'new_value')
+    ordering = ('-created_at',)

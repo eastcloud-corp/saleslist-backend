@@ -4,6 +4,10 @@ from . import views
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('login', views.login_view, name='login_no_slash'),
+    path('mfa/resend/', views.mfa_resend_view, name='mfa_resend'),
+    path('mfa/resend', views.mfa_resend_view, name='mfa_resend_no_slash'),
+    path('mfa/verify/', views.mfa_verify_view, name='mfa_verify'),
+    path('mfa/verify', views.mfa_verify_view, name='mfa_verify_no_slash'),
     path('logout/', views.logout_view, name='logout'),
     path('logout', views.logout_view, name='logout_no_slash'),
     path('me/', views.me_view, name='me'),

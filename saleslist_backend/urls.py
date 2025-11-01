@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/v1/saved_filters/', include('filters.urls')),
     path('api/v1/executives/', include('executives.urls')),
     path('api/v1/ng-companies/', include('ng_companies.urls')),
+    path('api/v1/data-collection/', include('data_collection.urls')),
     
     # Health check endpoints
     path('health', health_check, name='health_check'),

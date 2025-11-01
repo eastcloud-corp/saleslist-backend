@@ -19,7 +19,7 @@ saleslist-backend/
 ├── redis/                 # Redis Dockerコンテナ（将来使用）
 ├── docker/                # Docker Compose設定
 ├── tests/                 # APIテストスイート
-├── docs/                  # （一部レガシー）設計資料
+├── saleslist-docs/         # 設計資料・タスク管理 (旧 docs/)
 ├── manage.py              # Django管理コマンド
 ├── requirements.txt       # Python依存関係
 └── seed_data.py          # 初期データ投入スクリプト
@@ -144,6 +144,6 @@ http://localhost:8080/admin/
 
 ## 📞 サポート
 
-- **API仕様書**: `docs/screen_api_specification.md`
-- **DB設計書**: `docs/DB_design.md`
+- **API仕様書**: `saleslist-docs/design/screen_api_specification.md`
+- **DB設計書**: `saleslist-docs/design/DB_design.md`
 - **OpenAPI仕様**: `deployment/swagger/openapi.yaml`

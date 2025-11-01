@@ -1,6 +1,9 @@
 import logging
 
-from rest_framework import viewsets, status
+from celery.exceptions import CeleryError, TimeoutError
+from django.conf import settings
+from django.core.management.base import CommandError
+from rest_framework import viewsets, status, serializers as drf_serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -9,12 +12,35 @@ from django_filters import rest_framework as filters
 from django.db import transaction
 from django.db.models import Q
 from rest_framework.exceptions import APIException
-from .models import Company, Executive
+from django.utils import timezone
+from .models import (
+    Company,
+    Executive,
+    CompanyUpdateCandidate,
+    CompanyReviewBatch,
+    CompanyReviewItem,
+    CompanyUpdateHistory,
+)
 from .importers import import_companies_csv
 from projects.models import Project, ProjectCompany
+from .services.review_ingestion import generate_sample_candidates, ingest_corporate_number_candidates
+from .services.corporate_number_client import CorporateNumberAPIError
 from .serializers import (
     CompanyListSerializer, CompanyDetailSerializer, 
-    CompanyCreateSerializer, ExecutiveSerializer
+    CompanyCreateSerializer, ExecutiveSerializer,
+    CompanyReviewBatchListSerializer,
+    CompanyReviewBatchDetailSerializer,
+    CompanyReviewDecisionSerializer,
+    CompanyReviewItemSerializer,
+    CorporateNumberImportSerializer,
+    CorporateNumberImportTriggerSerializer,
+    OpenDataIngestionTriggerSerializer,
+    AIIngestionTriggerSerializer,
+)
+from companies.tasks import (
+    run_ai_ingestion_stub,
+    run_corporate_number_import_task,
+    run_opendata_ingestion_task,
 )
 
 
@@ -60,6 +86,30 @@ ROLE_CATEGORY_DEFINITIONS = {
         'label': 'その他',
         'keywords': [],
     },
+}
+
+# レビュー対象フィールドのマッピング
+COMPANY_FIELD_MAPPING = {
+    'name': 'name',
+    'industry': 'industry',
+    'business_description': 'business_description',
+    'prefecture': 'prefecture',
+    'city': 'city',
+    'employee_count': 'employee_count',
+    'revenue': 'revenue',
+    'capital': 'capital',
+    'established_year': 'established_year',
+    'website_url': 'website_url',
+    'contact_email': 'contact_email',
+    'phone': 'phone',
+    'notes': 'notes',
+    'corporate_number': 'corporate_number',
+    'tob_toc_type': 'tob_toc_type',
+}
+
+INT_FIELDS = {'employee_count', 'revenue', 'capital', 'established_year'}
+CHOICE_FIELDS = {
+    'tob_toc_type': {choice[0] for choice in Company._meta.get_field('tob_toc_type').choices},
 }
 
 
@@ -404,6 +454,428 @@ class CompanyViewSet(viewsets.ModelViewSet):
             'missing_project_ids': missing_project_ids,
             'projects': project_results,
         })
+
+
+class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
+    """企業補完候補レビュー用ViewSet"""
+
+    queryset = CompanyReviewBatch.objects.all()
+    serializer_class = CompanyReviewBatchListSerializer
+    email_field = drf_serializers.EmailField()
+    url_field = drf_serializers.URLField()
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return CompanyReviewBatchDetailSerializer
+        if self.action == 'decide':
+            return CompanyReviewDecisionSerializer
+        return CompanyReviewBatchListSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('company', 'assigned_to').prefetch_related(
+            'items__candidate'
+        )
+        request = getattr(self, 'request', None)
+        if request is None:
+            return queryset
+
+        status_param = request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        else:
+            queryset = queryset.filter(
+                status__in=[
+                    CompanyReviewBatch.STATUS_PENDING,
+                    CompanyReviewBatch.STATUS_IN_REVIEW,
+                ]
+            )
+
+        company_name = request.query_params.get('company_name')
+        if company_name:
+            queryset = queryset.filter(company__name__icontains=company_name)
+
+        source_type = request.query_params.get('source_type')
+        if source_type:
+            queryset = queryset.filter(items__candidate__source_type=source_type).distinct()
+
+        target_field = request.query_params.get('field')
+        if target_field and target_field != 'all':
+            queryset = queryset.filter(items__field=target_field).distinct()
+
+        confidence_min = request.query_params.get('confidence_min')
+        if confidence_min:
+            try:
+                confidence_min = int(confidence_min)
+                queryset = queryset.filter(items__confidence__gte=confidence_min).distinct()
+            except ValueError:
+                pass
+
+        return queryset.order_by('-created_at')
+
+    def _normalize_corporate_number(self, value):
+        if value is None:
+            return ''
+        return ''.join(ch for ch in str(value).strip() if ch.isdigit())
+
+    def _clean_value(self, field, raw_value):
+        if raw_value is None:
+            return None, ''
+
+        if isinstance(raw_value, str):
+            value = raw_value.strip()
+        else:
+            value = raw_value
+
+        if field in INT_FIELDS:
+            if value == '':
+                return None, ''
+            try:
+                int_value = int(value)
+            except (TypeError, ValueError):
+                raise drf_serializers.ValidationError({field: f'{field} は数値で指定してください。'})
+            return int_value, str(int_value)
+
+        if field == 'contact_email':
+            if value == '':
+                return '', ''
+            email = self.email_field.to_internal_value(value)
+            return email, email
+
+        if field == 'website_url':
+            if value == '':
+                return '', ''
+            url = self.url_field.to_internal_value(value)
+            return url, url
+
+        if field == 'tob_toc_type':
+            if value and value not in CHOICE_FIELDS['tob_toc_type']:
+                raise drf_serializers.ValidationError({
+                    field: f'{field} は {", ".join(sorted(CHOICE_FIELDS["tob_toc_type"]))} のいずれかで指定してください。'
+                })
+            return value, value or ''
+
+        if field == 'corporate_number':
+            normalized = self._normalize_corporate_number(value)
+            return normalized, normalized
+
+        if isinstance(value, str):
+            return value, value
+        return value, str(value)
+
+    def _apply_batch_status(self, batch):
+        pending_exists = batch.items.filter(decision=CompanyReviewItem.DECISION_PENDING).exists()
+        approved_exists = batch.items.filter(
+            decision__in=[CompanyReviewItem.DECISION_APPROVED, CompanyReviewItem.DECISION_UPDATED]
+        ).exists()
+        rejected_exists = batch.items.filter(decision=CompanyReviewItem.DECISION_REJECTED).exists()
+
+        if pending_exists:
+            batch.status = CompanyReviewBatch.STATUS_IN_REVIEW
+        else:
+            if approved_exists and rejected_exists:
+                batch.status = CompanyReviewBatch.STATUS_PARTIAL
+            elif approved_exists:
+                batch.status = CompanyReviewBatch.STATUS_APPROVED
+            elif rejected_exists:
+                batch.status = CompanyReviewBatch.STATUS_REJECTED
+            else:
+                batch.status = CompanyReviewBatch.STATUS_IN_REVIEW
+
+    @action(detail=True, methods=['post'])
+    def decide(self, request, pk=None):
+        """レビュー項目の承認／否認を反映"""
+        batch = self.get_object()
+        serializer = CompanyReviewDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        items_payload = serializer.validated_data['items']
+
+        now = timezone.now()
+        auth_user = request.user if request.user and request.user.is_authenticated else None
+
+        with transaction.atomic():
+            batch = (
+                CompanyReviewBatch.objects.select_for_update()
+                .prefetch_related('items__candidate')
+                .get(pk=batch.pk)
+            )
+            company = Company.objects.select_for_update().get(pk=batch.company_id)
+            items_map = {item.id: item for item in batch.items.all()}
+            update_fields = set()
+            history_records = []
+            batch_modified = False
+
+            for payload in items_payload:
+                item_id = payload['id']
+                decision = payload['decision']
+                comment = payload.get('comment', '')
+                new_value_input = payload.get('new_value')
+
+                item = items_map.get(item_id)
+                if not item:
+                    raise drf_serializers.ValidationError({'id': f'id={item_id} のレビュー項目が見つかりません。'})
+
+                candidate = item.candidate
+                field = item.field
+
+                if field not in COMPANY_FIELD_MAPPING:
+                    raise drf_serializers.ValidationError({'field': f'{field} は現在更新対象外です。'})
+
+                model_field = COMPANY_FIELD_MAPPING[field]
+
+                # Determine new value based on decision
+                item_update_fields = ['decision', 'comment', 'decided_by', 'decided_at', 'updated_at']
+
+                if decision in ('approve', 'update'):
+                    raw_value = candidate.candidate_value if decision == 'approve' else new_value_input
+                    converted_value, display_value = self._clean_value(field, raw_value)
+                    old_value = getattr(company, model_field, None)
+
+                    setattr(company, model_field, converted_value)
+                    update_fields.add(model_field)
+
+                    history_records.append({
+                        'field': field,
+                        'old_value': '' if old_value is None else str(old_value),
+                        'new_value': display_value,
+                        'source_type': candidate.source_type,
+                        'comment': comment or '',
+                    })
+
+                    # Update candidate and item values
+                    candidate.candidate_value = display_value
+                    candidate.value_hash = CompanyUpdateCandidate.make_value_hash(field, display_value)
+                    candidate.status = CompanyUpdateCandidate.STATUS_MERGED
+                    candidate.merged_at = now
+                    candidate.block_reproposal = False
+                    candidate.rejection_reason_code = CompanyUpdateCandidate.REJECTION_REASON_NONE
+                    candidate.rejection_reason_detail = ''
+                    candidate.save(update_fields=[
+                        'candidate_value',
+                        'value_hash',
+                        'status',
+                        'merged_at',
+                        'block_reproposal',
+                        'rejection_reason_code',
+                        'rejection_reason_detail',
+                        'updated_at',
+                    ])
+
+                    item.candidate_value = display_value
+                    item_update_fields.append('candidate_value')
+                    item.decision = (
+                        CompanyReviewItem.DECISION_APPROVED
+                        if decision == 'approve'
+                        else CompanyReviewItem.DECISION_UPDATED
+                    )
+                elif decision == 'reject':
+                    block_reproposal = bool(payload.get('block_reproposal'))
+                    reason_code = payload.get('rejection_reason_code') or CompanyUpdateCandidate.REJECTION_REASON_NONE
+                    if reason_code not in dict(CompanyUpdateCandidate.REJECTION_REASON_CHOICES):
+                        raise drf_serializers.ValidationError({
+                            'rejection_reason_code': f'指定された否認理由コード({reason_code})は利用できません。'
+                        })
+
+                    reason_detail = (payload.get('rejection_reason_detail') or '').strip()
+
+                    candidate.status = CompanyUpdateCandidate.STATUS_REJECTED
+                    candidate.rejected_at = now
+                    candidate.block_reproposal = block_reproposal
+                    candidate.rejection_reason_code = reason_code
+                    candidate.rejection_reason_detail = reason_detail
+                    candidate.ensure_value_hash()
+
+                    update_candidate_fields = [
+                        'status',
+                        'rejected_at',
+                        'block_reproposal',
+                        'rejection_reason_code',
+                        'rejection_reason_detail',
+                        'updated_at',
+                    ]
+                    if candidate.value_hash:
+                        update_candidate_fields.append('value_hash')
+
+                    candidate.save(update_fields=update_candidate_fields)
+                    item.decision = CompanyReviewItem.DECISION_REJECTED
+                else:
+                    raise drf_serializers.ValidationError({'decision': f'想定外の decision: {decision}'})
+
+                item.comment = comment or ''
+                item.decided_by = auth_user
+                item.decided_at = now
+                item.save(update_fields=item_update_fields)
+                batch_modified = True
+
+            # 保存処理
+            if update_fields:
+                update_fields.add('updated_at')
+                company.save(update_fields=list(update_fields))
+
+            for record in history_records:
+                CompanyUpdateHistory.objects.create(
+                    company=company,
+                    field=record['field'],
+                    old_value=record['old_value'],
+                    new_value=record['new_value'],
+                    source_type=record['source_type'],
+                    approved_by=auth_user,
+                    approved_at=now,
+                    comment=record['comment'],
+                )
+
+            if auth_user and batch.assigned_to_id is None:
+                batch.assigned_to = auth_user
+
+            if batch_modified:
+                self._apply_batch_status(batch)
+                batch.updated_at = now
+                save_fields = ['status', 'updated_at']
+                if auth_user and batch.assigned_to:
+                    save_fields.append('assigned_to')
+                batch.save(update_fields=save_fields)
+
+            batch.refresh_from_db()
+
+        detail_serializer = CompanyReviewBatchDetailSerializer(batch)
+        return Response(detail_serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='generate-sample')
+    def generate_sample(self, request):
+        """開発用: サンプル候補を生成"""
+        company_id = request.data.get('company_id')
+        fields = request.data.get('fields')
+
+        company = None
+        if company_id:
+            try:
+                company = Company.objects.get(pk=company_id)
+            except Company.DoesNotExist:
+                return Response(
+                    {'error': f'company_id={company_id} は存在しません'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        try:
+            created_items = generate_sample_candidates(company=company, fields=fields)
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:  # pragma: no cover - 開発用
+            logger.exception("generate_sample failed")
+            return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        batch = created_items[0].batch if created_items else None
+        response = {
+            'created_count': len(created_items),
+            'batch_id': batch.id if batch else None,
+            'company_id': batch.company_id if batch else None,
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='import-corporate-numbers')
+    def import_corporate_numbers(self, request):
+        serializer = CorporateNumberImportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        entries = serializer.validated_data['entries']
+        created_items = ingest_corporate_number_candidates(entries)
+
+        return Response(
+            {
+                'created_count': len(created_items),
+                'batch_ids': sorted({item.batch_id for item in created_items}),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+    @action(detail=False, methods=['post'], url_path='run-corporate-number-import')
+    def run_corporate_number_import_action(self, request):
+        if not settings.DEBUG:
+            return Response(
+                {'detail': 'この操作は開発環境でのみ利用可能です。'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = CorporateNumberImportTriggerSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+
+        payload = {
+            "company_ids": serializer.validated_data.get('company_ids'),
+            "limit": serializer.validated_data.get('limit'),
+            "dry_run": serializer.validated_data.get('dry_run', False),
+            "prefecture_strict": serializer.validated_data.get('prefecture_strict', False),
+            "force_refresh": serializer.validated_data.get('force', False),
+            "allow_missing_token": True,
+        }
+
+        try:
+            async_result = run_corporate_number_import_task.apply_async(kwargs={"payload": payload})
+            result = async_result.get(timeout=settings.CELERY_TASK_TIME_LIMIT)
+        except TimeoutError:
+            return Response(
+                {'detail': '法人番号自動取得バッチがタイムアウトしました。'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT,
+            )
+        except CeleryError as exc:
+            logger.exception("Failed to run corporate number import task: %s", exc)
+            return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except CommandError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except CorporateNumberAPIError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+
+        if result.get('skipped') or result.get('dry_run'):
+            status_code = status.HTTP_200_OK
+        else:
+            status_code = status.HTTP_201_CREATED
+        return Response(result, status=status_code)
+
+    @action(detail=False, methods=['post'], url_path='run-ai-ingestion')
+    def run_ai_ingestion(self, request):
+        serializer = AIIngestionTriggerSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+
+        payload = serializer.validated_data
+        task = run_ai_ingestion_stub.delay(payload)
+        response = {
+            'task_id': getattr(task, 'id', None),
+            'status': 'accepted',
+            'message': 'AI ingestion stub dispatched.',
+        }
+        return Response(response, status=status.HTTP_202_ACCEPTED)
+
+
+    @action(detail=False, methods=['post'], url_path='run-opendata-ingestion')
+    def run_opendata_ingestion(self, request):
+        if not settings.DEBUG:
+            return Response(
+                {'detail': 'この操作は開発環境でのみ利用可能です。'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = OpenDataIngestionTriggerSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+
+        payload = {
+            "source_keys": serializer.validated_data.get('sources'),
+            "limit": serializer.validated_data.get('limit'),
+            "dry_run": serializer.validated_data.get('dry_run', False),
+        }
+
+        try:
+            async_result = run_opendata_ingestion_task.apply_async(kwargs={"payload": payload})
+            result = async_result.get(timeout=settings.CELERY_TASK_TIME_LIMIT)
+        except TimeoutError:
+            return Response(
+                {'detail': 'オープンデータ取り込みがタイムアウトしました。'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT,
+            )
+        except CeleryError as exc:
+            logger.exception("Failed to run open data ingestion task: %s", exc)
+            return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        status_code = status.HTTP_200_OK if result.get("dry_run") else status.HTTP_201_CREATED
+        return Response(result, status=status_code)
 
 
 class ExecutiveViewSet(viewsets.ModelViewSet):

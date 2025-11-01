@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "filters",
     "executives",
     "ng_companies",
+    "data_collection",
+    "ai_enrichment",
 ]
 
 MIDDLEWARE = [
@@ -115,6 +117,18 @@ STATIC_ROOT = BASE_DIR / "static"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Email configuration
+EMAIL_BACKEND_DEFAULT = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = config("EMAIL_BACKEND", default=EMAIL_BACKEND_DEFAULT)
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
+EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", default=30, cast=int)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-reply@saleslist.local")
+
 # REST Framework configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -140,16 +154,50 @@ REST_FRAMEWORK = {
         "user": config("DRF_THROTTLE_USER", default="600/min"),
         "auth_login": config("DRF_THROTTLE_LOGIN", default="10/min"),
         "auth_refresh": config("DRF_THROTTLE_REFRESH", default="30/min"),
+        "auth_mfa_resend": config("DRF_THROTTLE_MFA_RESEND", default="5/min"),
+        "auth_mfa_verify": config("DRF_THROTTLE_MFA_VERIFY", default="20/min"),
         "health": config("DRF_THROTTLE_HEALTH", default="120/min"),
     },
     "EXCEPTION_HANDLER": "saleslist_backend.api_exception_handler.custom_exception_handler",
 }
 
+JWT_ACCESS_TOKEN_LIFETIME_HOURS = config("JWT_ACCESS_TOKEN_LIFETIME_HOURS", default=72, cast=int)
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=JWT_ACCESS_TOKEN_LIFETIME_HOURS),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
 }
+
+MFA_TOKEN_TTL_SECONDS = config("MFA_TOKEN_TTL_SECONDS", default=1800, cast=int)
+MFA_RESEND_INTERVAL_SECONDS = config("MFA_RESEND_INTERVAL_SECONDS", default=30, cast=int)
+MFA_MAX_RESEND_COUNT = config("MFA_MAX_RESEND_COUNT", default=5, cast=int)
+MFA_TOKEN_LENGTH = config("MFA_TOKEN_LENGTH", default=6, cast=int)
+SENDGRID_API_KEY = config("SENDGRID_API_KEY", default="")
+MFA_EMAIL_FROM = config("MFA_EMAIL_FROM", default="no-reply@saleslist.local")
+MFA_EMAIL_SUBJECT = config("MFA_EMAIL_SUBJECT", default="【SalesList】ログイン確認コードのお知らせ")
+MFA_EMAIL_BODY_TEMPLATE = config(
+    "MFA_EMAIL_BODY_TEMPLATE",
+    default=(
+        "{name} 様\n"
+        "SalesList へのログインを確認するため、以下の確認コードを入力してください。\n\n"
+        "確認コード: {token}\n"
+        "有効期限: 発行から{ttl_minutes}分\n\n"
+        "このメールに心当たりがない場合は破棄してください。"
+    ),
+)
+MFA_EMAIL_TEMPLATE_ID = config("MFA_EMAIL_TEMPLATE_ID", default="")
+MFA_DEBUG_EMAIL_RECIPIENT = config("MFA_DEBUG_EMAIL_RECIPIENT", default="")
+
+# PowerPlexy AI enrichment configuration
+POWERPLEXY_API_KEY = config("POWERPLEXY_API_KEY", default="")
+POWERPLEXY_API_ENDPOINT = config("POWERPLEXY_API_ENDPOINT", default="https://api.perplexity.ai/query")
+POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-medium")
+POWERPLEXY_TIMEOUT = config("POWERPLEXY_TIMEOUT", default=30, cast=int)
+POWERPLEXY_MONTHLY_COST_LIMIT = config("POWERPLEXY_MONTHLY_COST_LIMIT", default=20.0, cast=float)
+POWERPLEXY_MONTHLY_CALL_LIMIT = config("POWERPLEXY_MONTHLY_CALL_LIMIT", default=5000, cast=int)
+POWERPLEXY_COST_PER_REQUEST = config("POWERPLEXY_COST_PER_REQUEST", default=0.004, cast=float)
+POWERPLEXY_DAILY_RECORD_LIMIT = config("POWERPLEXY_DAILY_RECORD_LIMIT", default=500, cast=int)
 
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
@@ -163,6 +211,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "companies.tasks.dispatch_facebook_sync",
         "schedule": crontab(hour=2, minute=0),
     },
+    "run-ai-enrich": {
+        "task": "ai_enrichment.tasks.run_ai_enrich",
+        "schedule": crontab(hour=3, minute=0),
+    },
 }
 
 # Facebook API
@@ -170,6 +222,19 @@ FACEBOOK_GRAPH_API_VERSION = config("FACEBOOK_GRAPH_API_VERSION", default="v19.0
 FACEBOOK_ACCESS_TOKEN = config("FACEBOOK_ACCESS_TOKEN", default="")
 FACEBOOK_GRAPH_API_TIMEOUT = config("FACEBOOK_GRAPH_API_TIMEOUT", default=10, cast=int)
 FACEBOOK_SYNC_CHUNK_SIZE = config("FACEBOOK_SYNC_CHUNK_SIZE", default=500, cast=int)
+
+# Corporate Number API
+CORPORATE_NUMBER_API_BASE_URL = config(
+    "CORPORATE_NUMBER_API_BASE_URL",
+    default="https://api.houjin-bangou.nta.go.jp",
+)
+CORPORATE_NUMBER_API_TOKEN = config("CORPORATE_NUMBER_API_TOKEN", default="")
+CORPORATE_NUMBER_API_TIMEOUT = config("CORPORATE_NUMBER_API_TIMEOUT", default=10, cast=int)
+CORPORATE_NUMBER_API_MAX_RESULTS = config(
+    "CORPORATE_NUMBER_API_MAX_RESULTS",
+    default=5,
+    cast=int,
+)
 
 # CORS / CSRF
 DEFAULT_CORS_ORIGINS = (

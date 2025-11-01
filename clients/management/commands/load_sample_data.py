@@ -154,6 +154,19 @@ class Command(BaseCommand):
                 'contact_email': 'sales@lambda-food.example.com',
                 'phone': '022-000-0010',
             },
+            {
+                'name': 'EastCloud株式会社',
+                'industry': 'IT・ソフトウェア',
+                'employee_count': 85,
+                'revenue': 320_000_000,
+                'prefecture': '東京都',
+                'city': '千代田区',
+                'website_url': 'https://east-cloud.jp',
+                'contact_email': 'info@east-cloud.jp',
+                'phone': '03-6200-0001',
+                'corporate_number': '7010001234567',
+                'business_description': 'クラウドインフラ運用とデータ連携ソリューションを提供',
+            },
         ]
 
         created = 0
