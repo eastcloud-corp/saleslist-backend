@@ -19,6 +19,7 @@ except ImportError:  # pragma: no cover
 DEFAULT_COST_LIMIT = 20.0
 DEFAULT_CALL_LIMIT = 5000
 DEFAULT_COST_PER_REQUEST = 0.004
+DEFAULT_DAILY_LIMIT = 500
 
 _USAGE_KEY_TEMPLATE = "ai_usage:{year}-{month}:{metric}"
 
@@ -60,7 +61,11 @@ class UsageTracker:
         cost_per_call: Optional[float] = None,
     ) -> None:
         self.connection_alias = connection_alias
-        self._use_cache = get_redis_connection is None
+        backend_name = settings.CACHES.get(connection_alias, {}).get("BACKEND", "")
+        self._use_cache = (
+            get_redis_connection is None
+            or "django_redis" not in backend_name
+        )
         self.cost_limit = cost_limit if cost_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_COST_LIMIT", DEFAULT_COST_LIMIT)
         self.call_limit = call_limit if call_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_CALL_LIMIT", DEFAULT_CALL_LIMIT)
         self.cost_per_call = cost_per_call if cost_per_call is not None else getattr(settings, "POWERPLEXY_COST_PER_REQUEST", DEFAULT_COST_PER_REQUEST)
@@ -70,7 +75,11 @@ class UsageTracker:
     def client(self):
         if self._use_cache:
             return caches[self.connection_alias]
-        return get_redis_connection(self.connection_alias)
+        try:
+            return get_redis_connection(self.connection_alias)
+        except NotImplementedError:
+            self._use_cache = True
+            return caches[self.connection_alias]
 
     def snapshot(self, *, now: Optional[datetime] = None) -> UsageSnapshot:
         year, month = _current_month(now)
