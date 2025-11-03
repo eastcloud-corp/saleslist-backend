@@ -1,7 +1,7 @@
 import contextvars
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, Mapping
 
 
 request_id_ctx = contextvars.ContextVar('request_id', default=None)
@@ -50,6 +50,19 @@ class JsonFormatter(logging.Formatter):
         'asctime',
     }
 
+    @staticmethod
+    def _make_json_safe(value: Any) -> Any:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+
+        if isinstance(value, Mapping):
+            return {str(k): JsonFormatter._make_json_safe(v) for k, v in value.items()}
+
+        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+            return [JsonFormatter._make_json_safe(v) for v in value]
+
+        return str(value)
+
     def format(self, record: logging.LogRecord) -> str:
         log_record: Dict[str, Any] = {
             'timestamp': self.formatTime(record, self.datefmt),
@@ -61,14 +74,14 @@ class JsonFormatter(logging.Formatter):
         for key in ('request_id', 'client_ip', 'user_id'):
             value = getattr(record, key, None)
             if value:
-                log_record[key] = value
+                log_record[key] = self._make_json_safe(value)
 
         for key, value in record.__dict__.items():
             if key in self.RESERVED_ATTRIBUTES:
                 continue
             if key.startswith('_'):
                 continue
-            log_record[key] = value
+            log_record[key] = self._make_json_safe(value)
 
         if record.exc_info:
             log_record['exc_info'] = self.formatException(record.exc_info)
