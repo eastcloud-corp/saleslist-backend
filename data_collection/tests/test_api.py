@@ -29,12 +29,12 @@ class DataCollectionRunAPITests(APITestCase):
     @mock.patch('data_collection.views.compute_next_schedules')
     def test_list_runs_returns_expected_payload(self, mock_compute, mock_usage):
         tracker = mock_usage.return_value
-        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.04)
-        tracker.remaining.return_value = UsageSnapshot(calls=4990, cost=19.96)
-        tracker.call_limit = 5000
-        tracker.cost_limit = 20.0
-        tracker.cost_per_call = 0.004
-        tracker.daily_limit = 500
+        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.5)
+        tracker.remaining.return_value = UsageSnapshot(calls=2990, cost=149.5)
+        tracker.call_limit = 3000
+        tracker.cost_limit = 150.0
+        tracker.cost_per_call = 0.05
+        tracker.daily_limit = 100
         now = timezone.now()
         run1 = DataCollectionRun.objects.create(
             job_name="clone.corporate_number",
@@ -71,7 +71,7 @@ class DataCollectionRunAPITests(APITestCase):
         self.assertIn('clone.facebook_sync', body['schedules'])
         self.assertIn('ai_usage', body)
         self.assertEqual(body['ai_usage']['calls_this_month'], 10)
-        self.assertEqual(body['ai_usage']['call_limit'], 5000)
+        self.assertEqual(body['ai_usage']['call_limit'], 3000)
 
     @mock.patch('data_collection.views.enqueue_job')
     @mock.patch('data_collection.views.has_active_run')
@@ -79,12 +79,12 @@ class DataCollectionRunAPITests(APITestCase):
     @mock.patch('data_collection.views.UsageTracker')
     def test_trigger_enqueues_job(self, mock_usage, mock_compute, mock_active, mock_enqueue):
         tracker = mock_usage.return_value
-        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.04)
-        tracker.remaining.return_value = UsageSnapshot(calls=4990, cost=19.96)
-        tracker.call_limit = 5000
-        tracker.cost_limit = 20.0
-        tracker.cost_per_call = 0.004
-        tracker.daily_limit = 500
+        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.5)
+        tracker.remaining.return_value = UsageSnapshot(calls=2990, cost=149.5)
+        tracker.call_limit = 3000
+        tracker.cost_limit = 150.0
+        tracker.cost_per_call = 0.05
+        tracker.daily_limit = 100
         mock_active.return_value = False
         now = timezone.now()
         mock_compute.return_value = {
@@ -121,12 +121,12 @@ class DataCollectionRunAPITests(APITestCase):
     @mock.patch('data_collection.views.UsageTracker')
     def test_trigger_opendata_accepts_company_ids(self, mock_usage, mock_compute, mock_active, mock_enqueue):
         tracker = mock_usage.return_value
-        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.04)
-        tracker.remaining.return_value = UsageSnapshot(calls=4990, cost=19.96)
-        tracker.call_limit = 5000
-        tracker.cost_limit = 20.0
-        tracker.cost_per_call = 0.004
-        tracker.daily_limit = 500
+        tracker.snapshot.return_value = UsageSnapshot(calls=10, cost=0.5)
+        tracker.remaining.return_value = UsageSnapshot(calls=2990, cost=149.5)
+        tracker.call_limit = 3000
+        tracker.cost_limit = 150.0
+        tracker.cost_per_call = 0.05
+        tracker.daily_limit = 100
         mock_active.return_value = False
         mock_compute.return_value = {
             "clone.facebook_sync": None,

@@ -2,6 +2,7 @@
 from unittest import mock
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from companies.models import Company, CompanyUpdateCandidate
 
@@ -23,7 +24,7 @@ class RunAIEnrichTaskTests(TestCase):
     @mock.patch('ai_enrichment.tasks.UsageTracker')
     def test_task_creates_candidates(self, mock_tracker, mock_client_cls):
         tracker_instance = mock_tracker.return_value
-        tracker_instance.snapshot.side_effect = [UsageSnapshot(calls=0, cost=0.0), UsageSnapshot(calls=1, cost=0.004)]
+        tracker_instance.snapshot.side_effect = [UsageSnapshot(calls=0, cost=0.0), UsageSnapshot(calls=1, cost=0.05)]
         tracker_instance.can_execute.return_value = True
 
         client_instance = mock_client_cls.return_value
@@ -48,7 +49,7 @@ class RunAIEnrichTaskTests(TestCase):
     @mock.patch('ai_enrichment.tasks.UsageTracker')
     def test_task_filters_by_company_ids(self, mock_tracker, mock_client_cls):
         tracker_instance = mock_tracker.return_value
-        tracker_instance.snapshot.side_effect = [UsageSnapshot(calls=0, cost=0.0), UsageSnapshot(calls=1, cost=0.004)]
+        tracker_instance.snapshot.side_effect = [UsageSnapshot(calls=0, cost=0.0), UsageSnapshot(calls=1, cost=0.05)]
         tracker_instance.can_execute.return_value = True
 
         client_instance = mock_client_cls.return_value
@@ -80,9 +81,46 @@ class RunAIEnrichTaskTests(TestCase):
     @mock.patch('ai_enrichment.tasks.UsageTracker')
     def test_task_skips_when_limit_reached(self, mock_tracker):
         tracker_instance = mock_tracker.return_value
-        tracker_instance.snapshot.return_value = UsageSnapshot(calls=5000, cost=20.0)
+        tracker_instance.snapshot.return_value = UsageSnapshot(calls=3000, cost=150.0)
         tracker_instance.can_execute.return_value = False
 
         result = run_ai_enrich()
         self.assertEqual(result['status'], 'skipped')
         self.assertEqual(result['reason'], 'usage_limit')
+
+    @override_settings(POWERPLEXY_DAILY_RECORD_LIMIT=1)
+    @mock.patch('ai_enrichment.tasks.PowerplexyClient')
+    @mock.patch('ai_enrichment.tasks.UsageTracker')
+    def test_task_prioritises_never_enriched_companies(self, mock_tracker, mock_client_cls):
+        tracker_instance = mock_tracker.return_value
+        tracker_instance.snapshot.side_effect = [UsageSnapshot(calls=0, cost=0.0), UsageSnapshot(calls=1, cost=0.05)]
+        tracker_instance.can_execute.return_value = True
+
+        client_instance = mock_client_cls.return_value
+        client_instance.extract_json.return_value = {
+            '担当者名': '佐藤 花子',
+        }
+
+        enriched_company = Company.objects.create(
+            name="既存AI補完済み",
+            website_url="https://old.example.com",
+            prefecture="",
+            city="",
+            ai_last_enriched_at=timezone.now(),
+        )
+
+        run_ai_enrich()
+
+        self.assertTrue(
+            CompanyUpdateCandidate.objects.filter(
+                company=self.company,
+                source_type=CompanyUpdateCandidate.SOURCE_AI,
+            ).exists()
+        )
+        self.assertFalse(
+            CompanyUpdateCandidate.objects.filter(
+                company=enriched_company,
+                source_type=CompanyUpdateCandidate.SOURCE_AI,
+            ).exists()
+        )
+        client_instance.extract_json.assert_called_once()

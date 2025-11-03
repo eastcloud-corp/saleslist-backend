@@ -16,10 +16,8 @@ except ImportError:  # pragma: no cover
     get_redis_connection = None
 
 
-DEFAULT_COST_LIMIT = 20.0
-DEFAULT_CALL_LIMIT = 5000
-DEFAULT_COST_PER_REQUEST = 0.004
-DEFAULT_DAILY_LIMIT = 500
+DEFAULT_COST_LIMIT = 150.0
+DEFAULT_COST_PER_REQUEST = 0.05
 
 _USAGE_KEY_TEMPLATE = "ai_usage:{year}-{month}:{metric}"
 
@@ -40,6 +38,34 @@ def _month_ttl(year: int, month: int) -> int:
     end = now.replace(day=last_day, hour=23, minute=59, second=59, microsecond=0)
     seconds = int((end - now).total_seconds())
     return max(seconds, 3600)
+
+
+def _to_int_or_none(value: Optional[object]) -> Optional[int]:
+    if value is None:
+        return None
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _derive_call_limit(cost_limit: float, cost_per_call: float) -> int:
+    if cost_limit <= 0 or cost_per_call <= 0:
+        return 0
+    return max(int(cost_limit // cost_per_call), 0)
+
+
+def _derive_daily_limit(call_limit: int, *, now: Optional[datetime] = None) -> int:
+    if call_limit <= 0:
+        return 0
+    year, month = _current_month(now)
+    days_in_month = calendar.monthrange(year, month)[1]
+    if days_in_month <= 0:
+        return call_limit
+    per_day = call_limit // days_in_month
+    return max(per_day, 1)
 
 
 @dataclass
@@ -67,9 +93,24 @@ class UsageTracker:
             or "django_redis" not in backend_name
         )
         self.cost_limit = cost_limit if cost_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_COST_LIMIT", DEFAULT_COST_LIMIT)
-        self.call_limit = call_limit if call_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_CALL_LIMIT", DEFAULT_CALL_LIMIT)
         self.cost_per_call = cost_per_call if cost_per_call is not None else getattr(settings, "POWERPLEXY_COST_PER_REQUEST", DEFAULT_COST_PER_REQUEST)
-        self.daily_limit = getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", DEFAULT_DAILY_LIMIT)
+
+        if call_limit is not None:
+            resolved_call_limit = call_limit
+        else:
+            explicit_call_limit = _to_int_or_none(getattr(settings, "POWERPLEXY_MONTHLY_CALL_LIMIT", None))
+            if explicit_call_limit is not None and explicit_call_limit >= 0:
+                resolved_call_limit = explicit_call_limit
+            else:
+                resolved_call_limit = _derive_call_limit(self.cost_limit, self.cost_per_call)
+        self.call_limit = max(int(resolved_call_limit), 0)
+
+        explicit_daily_limit = _to_int_or_none(getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", None))
+        if explicit_daily_limit is not None and explicit_daily_limit >= 0:
+            resolved_daily_limit = explicit_daily_limit
+        else:
+            resolved_daily_limit = _derive_daily_limit(self.call_limit)
+        self.daily_limit = max(int(resolved_daily_limit), 0)
 
     @property
     def client(self):

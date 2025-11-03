@@ -2,9 +2,9 @@
 Base settings shared by all environments.
 """
 
-from pathlib import Path
-from datetime import timedelta
 import os
+from datetime import timedelta
+from pathlib import Path
 
 from celery.schedules import crontab
 from decouple import Csv, config
@@ -191,13 +191,23 @@ MFA_DEBUG_EMAIL_RECIPIENT = config("MFA_DEBUG_EMAIL_RECIPIENT", default="")
 
 # PowerPlexy AI enrichment configuration
 POWERPLEXY_API_KEY = config("POWERPLEXY_API_KEY", default="")
-POWERPLEXY_API_ENDPOINT = config("POWERPLEXY_API_ENDPOINT", default="https://api.perplexity.ai/query")
-POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-medium")
+POWERPLEXY_API_ENDPOINT = config("POWERPLEXY_API_ENDPOINT", default="https://api.perplexity.ai/chat/completions")
+POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-pro")
 POWERPLEXY_TIMEOUT = config("POWERPLEXY_TIMEOUT", default=30, cast=int)
-POWERPLEXY_MONTHLY_COST_LIMIT = config("POWERPLEXY_MONTHLY_COST_LIMIT", default=20.0, cast=float)
-POWERPLEXY_MONTHLY_CALL_LIMIT = config("POWERPLEXY_MONTHLY_CALL_LIMIT", default=5000, cast=int)
-POWERPLEXY_COST_PER_REQUEST = config("POWERPLEXY_COST_PER_REQUEST", default=0.004, cast=float)
-POWERPLEXY_DAILY_RECORD_LIMIT = config("POWERPLEXY_DAILY_RECORD_LIMIT", default=500, cast=int)
+POWERPLEXY_MONTHLY_COST_LIMIT = config("POWERPLEXY_MONTHLY_COST_LIMIT", default=150.0, cast=float)
+_powerplexy_monthly_call_limit = config("POWERPLEXY_MONTHLY_CALL_LIMIT", default=None)
+POWERPLEXY_MONTHLY_CALL_LIMIT = (
+    int(_powerplexy_monthly_call_limit)
+    if _powerplexy_monthly_call_limit not in (None, "")
+    else None
+)
+POWERPLEXY_COST_PER_REQUEST = config("POWERPLEXY_COST_PER_REQUEST", default=0.05, cast=float)
+_powerplexy_daily_record_limit = config("POWERPLEXY_DAILY_RECORD_LIMIT", default=None)
+POWERPLEXY_DAILY_RECORD_LIMIT = (
+    int(_powerplexy_daily_record_limit)
+    if _powerplexy_daily_record_limit not in (None, "")
+    else None
+)
 
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
