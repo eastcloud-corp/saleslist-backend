@@ -1,10 +1,7 @@
--- ソーシャルナビゲーター初期データベース設定
-
--- データベース作成（既に作成済みだが念のため）
--- CREATE DATABASE social_navigator;
+-- Saleslist 初期データベース設定
 
 -- ユーザー権限設定
-ALTER USER social_navigator_user CREATEDB;
+ALTER USER saleslist_user CREATEDB;
 
 -- 基本設定
 SET TIME ZONE 'Asia/Tokyo';

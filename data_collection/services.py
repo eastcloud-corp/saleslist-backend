@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Tuple
 
@@ -79,8 +80,18 @@ def enqueue_job(job_name: str, options: Dict[str, Any]) -> Tuple[DataCollectionR
         )
 
     task = _import_task(definition.task_path)
-    async_result = task.apply_async(kwargs={
-        "payload": options,
-        "execution_uuid": str(run.execution_uuid),
-    })
+    callable_obj = getattr(task, "run", task)
+
+    task_kwargs: Dict[str, Any] = {"execution_uuid": str(run.execution_uuid)}
+
+    try:
+        signature = inspect.signature(callable_obj)
+        if "payload" in signature.parameters:
+            task_kwargs["payload"] = options
+        else:
+            task_kwargs.update(options)
+    except (ValueError, TypeError):
+        task_kwargs.update(options)
+
+    async_result = task.apply_async(kwargs=task_kwargs)
     return run, async_result

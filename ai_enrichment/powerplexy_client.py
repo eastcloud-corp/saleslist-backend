@@ -16,8 +16,8 @@ from .exceptions import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ENDPOINT = "https://api.perplexity.ai/query"
-DEFAULT_MODEL = "sonar-medium"
+DEFAULT_ENDPOINT = "https://api.perplexity.ai/chat/completions"
+DEFAULT_MODEL = "sonar-pro"
 DEFAULT_TIMEOUT = 30
 
 
@@ -45,8 +45,15 @@ class PowerplexyClient:
     def query(self, prompt: str) -> Dict[str, Any]:
         payload = {
             "model": self.model,
-            "query": prompt,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an assistant that responds strictly with valid JSON matching the requested schema.",
+                },
+                {"role": "user", "content": prompt},
+            ],
             "temperature": 0.2,
+            "stream": False,
         }
 
         headers = {
@@ -87,6 +94,14 @@ class PowerplexyClient:
     def extract_json(self, prompt: str) -> Dict[str, Any]:
         data = self.query(prompt)
         if isinstance(data, dict):
+            # Chat completions response: {"choices":[{"message":{"content":"..."}}, ...]}
+            choices = data.get("choices")
+            if isinstance(choices, list) and choices:
+                message = choices[0].get("message", {})
+                content = message.get("content")
+                if isinstance(content, str):
+                    return self._parse_json_blob(content)
+            # Legacy response fallback
             for key in ("answer", "output", "text", "result"):
                 if key in data and isinstance(data[key], str):
                     return self._parse_json_blob(data[key])

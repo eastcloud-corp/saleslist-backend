@@ -1,9 +1,9 @@
 FROM postgres:15
 
 # Set environment variables
-ENV POSTGRES_DB=social_navigator
-ENV POSTGRES_USER=social_navigator_user
-ENV POSTGRES_PASSWORD=social_navigator_password
+ENV POSTGRES_DB=saleslist_dev
+ENV POSTGRES_USER=saleslist_user
+ENV POSTGRES_PASSWORD=saleslist_password
 ENV PGDATA=/var/lib/postgresql/data/pgdata
 
 # Create init directory

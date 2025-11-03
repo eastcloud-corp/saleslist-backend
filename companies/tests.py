@@ -301,6 +301,68 @@ class CompanyReviewDecisionAPITests(APITestCase):
 
         self.assertIsNone(blocked)
 
+    def test_update_normalizes_numeric_fields(self):
+        capital_candidate = create_candidate_entry(
+            company=self.company,
+            field="capital",
+            candidate_value="6500000",
+            source_type=CompanyUpdateCandidate.SOURCE_AI,
+            source_detail="ai-test",
+        )
+        established_candidate = create_candidate_entry(
+            company=self.company,
+            field="established_year",
+            candidate_value="2024",
+            source_type=CompanyUpdateCandidate.SOURCE_AI,
+            source_detail="ai-test",
+        )
+        self.assertIsNotNone(capital_candidate)
+        self.assertIsNotNone(established_candidate)
+
+        capital_item = CompanyReviewItem.objects.create(
+            batch=self.batch,
+            candidate=capital_candidate,
+            field="capital",
+            current_value="",
+            candidate_value=capital_candidate.candidate_value,
+            confidence=capital_candidate.confidence,
+        )
+        established_item = CompanyReviewItem.objects.create(
+            batch=self.batch,
+            candidate=established_candidate,
+            field="established_year",
+            current_value="",
+            candidate_value=established_candidate.candidate_value,
+            confidence=established_candidate.confidence,
+        )
+
+        payload = {
+            "items": [
+                {
+                    "id": capital_item.id,
+                    "decision": "update",
+                    "new_value": "6,500,000円",
+                },
+                {
+                    "id": established_item.id,
+                    "decision": "update",
+                    "new_value": "2024年",
+                },
+            ]
+        }
+
+        response = self._decide(payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.company.refresh_from_db()
+        capital_item.refresh_from_db()
+        established_item.refresh_from_db()
+
+        self.assertEqual(self.company.capital, 6500000)
+        self.assertEqual(self.company.established_year, 2024)
+        self.assertEqual(capital_item.candidate_value, "6500000")
+        self.assertEqual(established_item.candidate_value, "2024")
+
     def test_list_filter_by_field(self):
         from companies.services.review_ingestion import ingest_corporate_number_candidates
 

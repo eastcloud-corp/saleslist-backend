@@ -42,6 +42,7 @@ from companies.tasks import (
     run_corporate_number_import_task,
     run_opendata_ingestion_task,
 )
+from ai_enrichment.normalizers import normalize_candidate_value
 
 
 logger = logging.getLogger(__name__)
@@ -522,9 +523,15 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
             return None, ''
 
         if isinstance(raw_value, str):
-            value = raw_value.strip()
+            base_value = raw_value.strip()
         else:
-            value = raw_value
+            base_value = raw_value
+
+        normalized_value = normalize_candidate_value(field, raw_value)
+        if normalized_value is not None:
+            value = normalized_value
+        else:
+            value = base_value
 
         if field in INT_FIELDS:
             if value == '':

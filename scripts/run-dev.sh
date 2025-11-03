@@ -7,6 +7,7 @@ python manage.py migrate --noinput
 if [[ "${ENABLE_SAMPLE_DATA:-False}" == "True" ]]; then
   echo "🌱 Seeding sample data..."
   python seed_data.py || echo "⚠️ Sample data seeding encountered an issue (continuing)"
+  python manage.py load_sample_data || echo "⚠️ Demo data seeding encountered an issue (continuing)"
 fi
 
 if [[ "${ENABLE_CACHE_TABLE:-True}" == "True" ]]; then
