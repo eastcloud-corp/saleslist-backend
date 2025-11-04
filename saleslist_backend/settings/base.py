@@ -8,6 +8,7 @@ from pathlib import Path
 
 from celery.schedules import crontab
 from decouple import Csv, config
+from django.utils import timezone
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -221,11 +222,11 @@ CELERY_TASK_DEFAULT_QUEUE = config("CELERY_TASK_DEFAULT_QUEUE", default="default
 CELERY_BEAT_SCHEDULE = {
     "sync-facebook-activity": {
         "task": "companies.tasks.dispatch_facebook_sync",
-        "schedule": crontab(hour=2, minute=0, timezone=CELERY_TIMEZONE),
+        "schedule": crontab(hour=2, minute=0, nowfun=timezone.now),
     },
     "run-ai-enrich": {
         "task": "ai_enrichment.tasks.run_ai_enrich",
-        "schedule": crontab(hour=3, minute=0, timezone=CELERY_TIMEZONE),
+        "schedule": crontab(hour=3, minute=0, nowfun=timezone.now),
     },
 }
 
