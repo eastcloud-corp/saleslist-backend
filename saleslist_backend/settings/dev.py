@@ -19,3 +19,5 @@ _dev_origins = {
 
 CORS_ALLOWED_ORIGINS = list(set(CORS_ALLOWED_ORIGINS).union(_dev_origins))  # type: ignore[name-defined]
 CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS).union(_dev_origins))  # type: ignore[name-defined]
+
+ENABLE_REVIEW_SAMPLE_API = True

@@ -388,6 +388,40 @@ class CompanyReviewDecisionAPITests(APITestCase):
                 any(item["field"] == "corporate_number" for item in detail.data.get("items", []))
             )
 
+    def test_retrieve_includes_completed_batches(self):
+        self.batch.status = CompanyReviewBatch.STATUS_REJECTED
+        self.batch.save(update_fields=["status"])
+
+        response = self.client.get(f"/api/v1/companies/reviews/{self.batch.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_decide_returns_conflict_if_batch_completed(self):
+        self.batch.status = CompanyReviewBatch.STATUS_REJECTED
+        self.batch.save(update_fields=["status"])
+        payload = {
+            "items": [
+                {
+                    "id": self.item.id,
+                    "decision": "approve",
+                }
+            ]
+        }
+
+        response = self._decide(payload)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(response.data.get("status"), "conflict")
+
+    @override_settings(DEBUG=False, ENABLE_REVIEW_SAMPLE_API=False)
+    def test_generate_sample_forbidden_without_flag(self):
+        response = self.client.post("/api/v1/companies/reviews/generate-sample/", {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @override_settings(DEBUG=False, ENABLE_REVIEW_SAMPLE_API=True)
+    def test_generate_sample_allowed_with_feature_flag(self):
+        response = self.client.post("/api/v1/companies/reviews/generate-sample/", {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("created_count", response.data)
+
 
 class CorporateNumberImportAPITests(APITestCase):
     def setUp(self):

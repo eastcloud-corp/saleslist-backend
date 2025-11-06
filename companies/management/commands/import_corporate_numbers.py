@@ -168,6 +168,7 @@ def run_corporate_number_import(
                 "skipped": True,
                 "skipped_reason": "missing_token",
                 "force_refresh": force_refresh,
+                "processed_company_ids": [],
             }
         raise CommandError("CORPORATE_NUMBER_API_TOKEN が設定されていません。")
 
@@ -195,8 +196,11 @@ def run_corporate_number_import(
     last_call = cache.get(_CACHE_LAST_CALL_KEY)
     daily_limit_reached = False
 
+    processed_company_ids: List[int] = []
+
     for company in queryset:
         stats["checked"] += 1
+        processed_company_ids.append(company.id)
 
         if company_cooldown_days > 0 and not force_refresh:
             record = ExternalSourceRecord.objects.filter(
@@ -307,6 +311,7 @@ def run_corporate_number_import(
         "skipped": False,
         "force_refresh": force_refresh,
         "daily_rate_limit_reached": daily_limit_reached,
+        "processed_company_ids": processed_company_ids,
     }
 
 

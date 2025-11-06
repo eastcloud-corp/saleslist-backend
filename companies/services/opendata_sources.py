@@ -276,6 +276,7 @@ def ingest_opendata_sources(
             "matched": 0,
             "created": 0,
             "skipped_no_config": True,
+            "processed_company_ids": [],
         }
 
     from companies.models import Company
@@ -299,6 +300,7 @@ def ingest_opendata_sources(
             "created": 0,
             "dry_run": dry_run,
             "skipped_no_source": True,
+            "processed_company_ids": [],
         }
 
     allowed_company_ids: Optional[Set[int]] = None
@@ -309,6 +311,7 @@ def ingest_opendata_sources(
     companies_matched = 0
     created_items_total: List = []
     entries_buffer: List[dict] = []
+    processed_company_ids: List[int] = []
 
     for source_config in targets:
         try:
@@ -349,6 +352,7 @@ def ingest_opendata_sources(
                 continue
 
             companies_matched += 1
+            processed_company_ids.append(company.id)
 
             for entry in entries:
                 entry["company_id"] = company.id
@@ -368,4 +372,5 @@ def ingest_opendata_sources(
         "matched": companies_matched,
         "created": len(created_items_total),
         "dry_run": dry_run,
+        "processed_company_ids": processed_company_ids,
     }

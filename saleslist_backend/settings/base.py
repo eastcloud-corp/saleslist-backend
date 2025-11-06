@@ -211,6 +211,7 @@ POWERPLEXY_DAILY_RECORD_LIMIT = (
     if _powerplexy_daily_record_limit not in (None, "")
     else None
 )
+ENABLE_REVIEW_SAMPLE_API = config("ENABLE_REVIEW_SAMPLE_API", default=False, cast=bool)
 
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")

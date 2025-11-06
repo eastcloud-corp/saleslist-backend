@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence
 
 from celery import shared_task, group
 from django.conf import settings
@@ -25,6 +25,28 @@ CHUNK_SIZE = getattr(settings, "FACEBOOK_SYNC_CHUNK_SIZE", 500)
 def _chunked(iterable: Sequence[int], size: int) -> Iterable[List[int]]:
     for index in range(0, len(iterable), size):
         yield list(iterable[index : index + size])
+
+
+def _unique_int_list(values: Sequence[int]) -> List[int]:
+    seen = set()
+    unique: List[int] = []
+    for value in values:
+        iv = int(value)
+        if iv in seen:
+            continue
+        seen.add(iv)
+        unique.append(iv)
+    return unique
+
+
+def _metadata_with_processed(base: Dict[str, object], processed_ids: Sequence[int]) -> Dict[str, object]:
+    unique_ids = _unique_int_list(processed_ids)
+    metadata: Dict[str, object] = {**base, "processed_count": len(unique_ids)}
+    if unique_ids:
+        metadata["processed_company_ids"] = unique_ids[:100]
+        if len(unique_ids) > 100:
+            metadata["processed_company_ids_truncated"] = True
+    return metadata
 
 
 @shared_task(bind=True, ignore_result=True)
@@ -153,19 +175,23 @@ def run_corporate_number_import_task(self, payload: Optional[dict] = None, execu
             "skipped_rate_limit": int(stats.get("skipped_rate_limit", 0)),
         }
         skipped_count = sum(skip_breakdown.values())
+        processed_ids = result.get("processed_company_ids") or []
         tracker.complete_success(
             input_count=int(stats.get("checked", 0)),
             inserted_count=int(result.get("created_count", 0)),
             skipped_count=skipped_count,
             error_count=int(stats.get("errors", 0)),
             skip_breakdown=skip_breakdown,
-            metadata={
-                **tracker_metadata,
-                "summary": result.get("summary"),
-                "batch_ids": result.get("batch_ids"),
-                "skipped": result.get("skipped", False),
-                "skipped_reason": result.get("skipped_reason"),
-            },
+            metadata=_metadata_with_processed(
+                {
+                    **tracker_metadata,
+                    "summary": result.get("summary"),
+                    "batch_ids": result.get("batch_ids"),
+                    "skipped": result.get("skipped", False),
+                    "skipped_reason": result.get("skipped_reason"),
+                },
+                processed_ids,
+            ),
         )
         logger.info("Corporate number import completed. summary=%s", result.get("summary"))
         return result
@@ -217,13 +243,14 @@ def run_opendata_ingestion_task(self, payload: Optional[dict] = None, execution_
         rows = int(result.get("rows", 0))
         created = int(result.get("created", 0))
         skipped = rows - created if rows > created else 0
+        processed_ids = result.get("processed_company_ids") or []
         tracker.complete_success(
             input_count=rows,
             inserted_count=created,
             skipped_count=skipped,
             error_count=0,
             skip_breakdown={"unmatched": skipped},
-            metadata={**tracker_metadata, "result": result},
+            metadata=_metadata_with_processed({**tracker_metadata, "result": result}, processed_ids),
         )
         logger.info(
             "Open data ingestion finished. sources=%s rows=%s matched=%s created=%s",

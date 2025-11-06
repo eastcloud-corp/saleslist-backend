@@ -479,11 +479,11 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
         request = getattr(self, 'request', None)
         if request is None:
             return queryset
-
+        action = getattr(self, 'action', None)
         status_param = request.query_params.get('status')
         if status_param:
             queryset = queryset.filter(status=status_param)
-        else:
+        elif action not in {'retrieve', 'decide'}:
             queryset = queryset.filter(
                 status__in=[
                     CompanyReviewBatch.STATUS_PENDING,
@@ -592,6 +592,17 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
     def decide(self, request, pk=None):
         """レビュー項目の承認／否認を反映"""
         batch = self.get_object()
+        if batch.status not in (
+            CompanyReviewBatch.STATUS_PENDING,
+            CompanyReviewBatch.STATUS_IN_REVIEW,
+        ):
+            return Response(
+                {
+                    'detail': 'このレビューは処理済みのため更新できません。',
+                    'status': 'conflict',
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
         serializer = CompanyReviewDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         items_payload = serializer.validated_data['items']
@@ -606,6 +617,17 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
                 .get(pk=batch.pk)
             )
             company = Company.objects.select_for_update().get(pk=batch.company_id)
+            if batch.status not in (
+                CompanyReviewBatch.STATUS_PENDING,
+                CompanyReviewBatch.STATUS_IN_REVIEW,
+            ):
+                return Response(
+                    {
+                        'detail': 'このレビューは処理済みのため更新できません。',
+                        'status': 'conflict',
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
             items_map = {item.id: item for item in batch.items.all()}
             update_fields = set()
             history_records = []
@@ -749,6 +771,11 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['post'], url_path='generate-sample')
     def generate_sample(self, request):
         """開発用: サンプル候補を生成"""
+        if not settings.DEBUG and not getattr(settings, 'ENABLE_REVIEW_SAMPLE_API', False):
+            return Response(
+                {'detail': 'この操作は開発環境専用です。'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         company_id = request.data.get('company_id')
         fields = request.data.get('fields')
 

@@ -31,6 +31,28 @@ AI_SOURCE_DETAIL = "powerplexy"
 DEFAULT_DAILY_LIMIT = 500
 
 
+def _unique_int_list(values: Sequence[int]) -> List[int]:
+    seen = set()
+    unique: List[int] = []
+    for value in values:
+        iv = int(value)
+        if iv in seen:
+            continue
+        seen.add(iv)
+        unique.append(iv)
+    return unique
+
+
+def _metadata_with_processed(base: Dict[str, object], processed_ids: Sequence[int]) -> Dict[str, object]:
+    unique_ids = _unique_int_list(processed_ids)
+    metadata: Dict[str, object] = {**base, "processed_count": len(unique_ids)}
+    if unique_ids:
+        metadata["processed_company_ids"] = unique_ids[:100]
+        if len(unique_ids) > 100:
+            metadata["processed_company_ids_truncated"] = True
+    return metadata
+
+
 def _reverse_field_map() -> Dict[str, str]:
     return {label: field for field, label in TARGET_FIELDS.items()}
 
@@ -68,6 +90,7 @@ def _companies_requiring_update(limit: int, company_ids: Optional[Sequence[int]]
 def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional[str] = None) -> dict:
     payload = payload or {}
     tracker_metadata = {"options": payload}
+    processed_company_ids: List[int] = []
 
     daily_limit = payload.get(
         "limit", getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", DEFAULT_DAILY_LIMIT)
@@ -100,14 +123,18 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                 "usage_calls": usage_snapshot.calls,
                 "usage_cost": usage_snapshot.cost,
             })
-            run_tracker.complete_success(metadata={
-                "result": "skipped",
-                "reason": "usage_limit",
-                "usage": usage_snapshot_dict,
-            })
+            run_tracker.complete_success(metadata=_metadata_with_processed(
+                {
+                    "result": "skipped",
+                    "reason": "usage_limit",
+                    "usage": usage_snapshot_dict,
+                },
+                [],
+            ))
             return {
                 "status": "skipped",
                 "reason": "usage_limit",
+                "processed_company_ids": [],
                 "usage": usage_snapshot_dict,
             }
 
@@ -115,21 +142,28 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
             client = PowerplexyClient()
         except PowerplexyConfigurationError as exc:
             notify_error("PowerPlexyの設定が不完全なためAI補完をスキップ", extra={"error": str(exc)})
-            run_tracker.complete_success(metadata={
-                "result": "skipped",
-                "reason": "missing_api_key",
-            })
-            return {"status": "skipped", "reason": "missing_api_key"}
+            run_tracker.complete_success(metadata=_metadata_with_processed(
+                {
+                    "result": "skipped",
+                    "reason": "missing_api_key",
+                },
+                [],
+            ))
+            return {"status": "skipped", "reason": "missing_api_key", "processed_company_ids": []}
 
         companies = _companies_requiring_update(daily_limit, company_ids)
+        processed_company_ids = [company.id for company in companies]
         if not companies:
             logger.info("No companies require AI enrichment")
-            run_tracker.complete_success(metadata={
-                "result": "ok",
-                "processed": 0,
-                "created_candidates": 0,
-            })
-            return {"status": "ok", "processed": 0, "created_candidates": 0}
+            run_tracker.complete_success(metadata=_metadata_with_processed(
+                {
+                    "result": "ok",
+                    "processed": 0,
+                    "created_candidates": 0,
+                },
+                [],
+            ))
+            return {"status": "ok", "processed": 0, "created_candidates": 0, "processed_company_ids": []}
 
         reverse_map = _reverse_field_map()
         total_candidates = 0
@@ -225,14 +259,17 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
         )
 
         run_tracker.complete_success(
-            metadata={
-                "result": "ok",
-                "processed": len(companies),
-                "created_candidates": total_candidates,
-                "calls": calls_made,
-                "usage_before": usage_snapshot_dict,
-                "usage_after": usage_after_dict,
-            },
+            metadata=_metadata_with_processed(
+                {
+                    "result": "ok",
+                    "processed": len(companies),
+                    "created_candidates": total_candidates,
+                    "calls": calls_made,
+                    "usage_before": usage_snapshot_dict,
+                    "usage_after": usage_after_dict,
+                },
+                processed_company_ids,
+            ),
             input_count=len(companies),
             inserted_count=total_candidates,
             skipped_count=0,
@@ -244,4 +281,5 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
             "processed": len(companies),
             "created_candidates": total_candidates,
             "calls": calls_made,
+            "processed_company_ids": processed_company_ids,
         }
