@@ -233,6 +233,22 @@ class ClientAvailableCompaniesTests(TestCase):
         self.assertEqual(normal_status['types'], [])
         self.assertEqual(normal_status['reasons'], {})
 
+    def test_available_companies_respects_page_size_param(self):
+        """page_size クエリで取得件数を調整できる"""
+        for index in range(120):
+            Company.objects.create(
+                name=f'追加企業{index}',
+                industry='IT',
+                is_global_ng=False,
+            )
+
+        url = reverse('client-available-companies', kwargs={'pk': self.client_obj.pk})
+        response = self.api_client.get(f"{url}?page_size=120")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('results', response.data)
+        self.assertEqual(len(response.data['results']), 120)
+
 
 class ClientExportCompaniesTests(TestCase):
     """クライアント企業CSVエクスポートのテスト"""
