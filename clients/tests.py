@@ -249,6 +249,18 @@ class ClientAvailableCompaniesTests(TestCase):
         self.assertIn('results', response.data)
         self.assertEqual(len(response.data['results']), 120)
 
+    def test_available_companies_supports_ordering_param(self):
+        Company.objects.create(name='かきくけこ株式会社', industry='IT')
+        Company.objects.create(name='あいうえお株式会社', industry='IT')
+        Company.objects.create(name='さしすせそ株式会社', industry='IT')
+
+        url = reverse('client-available-companies', kwargs={'pk': self.client_obj.pk})
+        response = self.api_client.get(f"{url}?ordering=-name&page_size=5")
+
+        self.assertEqual(response.status_code, 200)
+        names = [item['name'] for item in response.data['results'][:3]]
+        self.assertEqual(names, sorted(names, reverse=True))
+
 
 class ClientExportCompaniesTests(TestCase):
     """クライアント企業CSVエクスポートのテスト"""

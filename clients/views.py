@@ -173,6 +173,13 @@ class ClientViewSet(viewsets.ModelViewSet):
 
         exclude_ng = str(request.query_params.get('exclude_ng', '')).lower() in ['1', 'true', 'yes', 'on']
 
+        ordering_param = request.query_params.get('ordering')
+        allowed_ordering = {
+            'name': 'name',
+            '-name': '-name',
+        }
+        ordering = allowed_ordering.get(ordering_param, 'name')
+
         if exclude_ng:
             client_ng_qs = client.ng_companies.all()
             client_ng_ids = list(
@@ -184,6 +191,8 @@ class ClientViewSet(viewsets.ModelViewSet):
             if client_ng_names:
                 queryset = queryset.exclude(name__in=client_ng_names)
             queryset = queryset.filter(is_global_ng=False)
+
+        queryset = queryset.order_by(ordering)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
