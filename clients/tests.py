@@ -297,3 +297,161 @@ class ClientExportCompaniesTests(TestCase):
         data_names = {row[4] for row in rows[1:]}
         self.assertIn('企業A', data_names)
         self.assertIn('企業B', data_names)
+
+
+class ClientNGBulkAddTests(TestCase):
+    """NGリスト一括追加APIのテスト"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='bulk@example.com',
+            password='password123',
+            username='bulk@example.com',
+            name='一括追加ユーザー'
+        )
+        self.client_obj = Client.objects.create(name='一括追加クライアント')
+        self.api_client = APIClient()
+        self.api_client.force_authenticate(self.user)
+
+        # テスト用企業を作成
+        self.company_1 = Company.objects.create(name='企業1', industry='IT')
+        self.company_2 = Company.objects.create(name='企業2', industry='IT')
+        self.company_3 = Company.objects.create(name='企業3', industry='IT')
+        self.company_duplicate = Company.objects.create(name='重複企業', industry='IT')
+        self.non_existent_id = 99999
+
+        # 事前に重複企業をNGリストに追加
+        ClientNGCompany.objects.create(
+            client=self.client_obj,
+            company=self.company_duplicate,
+            company_name=self.company_duplicate.name,
+            matched=True,
+            reason='既存理由',
+            is_active=True
+        )
+
+    def test_bulk_add_ng_companies_success(self):
+        """複数企業の一括追加が正常に動作する"""
+        url = reverse('client-bulk-add-ng-companies', kwargs={'pk': self.client_obj.pk})
+        payload = {
+            'company_ids': [self.company_1.id, self.company_2.id, self.company_3.id],
+            'reason': '一括追加テスト'
+        }
+        response = self.api_client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['added_count'], 3)
+        self.assertEqual(data['skipped_count'], 0)
+        self.assertEqual(data['error_count'], 0)
+        self.assertEqual(len(data['added']), 3)
+
+        # データベースで確認
+        ng_companies = ClientNGCompany.objects.filter(client=self.client_obj)
+        self.assertEqual(ng_companies.count(), 4)  # 既存の1件 + 新規3件
+
+        for company in [self.company_1, self.company_2, self.company_3]:
+            ng_company = ng_companies.get(company_name=company.name)
+            self.assertEqual(ng_company.company_id, company.id)
+            self.assertTrue(ng_company.matched)
+            self.assertEqual(ng_company.reason, '一括追加テスト')
+            self.assertTrue(ng_company.is_active)
+
+    def test_bulk_add_ng_companies_with_duplicates(self):
+        """既にNGリストに登録されている企業はスキップされる"""
+        url = reverse('client-bulk-add-ng-companies', kwargs={'pk': self.client_obj.pk})
+        payload = {
+            'company_ids': [self.company_1.id, self.company_duplicate.id, self.company_2.id],
+            'reason': '重複テスト'
+        }
+        response = self.api_client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['added_count'], 2)  # company_1, company_2
+        self.assertEqual(data['skipped_count'], 1)  # company_duplicate
+        self.assertEqual(data['error_count'], 0)
+        self.assertEqual(len(data['added']), 2)
+        self.assertEqual(len(data['skipped']), 1)
+        self.assertEqual(data['skipped'][0]['company_id'], self.company_duplicate.id)
+        self.assertEqual(data['skipped'][0]['reason'], '既にNGリストに登録されています')
+
+    def test_bulk_add_ng_companies_with_nonexistent_ids(self):
+        """存在しない企業IDはエラーとして記録される"""
+        url = reverse('client-bulk-add-ng-companies', kwargs={'pk': self.client_obj.pk})
+        payload = {
+            'company_ids': [self.company_1.id, self.non_existent_id, self.company_2.id],
+            'reason': 'エラーテスト'
+        }
+        response = self.api_client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['added_count'], 2)  # company_1, company_2
+        self.assertEqual(data['skipped_count'], 0)
+        self.assertEqual(data['error_count'], 1)  # non_existent_id
+        self.assertEqual(len(data['errors']), 1)
+        self.assertEqual(data['errors'][0]['company_id'], self.non_existent_id)
+        self.assertIn('見つかりません', data['errors'][0]['error'])
+
+    def test_bulk_add_ng_companies_requires_company_ids(self):
+        """company_idsが必須であることを確認"""
+        url = reverse('client-bulk-add-ng-companies', kwargs={'pk': self.client_obj.pk})
+        
+        # company_idsが無い場合
+        response = self.api_client.post(url, {'reason': 'テスト'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json())
+
+        # company_idsが空配列の場合
+        response = self.api_client.post(url, {'company_ids': [], 'reason': 'テスト'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json())
+
+        # company_idsが配列でない場合
+        response = self.api_client.post(url, {'company_ids': 'not-an-array', 'reason': 'テスト'}, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json())
+
+    def test_bulk_add_ng_companies_transaction_rollback(self):
+        """トランザクションの整合性を確認（部分的失敗でも追加されたものは保持される）"""
+        url = reverse('client-bulk-add-ng-companies', kwargs={'pk': self.client_obj.pk})
+        payload = {
+            'company_ids': [self.company_1.id, self.non_existent_id, self.company_2.id],
+            'reason': 'トランザクションテスト'
+        }
+        response = self.api_client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['added_count'], 2)
+        self.assertEqual(data['error_count'], 1)
+
+        # 正常に追加された企業はデータベースに存在する
+        self.assertTrue(
+            ClientNGCompany.objects.filter(
+                client=self.client_obj,
+                company=self.company_1
+            ).exists()
+        )
+        self.assertTrue(
+            ClientNGCompany.objects.filter(
+                client=self.client_obj,
+                company=self.company_2
+            ).exists()
+        )
+
+    def test_bulk_add_ng_companies_without_reason(self):
+        """理由が無くても追加できる"""
+        url = reverse('client-bulk-add-ng-companies', kwargs={'pk': self.client_obj.pk})
+        payload = {
+            'company_ids': [self.company_1.id]
+        }
+        response = self.api_client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['added_count'], 1)
+
+        ng_company = ClientNGCompany.objects.get(client=self.client_obj, company=self.company_1)
+        self.assertEqual(ng_company.reason, '')
