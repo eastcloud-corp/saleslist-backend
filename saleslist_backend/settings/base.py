@@ -223,11 +223,11 @@ CELERY_TASK_DEFAULT_QUEUE = config("CELERY_TASK_DEFAULT_QUEUE", default="default
 CELERY_BEAT_SCHEDULE = {
     "sync-facebook-activity": {
         "task": "companies.tasks.dispatch_facebook_sync",
-        "schedule": crontab(hour=2, minute=0, nowfun=timezone.now),
+        "schedule": crontab(hour=2, minute=0, timezone="Asia/Tokyo"),
     },
     "run-ai-enrich": {
         "task": "ai_enrichment.tasks.run_ai_enrich",
-        "schedule": crontab(hour=3, minute=0, nowfun=timezone.now),
+        "schedule": crontab(hour=3, minute=0, timezone="Asia/Tokyo"),
     },
 }
 
