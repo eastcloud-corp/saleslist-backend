@@ -104,6 +104,102 @@ class ClientViewSet(viewsets.ModelViewSet):
         serializer = ClientNGCompanySerializer(ng_company)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+    @action(detail=True, methods=['post'], url_path='ng-companies/bulk-add')
+    def bulk_add_ng_companies(self, request, pk=None):
+        """NGリストに複数企業を一括追加"""
+        client = self.get_object()
+        company_ids = request.data.get('company_ids', [])
+        reason = (request.data.get('reason') or '').strip()
+        
+        if not company_ids or not isinstance(company_ids, list):
+            return Response({
+                'error': 'company_idsは配列形式で必須です'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(company_ids) == 0:
+            return Response({
+                'error': 'company_idsに少なくとも1つの企業IDが必要です'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        from companies.models import Company
+        
+        results = {
+            'added_count': 0,
+            'skipped_count': 0,
+            'error_count': 0,
+            'added': [],
+            'skipped': [],
+            'errors': []
+        }
+        
+        with transaction.atomic():
+            for company_id in company_ids:
+                try:
+                    company = Company.objects.get(id=company_id)
+                    company_name = company.name
+                    matched = True
+                except Company.DoesNotExist:
+                    results['error_count'] += 1
+                    results['errors'].append({
+                        'company_id': company_id,
+                        'error': f'企業ID {company_id} が見つかりません'
+                    })
+                    continue
+                
+                # 既存のNGリストに登録されているかチェック
+                existing_ng = ClientNGCompany.objects.filter(
+                    client=client,
+                    company_name=company_name
+                ).first()
+                
+                if existing_ng:
+                    results['skipped_count'] += 1
+                    results['skipped'].append({
+                        'company_id': company_id,
+                        'company_name': company_name,
+                        'reason': '既にNGリストに登録されています'
+                    })
+                    continue
+                
+                # NGリストに追加
+                ng_company, created = ClientNGCompany.objects.update_or_create(
+                    client=client,
+                    company_name=company_name,
+                    defaults={
+                        'company': company,
+                        'matched': matched,
+                        'reason': reason,
+                        'is_active': True,
+                    }
+                )
+                
+                if created:
+                    results['added_count'] += 1
+                    results['added'].append({
+                        'company_id': company_id,
+                        'company_name': company_name,
+                        'ng_id': ng_company.id
+                    })
+                else:
+                    results['skipped_count'] += 1
+                    results['skipped'].append({
+                        'company_id': company_id,
+                        'company_name': company_name,
+                        'reason': '既にNGリストに登録されています'
+                    })
+        
+        return Response({
+            'message': f'{results["added_count"]}社をNGリストに追加しました' + 
+                      (f'（{results["skipped_count"]}社スキップ、{results["error_count"]}件エラー）' 
+                       if results['skipped_count'] > 0 or results['error_count'] > 0 else ''),
+            'added_count': results['added_count'],
+            'skipped_count': results['skipped_count'],
+            'error_count': results['error_count'],
+            'added': results['added'],
+            'skipped': results['skipped'],
+            'errors': results['errors']
+        }, status=status.HTTP_200_OK)
+    
     @action(detail=True, methods=['get'])
     def stats(self, request, pk=None):
         """クライアント統計情報取得"""
