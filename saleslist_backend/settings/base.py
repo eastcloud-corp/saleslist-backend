@@ -216,18 +216,18 @@ ENABLE_REVIEW_SAMPLE_API = config("ENABLE_REVIEW_SAMPLE_API", default=False, cas
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
-CELERY_ENABLE_UTC = True
+CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = "Asia/Tokyo"
 CELERY_TASK_TIME_LIMIT = config("CELERY_TASK_TIME_LIMIT", default=7200, cast=int)
 CELERY_TASK_DEFAULT_QUEUE = config("CELERY_TASK_DEFAULT_QUEUE", default="default")
 CELERY_BEAT_SCHEDULE = {
     "sync-facebook-activity": {
         "task": "companies.tasks.dispatch_facebook_sync",
-        "schedule": crontab(hour=2, minute=0, timezone="Asia/Tokyo"),
+        "schedule": crontab(hour=2, minute=0),
     },
     "run-ai-enrich": {
         "task": "ai_enrichment.tasks.run_ai_enrich",
-        "schedule": crontab(hour=3, minute=0, timezone="Asia/Tokyo"),
+        "schedule": crontab(hour=3, minute=0),
     },
 }
 
