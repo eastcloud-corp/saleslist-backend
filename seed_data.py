@@ -18,30 +18,232 @@ from companies.models import Company
 from projects.models import Project, ProjectCompany
 
 def seed_industries():
-    """業界マスターデータを投入"""
-    industries = [
-        ("IT・ソフトウェア", 1),
-        ("マーケティング・広告", 2),
-        ("製造業", 3),
-        ("人材・派遣", 4),
-        ("金融・保険", 5),
-        ("不動産", 6),
-        ("小売・EC", 7),
-        ("飲食・宿泊", 8),
-        ("医療・介護", 9),
-        ("教育・学習支援", 10),
-        ("その他", 99),
+    """業界マスターデータを投入（階層構造対応）"""
+    # 業界カテゴリ（親業界）
+    industry_categories = [
+        ("小売・卸売", 1),
+        ("飲食・宿泊", 2),
+        ("サービス", 3),
+        ("IT・マスコミ", 4),
+        ("コンサルティング・専門サービス", 5),
+        ("人材", 6),
+        ("医療・福祉", 7),
+        ("不動産", 8),
+        ("金融", 9),
+        ("教育・学習", 10),
+        ("建設・建築", 11),
+        ("運輸・物流", 12),
+        ("製造業", 13),
+        ("エネルギー", 14),
+        ("農林水産", 15),
+        ("鉱業", 16),
+        ("官公庁", 17),
+        ("団体・NPO", 18),
+        ("NPO", 19),
+        ("その他", 20),
+        ("未分類", 21),
     ]
     
-    for name, order in industries:
+    # 業種（子業界）の定義
+    sub_industries_data = {
+        "小売・卸売": [
+            "百貨店",
+            "スーパー",
+            "コンビニ",
+            "食料品",
+            "酒屋",
+            "ファッション、洋服",
+            "書籍、文房具、がん具",
+            "医薬品、化粧品",
+            "自動車、自転車",
+            "電器",
+            "家具、インテリア",
+            "ガソリンスタンド、燃料",
+            "日用雑貨",
+            "建築、鉱物、金属",
+            "機械器具",
+            "総合卸売、商社、貿易",
+            "通信販売",
+            "その他小売、卸売",
+        ],
+        "飲食・宿泊": [
+            "食堂、レストラン",
+            "居酒屋、バー",
+            "喫茶店",
+            "ファーストフード",
+            "持ち帰り、デリバリー",
+            "旅館、ホテル",
+        ],
+        "サービス": [
+            "旅行、レジャー",
+            "床屋、美容院",
+            "エステ、リラクゼーション",
+            "ペット",
+            "リース、レンタル",
+            "ビル管理、オフィスサポート",
+            "その他サービス",
+        ],
+        "IT・マスコミ": [
+            "情報通信、インターネット",
+            "ソフトウェア、SI",
+            "デザイン、製作",
+            "広告、販促",
+            "放送、出版、マスコミ",
+        ],
+        "コンサルティング・専門サービス": [
+            "経営コンサルティング",
+            "会計、税務、法務、労務",
+        ],
+        "人材": [
+            "人材",
+        ],
+        "医療・福祉": [
+            "病院",
+            "医院、診療所",
+            "歯医者",
+            "動物病院",
+            "介護、福祉",
+        ],
+        "不動産": [
+            "不動産売買",
+            "不動産賃貸",
+            "不動産開発",
+        ],
+        "金融": [
+            "銀行",
+            "貸金業、クレジットカード",
+            "金融商品取引",
+            "保険",
+            "その他金融",
+        ],
+        "教育・学習": [
+            "幼稚園、保育園",
+            "小学校、中学校",
+            "高校",
+            "大学",
+            "専門学校",
+            "予備校",
+            "進学塾、学習塾",
+            "外国語会話",
+            "パソコンスクール",
+            "幼児教室",
+            "その他教室、スクール",
+        ],
+        "建設・建築": [
+            "総合（建設・建築）",
+            "専門（建設・建築）",
+            "設備（建設・建築）",
+        ],
+        "運輸・物流": [
+            "運輸",
+            "倉庫",
+            "運輸付帯サービス",
+        ],
+        "製造業": [
+            "食料品・飲料",
+            "たばこ",
+            "飼料",
+            "繊維工業",
+            "衣服、繊維",
+            "パルプ、紙",
+            "印刷",
+            "油脂加工、洗剤、塗料",
+            "化粧品",
+            "医薬品",
+            "その他の化学工業",
+            "プラスチック製品",
+            "ゴム製品",
+            "一般機械",
+            "電気、電子機器",
+            "自動車、輸送機器",
+            "精密機械",
+            "鉄、金属",
+            "その他製造業",
+        ],
+        "エネルギー": [
+            "電気",
+            "ガス",
+            "水道",
+        ],
+        "農林水産": [
+            "農林水産",
+        ],
+        "鉱業": [
+            "鉱業",
+        ],
+        "官公庁": [
+            "官公庁",
+        ],
+        "団体・NPO": [
+            "組合",
+            "団体",
+            "協会",
+        ],
+        "NPO": [
+            "NPO",
+        ],
+        "その他": [
+            "その他",
+        ],
+        "未分類": [
+            "未分類",
+        ],
+    }
+    
+    # 業界カテゴリを作成
+    category_map = {}
+    for name, order in industry_categories:
         industry, created = Industry.objects.get_or_create(
             name=name,
-            defaults={'display_order': order}
+            defaults={
+                'display_order': order,
+                'is_category': True,
+                'parent_industry': None
+            }
         )
+        category_map[name] = industry
         if created:
-            print(f"✓ 業界 '{name}' を作成しました")
+            print(f"✓ 業界カテゴリ '{name}' を作成しました")
         else:
-            print(f"- 業界 '{name}' は既に存在します")
+            # 既存データの更新
+            if not industry.is_category or industry.parent_industry is not None:
+                industry.is_category = True
+                industry.parent_industry = None
+                industry.display_order = order
+                industry.save()
+                print(f"✓ 業界カテゴリ '{name}' を更新しました")
+            else:
+                print(f"- 業界カテゴリ '{name}' は既に存在します")
+    
+    # 業種（子業界）を作成
+    sub_order = 1
+    for category_name, sub_names in sub_industries_data.items():
+        parent = category_map.get(category_name)
+        if not parent:
+            continue
+        
+        for sub_name in sub_names:
+            sub_industry, created = Industry.objects.get_or_create(
+                name=sub_name,
+                defaults={
+                    'display_order': sub_order,
+                    'is_category': False,
+                    'parent_industry': parent
+                }
+            )
+            if created:
+                print(f"  ✓ 業種 '{sub_name}' (親: {category_name}) を作成しました")
+            else:
+                # 既存データの更新
+                if sub_industry.is_category or sub_industry.parent_industry != parent:
+                    sub_industry.is_category = False
+                    sub_industry.parent_industry = parent
+                    sub_industry.display_order = sub_order
+                    sub_industry.save()
+                    print(f"  ✓ 業種 '{sub_name}' を更新しました")
+                else:
+                    print(f"  - 業種 '{sub_name}' は既に存在します")
+            sub_order += 1
 
 def seed_statuses():
     """ステータスマスターデータを投入"""

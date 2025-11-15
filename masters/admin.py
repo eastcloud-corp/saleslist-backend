@@ -8,14 +8,17 @@ from .models import (
 
 @admin.register(Industry)
 class IndustryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'display_order', 'is_active', 'created_at')
-    list_filter = ('is_active', 'created_at')
+    list_display = ('name', 'parent_industry', 'is_category', 'display_order', 'is_active', 'created_at')
+    list_filter = ('is_category', 'is_active', 'parent_industry', 'created_at')
     search_fields = ('name',)
     ordering = ('display_order', 'name')
     
     fieldsets = (
         ('基本情報', {
             'fields': ('name', 'display_order', 'is_active')
+        }),
+        ('階層構造', {
+            'fields': ('parent_industry', 'is_category')
         }),
     )
     

@@ -23,8 +23,20 @@ class IndustryViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['display_order', 'name']
     
     def list(self, request, *args, **kwargs):
-        """業界一覧取得（カスタムレスポンス形式）"""
-        queryset = self.get_queryset()
+        """業界一覧取得（カスタムレスポンス形式、階層構造対応）"""
+        # 階層構造を返す場合は、親業界（カテゴリ）のみを取得
+        include_hierarchy = request.query_params.get('hierarchy', 'false').lower() == 'true'
+        
+        if include_hierarchy:
+            # 親業界（カテゴリ）のみを取得
+            queryset = self.get_queryset().filter(
+                is_category=True,
+                parent_industry__isnull=True
+            )
+        else:
+            # 従来通り全業界を取得
+            queryset = self.get_queryset()
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'results': serializer.data
