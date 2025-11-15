@@ -77,6 +77,7 @@ class ProjectCompanySerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
     company_industry = serializers.CharField(source='company.industry', read_only=True)
     company_id = serializers.IntegerField(source='company.id', read_only=True)
+    company = CompanyListSerializer(read_only=True)
     
     class Meta:
         model = ProjectCompany

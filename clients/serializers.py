@@ -10,8 +10,9 @@ class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
         fields = [
-            'id', 'name', 'company_type', 'industry', 'contact_person',
+            'id', 'name', 'company_type', 'industry', 'contact_person', 'contact_person_position',
             'contact_email', 'contact_phone', 'address', 'website', 'notes',
+            'facebook_url', 'employee_count', 'revenue', 'prefecture',
             'is_active', 'created_at', 'updated_at', 'project_count', 'active_project_count'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'project_count', 'active_project_count']
@@ -31,8 +32,9 @@ class ClientCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
         fields = [
-            'id', 'name', 'company_type', 'industry', 'contact_person',
-            'contact_email', 'contact_phone', 'address', 'website', 'notes'
+            'id', 'name', 'company_type', 'industry', 'contact_person', 'contact_person_position',
+            'contact_email', 'contact_phone', 'address', 'website', 'notes',
+            'facebook_url', 'employee_count', 'revenue', 'prefecture'
         ]
         read_only_fields = ['id']
 
