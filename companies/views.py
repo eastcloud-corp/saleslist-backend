@@ -340,6 +340,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
         from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="companies.csv"'
+        # BOMを追加してExcelで正しく日本語を表示
+        response.write('\ufeff')
         response.write('企業名,業界,従業員数\n')
         return response
 

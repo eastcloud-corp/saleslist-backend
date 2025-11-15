@@ -319,6 +319,8 @@ class ClientViewSet(viewsets.ModelViewSet):
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename=\"client_{client.id}_companies.csv\"'
 
+        # BOMを追加してExcelで正しく日本語を表示
+        response.write('\ufeff')
         writer = csv.writer(response)
         writer.writerow([
             'client_name',

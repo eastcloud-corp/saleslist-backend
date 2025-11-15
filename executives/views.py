@@ -66,6 +66,8 @@ class ExecutiveViewSet(viewsets.ModelViewSet):
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="executives.csv"'
         
+        # BOMを追加してExcelで正しく日本語を表示
+        response.write('\ufeff')
         import csv
         writer = csv.writer(response)
         writer.writerow(['company_name', 'name', 'position', 'facebook_url', 'other_sns_url', 'direct_email', 'notes'])

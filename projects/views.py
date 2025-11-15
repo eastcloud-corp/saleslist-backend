@@ -541,6 +541,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename="project_{project.id}.csv"'
         
+        # BOMを追加してExcelで正しく日本語を表示
+        response.write('\ufeff')
         import csv
         writer = csv.writer(response)
         writer.writerow(['company_name', 'status', 'contact_date', 'notes'])
