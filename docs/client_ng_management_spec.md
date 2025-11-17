@@ -172,6 +172,42 @@ Response: {
   results: ClientNGCompany[]
 }
 
+// NG企業単一追加（既存）
+POST /clients/{id}/ng-companies/add
+Body: {
+  company_id: number
+  company_name: string
+  reason?: string
+}
+Response: ClientNGCompany
+
+// NG企業一括追加（新規）
+POST /clients/{id}/ng-companies/bulk-add
+Body: {
+  company_ids: number[]  // 必須: 企業IDの配列
+  reason?: string        // オプション: NG理由
+}
+Response: {
+  message: string
+  added_count: number
+  skipped_count: number
+  error_count: number
+  added: Array<{
+    company_id: number
+    company_name: string
+    ng_id: number
+  }>
+  skipped: Array<{
+    company_id: number
+    company_name: string
+    reason: string
+  }>
+  errors: Array<{
+    company_id: number
+    error: string
+  }>
+}
+
 // NGリストCSVインポート
 POST /clients/{id}/ng-companies/import
 Body: FormData (CSV file)

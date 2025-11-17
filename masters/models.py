@@ -6,6 +6,15 @@ class Industry(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="業界名")
     display_order = models.IntegerField(default=0, verbose_name="表示順序")
     is_active = models.BooleanField(default=True, verbose_name="アクティブ状態")
+    parent_industry = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='sub_industries',
+        verbose_name="親業界"
+    )
+    is_category = models.BooleanField(default=False, verbose_name="業界カテゴリ")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")
 
@@ -18,6 +27,8 @@ class Industry(models.Model):
             models.Index(fields=['name']),
             models.Index(fields=['is_active']),
             models.Index(fields=['display_order']),
+            models.Index(fields=['parent_industry']),
+            models.Index(fields=['is_category']),
         ]
 
     def __str__(self):

@@ -9,11 +9,18 @@ class Client(models.Model):
     
     # 連絡先情報
     contact_person = models.CharField(max_length=100, blank=True, verbose_name="担当者名")
+    contact_person_position = models.CharField(max_length=100, blank=True, verbose_name="担当者役職")
     contact_email = models.EmailField(blank=True, verbose_name="連絡先メール")
     contact_phone = models.CharField(max_length=50, blank=True, verbose_name="連絡先電話")
     address = models.TextField(blank=True, verbose_name="住所")
     website = models.URLField(blank=True, verbose_name="ウェブサイト")
     notes = models.TextField(blank=True, verbose_name="備考")
+    
+    # 企業情報
+    facebook_url = models.URLField(max_length=500, blank=True, verbose_name="Facebookリンク")
+    employee_count = models.IntegerField(null=True, blank=True, verbose_name="従業員数")
+    revenue = models.BigIntegerField(null=True, blank=True, verbose_name="売上規模")
+    prefecture = models.CharField(max_length=10, blank=True, verbose_name="都道府県")
     is_active = models.BooleanField(default=True, verbose_name="アクティブ状態")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")

@@ -178,12 +178,12 @@ MFA_MAX_RESEND_COUNT = config("MFA_MAX_RESEND_COUNT", default=5, cast=int)
 MFA_TOKEN_LENGTH = config("MFA_TOKEN_LENGTH", default=6, cast=int)
 SENDGRID_API_KEY = config("SENDGRID_API_KEY", default="")
 MFA_EMAIL_FROM = config("MFA_EMAIL_FROM", default="no-reply@saleslist.local")
-MFA_EMAIL_SUBJECT = config("MFA_EMAIL_SUBJECT", default="【セールスナビゲーター】ログイン確認コードのお知らせ")
+MFA_EMAIL_SUBJECT = config("MFA_EMAIL_SUBJECT", default="【ソーシャルナビゲーター】ログイン確認コードのお知らせ")
 MFA_EMAIL_BODY_TEMPLATE = config(
     "MFA_EMAIL_BODY_TEMPLATE",
     default=(
         "{name} 様\n"
-        "セールスナビゲーターへのログインを確認するため、以下の確認コードを入力してください。\n\n"
+        "ソーシャルナビゲーターへのログインを確認するため、以下の確認コードを入力してください。\n\n"
         "確認コード: {token}\n"
         "有効期限: 発行から{ttl_minutes}分\n\n"
         "このメールに心当たりがない場合は破棄してください。"

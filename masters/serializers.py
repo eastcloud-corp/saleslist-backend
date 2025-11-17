@@ -8,10 +8,38 @@ from .models import (
 
 class IndustrySerializer(serializers.ModelSerializer):
     """業界マスター用シリアライザー"""
+    sub_industries = serializers.SerializerMethodField()
     
     class Meta:
         model = Industry
-        fields = ['id', 'name', 'display_order', 'is_active']
+        fields = ['id', 'name', 'display_order', 'is_active', 'parent_industry', 'is_category', 'sub_industries']
+    
+    def get_sub_industries(self, obj):
+        """子業界（業種）を取得"""
+        if obj.is_category:
+            sub_industries = Industry.objects.filter(
+                parent_industry=obj,
+                is_active=True
+            ).order_by('display_order', 'name')
+            result = IndustrySerializer(sub_industries, many=True).data
+            
+            # 特殊カテゴリ（人材、農林水産、鉱業、官公庁、NPO、その他、未分類）の場合、
+            # カテゴリレコード自体を業種としても扱う（nameがuniqueのため）
+            special_categories = ['人材', '農林水産', '鉱業', '官公庁', 'NPO', 'その他', '未分類']
+            if obj.name in special_categories and not sub_industries.exists():
+                # カテゴリレコード自体を業種として返す
+                return [{
+                    'id': obj.id,
+                    'name': obj.name,
+                    'display_order': obj.display_order,
+                    'is_active': obj.is_active,
+                    'parent_industry': None,
+                    'is_category': False,
+                    'sub_industries': []
+                }]
+            
+            return result
+        return []
 
 
 class StatusSerializer(serializers.ModelSerializer):

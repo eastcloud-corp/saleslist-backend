@@ -541,18 +541,41 @@ class ProjectViewSet(viewsets.ModelViewSet):
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename="project_{project.id}.csv"'
         
+        # BOMを追加してExcelで正しく日本語を表示
+        response.write('\ufeff')
         import csv
         writer = csv.writer(response)
-        writer.writerow(['company_name', 'status', 'contact_date', 'notes'])
+        # 日本語ヘッダー
+        writer.writerow([
+            '企業名',
+            '担当者名',
+            '担当者役職',
+            'Facebook',
+            '業界',
+            '従業員数',
+            '売上',
+            '所在地',
+            'ステータス',
+            '最終接触',
+            '備考',
+        ])
         
         # ProjectCompany データをエクスポート
         from .models import ProjectCompany
         for pc in ProjectCompany.objects.filter(project=project).select_related('company'):
+            company = pc.company
             writer.writerow([
-                pc.company.name,
-                pc.status,
+                company.name if company else pc.company_name or '',
+                company.contact_person_name if company else '',
+                company.contact_person_position if company else '',
+                company.facebook_url if company else '',
+                company.industry if company else pc.company_industry or '',
+                company.employee_count if company else '',
+                company.revenue if company else '',
+                company.prefecture if company else '',
+                pc.status or '',
                 pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
-                pc.notes,
+                pc.notes or '',
             ])
         
         return response

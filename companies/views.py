@@ -336,11 +336,54 @@ class CompanyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='export_csv')  
     def export_csv(self, request):
         """企業CSVエクスポート（OpenAPI仕様準拠）"""
-        # 簡易実装：CSVダウンロード
         from django.http import HttpResponse
+        import csv
+        
+        # フィルタリングされたクエリセットを取得
+        queryset = self.filter_queryset(self.get_queryset())
+        
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="companies.csv"'
-        response.write('企業名,業界,従業員数\n')
+        
+        # BOMを追加してExcelで正しく日本語を表示
+        response.write('\ufeff')
+        writer = csv.writer(response)
+        
+        # 日本語ヘッダー
+        writer.writerow([
+            '企業名',
+            '担当者名',
+            '担当者役職',
+            'Facebook',
+            '業界',
+            '従業員数',
+            '売上',
+            '所在地',
+            'Webサイト',
+            '電話番号',
+            'メールアドレス',
+            '備考',
+            'ステータス',
+        ])
+        
+        # 企業データをエクスポート
+        for company in queryset:
+            writer.writerow([
+                company.name or '',
+                company.contact_person_name or '',
+                company.contact_person_position or '',
+                company.facebook_url or '',
+                company.industry or '',
+                company.employee_count or '',
+                company.revenue or '',
+                company.prefecture or '',
+                company.website_url or company.website or '',
+                company.phone or '',
+                company.contact_email or company.email or '',
+                company.notes or company.description or '',
+                company.status or '',
+            ])
+        
         return response
 
     @action(detail=False, methods=['post'], url_path='bulk-add-to-projects')
