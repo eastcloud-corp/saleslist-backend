@@ -35,7 +35,19 @@ def compute_next_schedules(reference_time: Optional[datetime] = None) -> Dict[st
         if not schedule:
             results[job_name] = None
             continue
-        remaining = schedule.remaining_estimate(reference_time)
+        
+        # scheduleがtimedeltaの場合は直接使用、それ以外はremaining_estimateメソッドを呼び出す
+        if isinstance(schedule, timedelta):
+            remaining = schedule
+        else:
+            # Celeryのスケジュールオブジェクト（crontabなど）の場合
+            if hasattr(schedule, 'remaining_estimate'):
+                remaining = schedule.remaining_estimate(reference_time)
+            else:
+                # remaining_estimateメソッドがない場合はNoneを返す
+                results[job_name] = None
+                continue
+        
         if isinstance(remaining, timedelta):
             next_time = reference_time + remaining
             if timezone.is_naive(next_time):

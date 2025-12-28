@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any, Dict, Optional
 
 import requests
@@ -17,8 +18,9 @@ from .exceptions import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = "https://api.perplexity.ai/chat/completions"
-DEFAULT_MODEL = "sonar-pro"
+DEFAULT_MODEL = "sonar-pro"  # オンライン検索対応モデル（llama-3.1-sonar-large-128k-onlineは2025年2月に非推奨）
 DEFAULT_TIMEOUT = 30
+DEFAULT_MAX_TOKENS = 1000
 
 
 class PowerplexyClient:
@@ -31,6 +33,7 @@ class PowerplexyClient:
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         timeout: Optional[int] = None,
+        max_tokens: Optional[int] = None,
         session: Optional[requests.Session] = None,
     ) -> None:
         self.api_key = api_key or getattr(settings, "POWERPLEXY_API_KEY", "")
@@ -40,19 +43,30 @@ class PowerplexyClient:
         self.endpoint = endpoint or getattr(settings, "POWERPLEXY_API_ENDPOINT", DEFAULT_ENDPOINT)
         self.model = model or getattr(settings, "POWERPLEXY_MODEL", DEFAULT_MODEL)
         self.timeout = timeout or getattr(settings, "POWERPLEXY_TIMEOUT", DEFAULT_TIMEOUT)
+        self.max_tokens = max_tokens or getattr(settings, "POWERPLEXY_MAX_TOKENS", DEFAULT_MAX_TOKENS)
         self.session = session or requests.Session()
 
-    def query(self, prompt: str) -> Dict[str, Any]:
+    def query(self, prompt: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Perplexity AI APIにリクエストを送信
+        
+        Args:
+            prompt: ユーザープロンプト
+            system_prompt: システムプロンプト（オプション）
+        
+        Returns:
+            APIレスポンスのJSON
+        """
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        
         payload = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are an assistant that responds strictly with valid JSON matching the requested schema.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            "temperature": 0.2,
+            "messages": messages,
+            "temperature": 0.2,  # 低い温度で一貫性のある結果を取得
+            "max_tokens": self.max_tokens,
             "stream": False,
         }
 
@@ -91,8 +105,18 @@ class PowerplexyClient:
 
         return data
 
-    def extract_json(self, prompt: str) -> Dict[str, Any]:
-        data = self.query(prompt)
+    def extract_json(self, prompt: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
+        """
+        プロンプトを送信し、レスポンスからJSONを抽出
+        
+        Args:
+            prompt: ユーザープロンプト
+            system_prompt: システムプロンプト（オプション）
+        
+        Returns:
+            抽出されたJSON辞書
+        """
+        data = self.query(prompt, system_prompt)
         if isinstance(data, dict):
             # Chat completions response: {"choices":[{"message":{"content":"..."}}, ...]}
             choices = data.get("choices")
@@ -109,13 +133,30 @@ class PowerplexyClient:
 
     @staticmethod
     def _parse_json_blob(blob: str) -> Dict[str, Any]:
+        """
+        JSON文字列をパース（コードブロックやマークダウン記号を除去）
+        
+        Args:
+            blob: JSONを含む可能性のある文字列
+        
+        Returns:
+            パースされたJSON辞書
+        """
         blob = blob.strip()
         if not blob:
             return {}
+        
+        # コードブロックを除去
         if blob.startswith("```"):
             lines = [line for line in blob.splitlines() if not line.startswith("```")]
             if lines:
                 blob = "\n".join(lines)
+        
+        # 正規表現でJSONを抽出（テキスト内にJSONが埋め込まれている場合に対応）
+        json_match = re.search(r'\{.*\}', blob, re.DOTALL)
+        if json_match:
+            blob = json_match.group()
+        
         try:
             parsed = json.loads(blob)
         except json.JSONDecodeError as exc:

@@ -195,7 +195,8 @@ MFA_DEBUG_EMAIL_RECIPIENT = config("MFA_DEBUG_EMAIL_RECIPIENT", default="")
 # PowerPlexy AI enrichment configuration
 POWERPLEXY_API_KEY = config("POWERPLEXY_API_KEY", default="")
 POWERPLEXY_API_ENDPOINT = config("POWERPLEXY_API_ENDPOINT", default="https://api.perplexity.ai/chat/completions")
-POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-pro")
+POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-pro")  # llama-3.1-sonar-large-128k-onlineは2025年2月に非推奨
+POWERPLEXY_MAX_TOKENS = config("POWERPLEXY_MAX_TOKENS", default=1000, cast=int)
 POWERPLEXY_TIMEOUT = config("POWERPLEXY_TIMEOUT", default=30, cast=int)
 POWERPLEXY_MONTHLY_COST_LIMIT = config("POWERPLEXY_MONTHLY_COST_LIMIT", default=150.0, cast=float)
 _powerplexy_monthly_call_limit = config("POWERPLEXY_MONTHLY_CALL_LIMIT", default=None)
@@ -226,7 +227,7 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=2, minute=0),
     },
     "run-ai-enrich": {
-        "task": "ai_enrichment.tasks.run_ai_enrich",
+        "task": "ai_enrichment.tasks.run_ai_enrich_scheduled",
         "schedule": crontab(hour=3, minute=0),
     },
 }
