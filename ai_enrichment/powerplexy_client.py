@@ -117,6 +117,7 @@ class PowerplexyClient:
             抽出されたJSON辞書
         """
         data = self.query(prompt, system_prompt)
+        logger.debug("PowerPlexy raw response: %s", data)
         if isinstance(data, dict):
             # Chat completions response: {"choices":[{"message":{"content":"..."}}, ...]}
             choices = data.get("choices")
@@ -124,11 +125,18 @@ class PowerplexyClient:
                 message = choices[0].get("message", {})
                 content = message.get("content")
                 if isinstance(content, str):
-                    return self._parse_json_blob(content)
+                    logger.debug("PowerPlexy content extracted: %s", content[:500])
+                    parsed = self._parse_json_blob(content)
+                    logger.debug("PowerPlexy parsed JSON: %s", parsed)
+                    return parsed
             # Legacy response fallback
             for key in ("answer", "output", "text", "result"):
                 if key in data and isinstance(data[key], str):
-                    return self._parse_json_blob(data[key])
+                    logger.debug("PowerPlexy legacy response key '%s': %s", key, data[key][:500])
+                    parsed = self._parse_json_blob(data[key])
+                    logger.debug("PowerPlexy parsed JSON: %s", parsed)
+                    return parsed
+        logger.error("PowerPlexy unexpected response structure: %s", data)
         raise PowerplexyResponseError("Unexpected PowerPlexy response structure")
 
     @staticmethod

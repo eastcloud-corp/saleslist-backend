@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Sequence
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from celery import shared_task
 from django.conf import settings
@@ -14,10 +15,20 @@ from django.utils import timezone
 from companies.models import Company, CompanyUpdateCandidate
 from companies.services.review_ingestion import ingest_rule_based_candidates
 from data_collection.tracker import track_data_collection_run
+from saleslist_backend.settings.base import get_ai_enrichment_cooldown
 
 from .constants import AI_ENRICH_BATCH_SIZE, AI_ENRICH_API_DELAY_SECONDS
-from .enrich_rules import TARGET_FIELDS, apply_rule_based, build_prompt, build_system_prompt, detect_missing_fields
+from .enrich_rules import TARGET_FIELDS, apply_rule_based, build_prompt, build_prompt_with_constraints, build_system_prompt, detect_missing_fields
 from .normalizers import normalize_candidate_value
+from .enrichment_context import EnrichmentContext
+from .confidence import calculate_confidence
+from .no_data_reasons import (
+    NoDataReasonCode,
+    RetryStrategy,
+    get_reason_message,
+    get_retry_strategy,
+)
+from .no_data_classifier import classify_no_data_reason
 from .exceptions import (
     PowerplexyConfigurationError,
     PowerplexyError,
@@ -66,6 +77,29 @@ def _normalize_candidate_value(field: str, value: object) -> str:
         digits = "".join(ch for ch in str(value) if ch.isdigit())
         return digits
     return str(value).strip()
+
+
+def should_skip_company(company: Company, now: datetime) -> Tuple[bool, Optional[str]]:
+    """
+    企業の補完をスキップすべきか判定（Phase 1: 再実行ガード）
+    
+    Args:
+        company: 対象企業
+        now: 現在時刻
+    
+    Returns:
+        (should_skip, skip_reason)
+    """
+    if not company.ai_last_enriched_at:
+        return False, None
+    
+    cooldown_seconds = get_ai_enrichment_cooldown()
+    elapsed = (now - company.ai_last_enriched_at).total_seconds()
+    
+    if elapsed < cooldown_seconds:
+        return True, f"cooldown_not_expired (elapsed: {elapsed:.0f}s, required: {cooldown_seconds}s)"
+    
+    return False, None
 
 
 def _companies_requiring_update(limit: int, company_ids: Optional[Sequence[int]] = None, offset: int = 0) -> List[Company]:
@@ -296,22 +330,172 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
         success_company_ids: List[int] = []
         failed_company_ids: List[int] = []
         error_details: List[Dict[str, Any]] = []
+        companies_with_corporate_number = 0  # 法人番号がプロンプトに含まれた企業数
+        ai_api_used = False  # AI APIが実際に使用されたか
+        corporate_number_api_stats = {"calls": 0, "success": 0, "failed": 0}  # 法人番号API統計
+        enrichment_details: List[Dict[str, Any]] = []  # 補完情報の詳細
 
         for company in companies:
             try:
+                # Phase 1: 再実行ガードチェック
+                now = timezone.now()
+                should_skip, skip_reason = should_skip_company(company, now)
+                if should_skip:
+                    logger.info(
+                        "[AI_ENRICH][SKIP] company_id=%d, skip_reason=%s, last_enriched_at=%s",
+                        company.id,
+                        skip_reason,
+                        company.ai_last_enriched_at.isoformat() if company.ai_last_enriched_at else None,
+                    )
+                    # スキップ情報を記録
+                    company_enrichment_record = {
+                        "company_id": company.id,
+                        "company_name": company.name,
+                        "fields": [],
+                        "status": "skipped",
+                        "reason": skip_reason,
+                    }
+                    enrichment_details.append(company_enrichment_record)
+                    success_company_ids.append(company.id)  # スキップも成功としてカウント（処理は完了）
+                    continue
+                
                 missing_fields = detect_missing_fields(company)
+                # 補完を試みた企業を記録（成功/失敗に関わらず）
+                company_enrichment_record = {
+                    "company_id": company.id,
+                    "company_name": company.name,
+                    "fields": [],
+                    "status": "skipped" if not missing_fields else "attempted",
+                }
+                
                 if not missing_fields:
+                    # 補完不要な企業も記録（補完を試みた企業として表示）
+                    enrichment_details.append(company_enrichment_record)
+                    # Phase 1: 再実行ガード - スキップステータスを更新
+                    Company.objects.filter(id=company.id).update(
+                        ai_last_enriched_at=timezone.now(),
+                        ai_last_enriched_source="",
+                        ai_last_enrichment_status="skipped",
+                    )
                     success_company_ids.append(company.id)
                     continue
 
-                rule_result = apply_rule_based(company, missing_fields)
+                # Phase 2: EnrichmentContext初期化
+                context = EnrichmentContext(
+                    company_id=company.id,
+                    company_name=company.name,
+                )
+                
+                rule_result = apply_rule_based(
+                    company,
+                    missing_fields,
+                    corporate_number_api_stats=corporate_number_api_stats,
+                    return_best_match=True,  # Phase 2: best_matchを取得
+                )
                 provisional_values = dict(rule_result.values)
+                
+                # Phase 2: gBizINFO APIの結果をコンテキストに追加
+                # Phase 3-②: 初期gBizINFO検索の成功/失敗を記録
+                gbiz_initial_404 = not rule_result.metadata.get("corporate_number_found")
+                best_match = rule_result.metadata.get("best_match")
+                if best_match:
+                    context.add_gbizinfo_result(best_match)
+                elif rule_result.metadata.get("corporate_number_found"):
+                    # best_matchがない場合でも、corporate_number_foundがあればコンテキストに追加
+                    gbizinfo_result = {
+                        "corporate_number": rule_result.metadata.get("corporate_number_found"),
+                        "name": rule_result.metadata.get("gbizinfo_official_name", ""),
+                        "address": rule_result.metadata.get("gbizinfo_address", ""),
+                        "prefecture": rule_result.metadata.get("gbizinfo_prefecture", ""),
+                    }
+                    if gbizinfo_result.get("corporate_number") or gbizinfo_result.get("address"):
+                        context.add_gbizinfo_result(gbizinfo_result)
+                
+                # 補完できなかった理由を記録（簡潔に）
+                reasons = []
+                # gBizINFO APIの結果を確認
+                if "corporate_number" in missing_fields or not company.corporate_number:
+                    if not rule_result.metadata.get("corporate_number_found"):
+                        # gBizINFO APIの理由を確認
+                        gbizinfo_reason = rule_result.metadata.get("gbizinfo_reason")
+                        if gbizinfo_reason:
+                            # 理由を簡潔に（長いエラーメッセージを短縮）
+                            if "gBizINFO APIエラー:" in gbizinfo_reason:
+                                reasons.append("gBizINFO APIエラー")
+                            else:
+                                reasons.append(gbizinfo_reason)
+                        elif settings.CORPORATE_NUMBER_API_TOKEN:
+                            # APIトークンは設定されているが、理由が記録されていない場合
+                            reasons.append("gBizINFOで企業が見つかりませんでした")
+                # ルールベースで取得できたフィールドがない場合（法人番号以外のフィールドが不足している場合）
+                # ただし、法人番号のみが不足している場合は理由に含めない
+                if not provisional_values and len(missing_fields) > 1:
+                    # 複数のフィールドが不足しているが、ルールベースで取得できなかった
+                    if "corporate_number" not in missing_fields or company.corporate_number:
+                        reasons.append("ルールベースで補完不可")
+                
+                # 法人番号APIで取得した法人番号を一時的に設定（プロンプトに含めるため）
+                corporate_number_found = rule_result.metadata.get("corporate_number_found")
+                original_corporate_number = company.corporate_number
+                if corporate_number_found and not company.corporate_number:
+                    company.corporate_number = corporate_number_found
+                
+                # gBizINFOから取得した情報を一時的に設定（AI補完の精度向上のため）
+                gbizinfo_address = rule_result.metadata.get("gbizinfo_address")
+                gbizinfo_prefecture = rule_result.metadata.get("gbizinfo_prefecture")
+                original_prefecture = company.prefecture
+                original_city = company.city
+                
+                # gBizINFOから取得した住所情報を一時的に設定（プロンプトに含めるため）
+                if gbizinfo_prefecture and not company.prefecture:
+                    company.prefecture = gbizinfo_prefecture
+                if gbizinfo_address:
+                    # 住所から都道府県を除いた部分をcityに設定
+                    # ただし、既にcityがある場合は上書きしない
+                    if not company.city and gbizinfo_address:
+                        # 都道府県を除いた住所部分を抽出
+                        address_without_pref = gbizinfo_address
+                        for pref in ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+                                    "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+                                    "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
+                                    "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
+                                    "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+                                    "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
+                                    "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"]:
+                            if gbizinfo_address.startswith(pref):
+                                address_without_pref = gbizinfo_address[len(pref):].strip()
+                                break
+                        if address_without_pref:
+                            company.city = address_without_pref
 
                 remaining = [field for field in missing_fields if field not in provisional_values]
                 ai_values: Dict[str, str] = {}
+                ai_attempted = False
                 if remaining:
-                    prompt = build_prompt(company, remaining)
+                    # 法人番号がプロンプトに含まれるかチェック
+                    if hasattr(company, 'corporate_number') and company.corporate_number:
+                        companies_with_corporate_number += 1
+                    
+                    # Phase 2: 制約注入版のプロンプトを使用
+                    prompt = build_prompt_with_constraints(company, remaining, context)
                     system_prompt = build_system_prompt()
+                    
+                    # Phase 2: 制約条件が含まれているかログに記録
+                    has_constraints = context.has_gbizinfo_constraints()
+                    logger.info(
+                        "[AI_ENRICH][PROMPT_WITH_CONSTRAINTS] company_id=%d, has_constraints=%s, prompt_length=%d",
+                        company.id,
+                        has_constraints,
+                        len(prompt),
+                    )
+                    if has_constraints:
+                        constraints = context.get_constraints_for_prompt()
+                        logger.info(
+                            "[AI_ENRICH][CONSTRAINTS] company_id=%d, constraints=%s",
+                            company.id,
+                            constraints,
+                        )
+                    
                     logger.info(
                         "[AI_ENRICH][SYSTEM_PROMPT]",
                         extra={
@@ -321,7 +505,20 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         },
                     )
                     try:
+                        logger.info(
+                            "[AI_ENRICH][AI_REQUEST] company_id=%d, missing_fields=%s, prompt_length=%d",
+                            company.id,
+                            remaining,
+                            len(prompt),
+                        )
                         completion = client.extract_json(prompt=prompt, system_prompt=system_prompt)
+                        ai_api_used = True
+                        ai_attempted = True
+                        logger.info(
+                            "[AI_ENRICH][AI_RESPONSE] company_id=%d, completion=%s",
+                            company.id,
+                            completion if completion else "empty",
+                        )
                     except PowerplexyRateLimitError:
                         # Rate Limitは再スローしてCelery retryに任せる
                         raise
@@ -340,6 +537,10 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                             "error_type": "PowerPlexyError",
                             "error": str(exc),
                         })
+                        # エラーが発生した場合も記録
+                        company_enrichment_record["status"] = "error"
+                        company_enrichment_record["error"] = str(exc)
+                        enrichment_details.append(company_enrichment_record)
                         continue
                     
                     # Rate Limit対策: API呼び出し間隔を空ける
@@ -347,25 +548,259 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         time.sleep(AI_ENRICH_API_DELAY_SECONDS)
 
                     mapped: Dict[str, str] = {}
-                    for label, value in completion.items():
-                        field = reverse_map.get(label)
-                        if not field:
-                            continue
-                        normalized = normalize_candidate_value(field, value)
-                        if normalized:
-                            mapped[field] = normalized
+                    if completion:
+                        logger.info(
+                            "[AI_ENRICH][AI_PARSING] company_id=%d, completion_keys=%s, reverse_map_keys=%s",
+                            company.id,
+                            list(completion.keys()),
+                            list(reverse_map.keys()),
+                        )
+                        for label, value in completion.items():
+                            field = reverse_map.get(label)
+                            if not field:
+                                logger.debug(
+                                    "[AI_ENRICH][AI_MAPPING] label '%s' not found in reverse_map",
+                                    label,
+                                )
+                                continue
+                            # 空文字列やNoneの場合はスキップ
+                            if not value or (isinstance(value, str) and value.strip() == ""):
+                                logger.debug(
+                                    "[AI_ENRICH][AI_SKIP_EMPTY] field=%s, value=%s",
+                                    field,
+                                    value,
+                                )
+                                continue
+                            normalized = normalize_candidate_value(field, value)
+                            if normalized:
+                                mapped[field] = normalized
+                                logger.info(
+                                    "[AI_ENRICH][AI_MAPPED] field=%s, value=%s, normalized=%s",
+                                    field,
+                                    value[:50],
+                                    normalized[:50],
+                                )
+                            else:
+                                logger.debug(
+                                    "[AI_ENRICH][AI_NORMALIZE_FAILED] field=%s, value=%s",
+                                    field,
+                                    value,
+                                )
+                    
                     ai_values = mapped
+                    
+                    # Phase 2: AI補完の結果をコンテキストに追加
+                    if completion:
+                        context.add_ai_findings(completion)
+                    
+                    logger.info(
+                        "[AI_ENRICH][AI_RESULT] company_id=%d, completion_keys=%s, mapped_keys=%s, mapped_count=%d",
+                        company.id,
+                        list(completion.keys()) if completion else [],
+                        list(mapped.keys()),
+                        len(mapped),
+                    )
+                    
                     if mapped:
                         usage_tracker.increment()
                         calls_made += 1
+                    elif ai_attempted:
+                        # AI補完を試みたが結果が空だった
+                        reasons.append("AI補完で情報が見つかりませんでした")
+                        logger.info(
+                            "[AI_ENRICH][AI_NO_RESULT] company_id=%d, completion=%s",
+                            company.id,
+                            completion if completion else "empty",
+                        )
+                        # Phase 2: 空の結果でもコンテキストに追加（失敗情報として）
+                        if completion:
+                            context.add_ai_findings(completion)
+                elif remaining:
+                    # AI補完を試みるべきフィールドがあったが、試みなかった（エラーなど）
+                    # この場合は既にエラーとして記録されているので、ここでは追加しない
+                    pass
+                else:
+                    # AI補完を試みる必要がなかった（すべてルールベースで補完できた、または補完不要）
+                    pass
+                
+                # Phase 2: gBizINFO再探索（AIのヒントを使用）
+                # Phase 3-②: 再探索の結果を追跡
+                gbiz_retry_attempted = False
+                gbiz_retry_404 = False
+                if context.has_ai_hints_for_retry():
+                    gbiz_retry_attempted = True
+                    logger.info(
+                        "[AI_ENRICH][GBIZINFO_RETRY] company_id=%d, candidates=%s, english_name=%s",
+                        company.id,
+                        context.ai_official_name_candidates[:3],  # 最初の3つまで
+                        context.ai_english_name or "",
+                    )
+                    try:
+                        from companies.services.corporate_number_client import CorporateNumberAPIClient
+                        retry_client = CorporateNumberAPIClient()
+                        
+                        # 再探索候補リストを構築（正式法人名候補 + 英語名）
+                        retry_candidates = list(context.ai_official_name_candidates)
+                        if context.ai_english_name and context.ai_english_name not in retry_candidates:
+                            retry_candidates.append(context.ai_english_name)
+                        
+                        # 複数の候補を試す（最大3つまで）
+                        retry_success = False
+                        for retry_candidate in retry_candidates[:3]:
+                            if retry_success:
+                                break
+                            retry_results = retry_client.search(retry_candidate, prefecture=company.prefecture)
+                            if retry_results:
+                                from companies.services.corporate_number_client import select_best_match
+                                retry_best_match = select_best_match(
+                                    retry_results,
+                                    retry_candidate,
+                                    prefecture=company.prefecture
+                                )
+                                if retry_best_match and retry_best_match.get("corporate_number"):
+                                    # 再探索で成功した場合、コンテキストにマージ
+                                    context.add_gbizinfo_result(retry_best_match)
+                                    # provisional_valuesにも追加（既に存在しない場合のみ）
+                                    if not provisional_values.get("corporate_number"):
+                                        provisional_values["corporate_number"] = retry_best_match["corporate_number"]
+                                    logger.info(
+                                        "[AI_ENRICH][GBIZINFO_RETRY_SUCCESS] company_id=%d, candidate=%s, corporate_number=%s, attempt=%d",
+                                        company.id,
+                                        retry_candidate,
+                                        retry_best_match.get("corporate_number"),
+                                        retry_candidates.index(retry_candidate) + 1,
+                                    )
+                                    retry_success = True
+                            else:
+                                logger.debug(
+                                    "[AI_ENRICH][GBIZINFO_RETRY_NO_RESULT] company_id=%d, candidate=%s",
+                                    company.id,
+                                    retry_candidate,
+                                )
+                        
+                        if not retry_success:
+                            gbiz_retry_404 = True
+                            logger.info(
+                                "[AI_ENRICH][GBIZINFO_RETRY_ALL_FAILED] company_id=%d, tried_candidates=%s",
+                                company.id,
+                                retry_candidates[:3],
+                            )
+                    except Exception as exc:
+                        gbiz_retry_404 = True
+                        logger.warning(
+                            "[AI_ENRICH][GBIZINFO_RETRY_ERROR] company_id=%d, error=%s",
+                            company.id,
+                            str(exc),
+                            exc_info=True,
+                        )
+                
+                # Phase 2: 信頼度計算
+                context.confidence = calculate_confidence(context)
+                
+                # 一時的に設定した情報を元に戻す
+                if corporate_number_found and not original_corporate_number:
+                    company.corporate_number = original_corporate_number
+                if gbizinfo_prefecture and not original_prefecture:
+                    company.prefecture = original_prefecture
+                if gbizinfo_address and not original_city:
+                    company.city = original_city
 
                 combined: Dict[str, str] = {}
                 combined.update({field: value for field, value in provisional_values.items() if value})
                 combined.update({field: value for field, value in ai_values.items() if value})
+                
+                logger.info(
+                    "[AI_ENRICH][DEBUG] company_id=%d, combined=%s, provisional_values=%s, ai_values=%s",
+                    company.id,
+                    list(combined.keys()),
+                    list(provisional_values.keys()),
+                    list(ai_values.keys()),
+                )
+                
+                # 補完情報を記録（combinedがあれば記録、normalized_entriesが空でも記録）
+                # 候補が作成されるかどうかに関係なく、補完が試みられた場合は記録
+                enriched_fields = []
+                for field, raw_value in combined.items():
+                    # corporate_numberの場合は特別に処理
+                    if field == "corporate_number":
+                        field_label = "法人番号"
+                    else:
+                        field_label = TARGET_FIELDS.get(field, field)
+                    # ソース表示を改善
+                    if field in ai_values:
+                        source = "AI"
+                    elif field == "corporate_number":
+                        source = "gBizINFO"
+                    else:
+                        source = "ルール"
+                    enriched_fields.append({
+                        "field": field_label,
+                        "value": str(raw_value),
+                        "source": source,
+                    })
+                
+                # 補完情報を企業レコードに追加
+                company_enrichment_record["fields"] = enriched_fields
+                # ステータス判定: enriched_fieldsがあればsuccess、なければno_data
+                company_enrichment_record["status"] = "success" if enriched_fields else "no_data"
+                
                 if not combined:
+                    logger.info(
+                        "[AI_ENRICH][DEBUG] combined is empty for company_id=%d",
+                        company.id,
+                    )
+                    # 補完を試みたが結果が空の場合も記録
+                    company_enrichment_record["status"] = "no_data"
+                    
+                    # Phase 3-②: no_data理由の分類と再探索戦略の決定
+                    ai_fields_empty = not bool(ai_values)
+                    has_official_site = bool(company.website_url or context.ai_website_url)
+                    
+                    reason_code, reason_message, resolved_strategy = classify_no_data_reason(
+                        context,
+                        gbiz_initial_404,
+                        gbiz_retry_404 if gbiz_retry_attempted else False,
+                        ai_attempted,
+                        ai_fields_empty,
+                        has_official_site,
+                    )
+                    
+                    # no_data_reason_codeとno_data_reason_messageを記録
+                    company_enrichment_record["no_data_reason_code"] = reason_code.value
+                    company_enrichment_record["no_data_reason_message"] = reason_message
+                    
+                    logger.info(
+                        "[AI_ENRICH][NO_DATA_CLASSIFIED] company_id=%d, reason=%s, next_retry_strategy=%s",
+                        company.id,
+                        reason_code.value,
+                        resolved_strategy.value,
+                    )
+                    
+                    # 理由を記録（簡潔に、複数の理由がある場合は改行で区切る）
+                    if reasons:
+                        # 理由を簡潔にまとめる（重複を除去し、読みやすく）
+                        unique_reasons = []
+                        seen = set()
+                        for reason in reasons:
+                            if reason not in seen:
+                                unique_reasons.append(reason)
+                                seen.add(reason)
+                        company_enrichment_record["reason"] = " / ".join(unique_reasons)
+                    else:
+                        company_enrichment_record["reason"] = reason_message
+                    
+                    enrichment_details.append(company_enrichment_record)
+                    
+                    # Phase 3-③: 次回再探索戦略とクールダウンを保存
+                    Company.objects.filter(id=company.id).update(
+                        ai_last_enriched_at=timezone.now(),
+                        ai_last_enriched_source="",
+                        ai_last_enrichment_status="failed",
+                        next_retry_strategy=resolved_strategy.value,
+                    )
                     success_company_ids.append(company.id)
                     continue
-
+                
                 normalized_entries: Dict[str, str] = {}
                 for field, raw_value in combined.items():
                     normalized = normalize_candidate_value(field, raw_value)
@@ -378,11 +813,33 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         )
 
                 if not normalized_entries:
+                    logger.info(
+                        "[AI_ENRICH][DEBUG] normalized_entries is empty for company_id=%d, combined=%s",
+                        company.id,
+                        combined,
+                    )
+                    # normalized_entriesが空でも、combinedがあれば補完情報を記録
+                    # 既にcompany_enrichment_recordに情報が入っているので、そのまま追加
+                    if enriched_fields:
+                        enrichment_details.append(company_enrichment_record)
+                        logger.info(
+                            "[AI_ENRICH][ENRICHMENT_DETAIL] recorded (no normalized) for company_id=%d, fields=%d",
+                            company.id,
+                            len(enriched_fields),
+                        )
                     success_company_ids.append(company.id)
                     continue
 
+                logger.info(
+                    "[AI_ENRICH][DEBUG] normalized_entries for company_id=%d: %s",
+                    company.id,
+                    list(normalized_entries.keys()),
+                )
+                
                 entry_records = []
                 for field, value in normalized_entries.items():
+                    # Phase 2: 信頼度をコンテキストから取得（なければデフォルト値）
+                    field_confidence = context.confidence.get(field, 85 if field in ai_values else 100)
                     entry_records.append(
                         {
                             "company_id": company.id,
@@ -390,23 +847,57 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                             "value": value,
                             "source_type": CompanyUpdateCandidate.SOURCE_AI,
                             "source_detail": AI_SOURCE_DETAIL,
-                            "confidence": 85 if field in ai_values else 100,
+                            "confidence": int(field_confidence * 100),  # 0.0-1.0を0-100に変換
                             "metadata": {
                                 "rule_metadata": getattr(rule_result, "metadata", {}),
                                 "ai": field in ai_values,
+                                "confidence_source": "calculated",  # Phase 2: 信頼度計算済み
                             },
                         }
                     )
+                
                 if entry_records:
                     ingested = ingest_rule_based_candidates(entry_records)
                     total_candidates += len(ingested)
+                    # Phase 1: 再実行ガード - ステータスを更新
+                    # Phase 3-③: 成功時はnext_retry_strategyをNONEにリセット
+                    enrichment_status = "success" if enriched_fields else "partial"
                     Company.objects.filter(id=company.id).update(
                         ai_last_enriched_at=timezone.now(),
                         ai_last_enriched_source="ai" if ai_values else "rule",
+                        ai_last_enrichment_status=enrichment_status,
+                        next_retry_strategy=RetryStrategy.NONE.value,
                     )
-                    success_company_ids.append(company.id)
-                else:
-                    success_company_ids.append(company.id)
+                    logger.info(
+                        "[AI_ENRICH][DEBUG] company_id=%d, ingested=%d, entry_records=%d",
+                        company.id,
+                        len(ingested),
+                        len(entry_records),
+                    )
+                
+                # 補完情報を記録（enriched_fieldsがあれば記録）
+                # 候補が作成されなくても（既存値と一致する場合など）、補完が試みられた場合は記録
+                # 既にcompany_enrichment_recordに情報が入っているので、そのまま追加
+                if enriched_fields:
+                    enrichment_details.append(company_enrichment_record)
+                    logger.info(
+                        "[AI_ENRICH][ENRICHMENT_DETAIL] recorded for company_id=%d, fields=%d",
+                        company.id,
+                        len(enriched_fields),
+                    )
+                    # Phase 1: 再実行ガード - 成功/部分成功ステータスを更新（候補が作成されなかった場合でも）
+                    # Phase 3-③: 成功時はnext_retry_strategyをNONEにリセット
+                    if not entry_records:
+                        # 候補は作成されなかったが、補完情報は記録された
+                        enrichment_status = "partial" if len(enriched_fields) < len(missing_fields) else "success"
+                        Company.objects.filter(id=company.id).update(
+                            ai_last_enriched_at=timezone.now(),
+                            ai_last_enriched_source="ai" if ai_values else "rule",
+                            ai_last_enrichment_status=enrichment_status,
+                            next_retry_strategy=RetryStrategy.NONE.value,
+                        )
+                
+                success_company_ids.append(company.id)
             except Exception as exc:
                 # 予期しないエラーも記録（部分成功前提）
                 logger.warning(
@@ -438,33 +929,56 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
             "calls": calls_made,
             "usage_before": usage_snapshot_dict,
             "usage_after": usage_after_dict,
+            "companies_with_corporate_number": companies_with_corporate_number,
+            "ai_api_used": ai_api_used,
+            "corporate_number_api": corporate_number_api_stats,
         }
         
-        if failed_company_ids:
-            metadata_base["failed_company_ids"] = failed_company_ids
-            metadata_base["error_details"] = error_details[:10]  # 最初の10件のみ保存
-            notify_warning(
-                "AI補完バッチが完了しました（一部失敗）",
-                extra={
-                    "companies": len(companies),
-                    "success": len(success_company_ids),
-                    "failed": len(failed_company_ids),
-                    "failed_company_ids": failed_company_ids,
-                    "candidates": total_candidates,
-                    "calls": calls_made,
-                    "usage": usage_after_dict,
-                },
+        # 補完情報が記録されている場合のみ通知を送信
+        if not enrichment_details and total_candidates == 0:
+            logger.info(
+                "[AI_ENRICH][NOTIFICATION] Skipping notification: no enrichment details and no candidates created"
             )
         else:
-            notify_success(
-                "AI補完バッチが完了しました",
-                extra={
-                    "companies": len(companies),
-                    "candidates": total_candidates,
-                    "calls": calls_made,
-                    "usage": usage_after_dict,
-                },
+            # 通知用の詳細情報を構築（シンプルに）
+            # 補完情報のフィールド数を計算（実際に補完された情報の数）
+            total_enriched_fields = sum(
+                len(detail.get("fields", [])) 
+                for detail in enrichment_details 
+                if isinstance(detail, dict)
             )
+            
+            notification_extra = {
+                "処理企業数": len(companies),
+                "成功": len(success_company_ids),
+                "失敗": len(failed_company_ids),
+                "作成された候補数": total_candidates,
+                "補完されたフィールド数": total_enriched_fields,
+            }
+            
+            # 補完情報を追加（折りたたみ可能な形式で）
+            logger.info(
+                "[AI_ENRICH][NOTIFICATION] enrichment_details count: %d, total_fields: %d, total_candidates: %d",
+                len(enrichment_details),
+                total_enriched_fields,
+                total_candidates,
+                extra={"enrichment_details": enrichment_details},
+            )
+            if enrichment_details:
+                notification_extra["補完情報"] = enrichment_details
+            
+            if failed_company_ids:
+                metadata_base["failed_company_ids"] = failed_company_ids
+                metadata_base["error_details"] = error_details[:10]  # 最初の10件のみ保存
+                notify_warning(
+                    "AI補完バッチが完了しました（一部失敗）",
+                    extra=notification_extra,
+                )
+            else:
+                notify_success(
+                    "AI補完バッチが完了しました",
+                    extra=notification_extra,
+                )
 
         run_tracker.complete_success(
             metadata=_metadata_with_processed(

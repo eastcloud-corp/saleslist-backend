@@ -238,10 +238,10 @@ FACEBOOK_ACCESS_TOKEN = config("FACEBOOK_ACCESS_TOKEN", default="")
 FACEBOOK_GRAPH_API_TIMEOUT = config("FACEBOOK_GRAPH_API_TIMEOUT", default=10, cast=int)
 FACEBOOK_SYNC_CHUNK_SIZE = config("FACEBOOK_SYNC_CHUNK_SIZE", default=500, cast=int)
 
-# Corporate Number API
+# Corporate Number API (gBizINFO)
 CORPORATE_NUMBER_API_BASE_URL = config(
     "CORPORATE_NUMBER_API_BASE_URL",
-    default="https://api.houjin-bangou.nta.go.jp",
+    default="https://api.info.gbiz.go.jp",
 )
 CORPORATE_NUMBER_API_TOKEN = config("CORPORATE_NUMBER_API_TOKEN", default="")
 CORPORATE_NUMBER_API_TIMEOUT = config("CORPORATE_NUMBER_API_TIMEOUT", default=10, cast=int)
@@ -250,6 +250,27 @@ CORPORATE_NUMBER_API_MAX_RESULTS = config(
     default=5,
     cast=int,
 )
+
+# AI Enrichment Cooldown (Phase 1: 再実行ガード)
+# 本番環境: 24時間、ローカル環境: 5分
+AI_ENRICHMENT_COOLDOWN_PRODUCTION = 24 * 60 * 60  # 24時間（秒）
+AI_ENRICHMENT_COOLDOWN_LOCAL = 5 * 60  # 5分（秒）
+
+
+def get_ai_enrichment_cooldown() -> int:
+    """
+    AI補完のクールダウン時間を取得（環境に応じて）
+    
+    Returns:
+        クールダウン時間（秒）
+    """
+    if DEBUG:
+        return AI_ENRICHMENT_COOLDOWN_LOCAL
+    return AI_ENRICHMENT_COOLDOWN_PRODUCTION
+
+
+# Slack Notifications
+SLACK_WEBHOOK_URL = config("SLACK_WEBHOOK_URL", default="")
 
 # CORS / CSRF
 DEFAULT_CORS_ORIGINS = (
