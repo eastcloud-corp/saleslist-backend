@@ -51,6 +51,31 @@ class Company(models.Model):
     latest_activity_at = models.DateTimeField(null=True, blank=True, verbose_name="最新アクティビティ時刻")
     ai_last_enriched_at = models.DateTimeField(null=True, blank=True, verbose_name="AI最終補完日時")
     ai_last_enriched_source = models.CharField(max_length=32, blank=True, verbose_name="AI補完ソース")
+    ai_last_enrichment_status = models.CharField(
+        max_length=16,
+        choices=[
+            ('success', '成功'),
+            ('partial', '部分成功'),
+            ('failed', '失敗'),
+            ('skipped', 'スキップ'),
+        ],
+        blank=True,
+        verbose_name="AI補完最終ステータス",
+    )
+    # Phase 3-③: 再探索戦略
+    next_retry_strategy = models.CharField(
+        max_length=32,
+        choices=[
+            ('none', '再探索しない'),
+            ('relax_prefecture', '都道府県条件を緩和'),
+            ('name_variant_expansion', '表記揺れを拡張'),
+            ('english_name_search', '英語名で検索'),
+            ('official_site_focused', '公式サイトに集中'),
+        ],
+        blank=True,
+        null=True,
+        verbose_name="次回再探索戦略",
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新日時")
 

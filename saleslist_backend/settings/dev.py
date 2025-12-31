@@ -2,6 +2,10 @@
 Development settings.
 """
 
+from datetime import timedelta
+
+from celery.schedules import crontab
+
 from .base import *  # noqa: F401,F403
 
 DEBUG = True
@@ -26,3 +30,15 @@ CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS).union(_dev_origins))  # ty
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 ENABLE_REVIEW_SAMPLE_API = True
+
+# 開発環境ではAI補完タスクを5分ごとに実行（テスト用）
+CELERY_BEAT_SCHEDULE = {
+    "sync-facebook-activity": {
+        "task": "companies.tasks.dispatch_facebook_sync",
+        "schedule": crontab(hour=2, minute=0),
+    },
+    "run-ai-enrich": {
+        "task": "ai_enrichment.tasks.run_ai_enrich_scheduled",
+        "schedule": timedelta(minutes=5),  # 開発環境では5分ごとに実行
+    },
+}

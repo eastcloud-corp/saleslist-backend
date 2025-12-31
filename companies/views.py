@@ -103,6 +103,8 @@ COMPANY_FIELD_MAPPING = {
     'website_url': 'website_url',
     'contact_email': 'contact_email',
     'phone': 'phone',
+    'contact_person_name': 'contact_person_name',
+    'contact_person_position': 'contact_person_position',
     'notes': 'notes',
     'corporate_number': 'corporate_number',
     'tob_toc_type': 'tob_toc_type',
