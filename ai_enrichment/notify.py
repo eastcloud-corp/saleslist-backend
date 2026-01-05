@@ -60,8 +60,8 @@ def _send_slack_notification(
                 logger.info("[SLACK_NOTIFY] enrichment_details found: %d items", len(value) if isinstance(value, list) else 0)
                 continue
             
-            # 基本情報のみ表示
-            if key in ("処理企業数", "成功", "失敗", "作成された候補数", "補完されたフィールド数"):
+            # 基本情報のみ表示（運用判断に必要な最小項目）
+            if key in ("AI利用(推定)", "処理企業数", "成功", "失敗", "作成された候補数", "補完されたフィールド数"):
                 fields.append({
                     "title": key,
                     "value": str(value),

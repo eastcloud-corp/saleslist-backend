@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import requests
 from django.conf import settings
@@ -147,7 +147,31 @@ class PowerplexyClient:
         """
         data = self.query(prompt, system_prompt)
         logger.debug("PowerPlexy raw response: %s", data)
+        parsed, _usage = self._extract_parsed_and_usage(data)
+        return parsed
+
+    def extract_json_with_usage(
+        self, prompt: str, system_prompt: Optional[str] = None
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        extract_json と同様にJSONを抽出しつつ、Perplexityの usage を返す。
+
+        Returns:
+            (parsed_json, usage_dict)
+        """
+        data = self.query(prompt, system_prompt)
+        logger.debug("PowerPlexy raw response: %s", data)
+        return self._extract_parsed_and_usage(data)
+
+    def _extract_parsed_and_usage(
+        self, data: object
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        usage: Dict[str, Any] = {}
         if isinstance(data, dict):
+            raw_usage = data.get("usage")
+            if isinstance(raw_usage, dict):
+                usage = raw_usage
+
             # Chat completions response: {"choices":[{"message":{"content":"..."}}, ...]}
             choices = data.get("choices")
             if isinstance(choices, list) and choices:
@@ -157,14 +181,14 @@ class PowerplexyClient:
                     logger.debug("PowerPlexy content extracted: %s", content[:500])
                     parsed = self._parse_json_blob(content)
                     logger.debug("PowerPlexy parsed JSON: %s", parsed)
-                    return parsed
+                    return parsed, usage
             # Legacy response fallback
             for key in ("answer", "output", "text", "result"):
                 if key in data and isinstance(data[key], str):
                     logger.debug("PowerPlexy legacy response key '%s': %s", key, data[key][:500])
                     parsed = self._parse_json_blob(data[key])
                     logger.debug("PowerPlexy parsed JSON: %s", parsed)
-                    return parsed
+                    return parsed, usage
         logger.error("PowerPlexy unexpected response structure: %s", data)
         raise PowerplexyResponseError("Unexpected PowerPlexy response structure")
 

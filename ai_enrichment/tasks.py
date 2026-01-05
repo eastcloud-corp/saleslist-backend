@@ -36,6 +36,7 @@ from .exceptions import (
 )
 from .notify import notify_error, notify_success, notify_warning
 from .powerplexy_client import PowerplexyClient
+from .pricing import estimate_powerplexy_cost_usd
 from .redis_usage import UsageTracker
 
 logger = logging.getLogger(__name__)
@@ -278,10 +279,15 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
         usage_snapshot = usage_tracker.snapshot()
         usage_snapshot_dict = {"calls": usage_snapshot.calls, "cost": usage_snapshot.cost}
         if not usage_tracker.can_execute():
-            notify_warning("PowerPlexy月次上限に達したためAI補完をスキップ", extra={
-                "usage_calls": usage_snapshot.calls,
-                "usage_cost": usage_snapshot.cost,
-            })
+            used = float(usage_snapshot.cost)
+            limit = float(usage_tracker.cost_limit)
+            remaining_cost = max(limit - used, 0.0)
+            notify_warning(
+                "PowerPlexy月次上限に達したためAI補完をスキップ",
+                extra={
+                    "AI利用(推定)": f"今月 ${used:.2f}/${limit:.2f}（残 ${remaining_cost:.2f}）, 今回 +$0.00",
+                },
+            )
             run_tracker.complete_success(metadata=_metadata_with_processed(
                 {
                     "result": "skipped",
@@ -327,6 +333,7 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
         reverse_map = _reverse_field_map()
         total_candidates = 0
         calls_made = 0
+        batch_ai_cost_usd = 0.0
         success_company_ids: List[int] = []
         failed_company_ids: List[int] = []
         error_details: List[Dict[str, Any]] = []
@@ -511,9 +518,29 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                             remaining,
                             len(prompt),
                         )
-                        completion = client.extract_json(prompt=prompt, system_prompt=system_prompt)
+                        completion, usage = client.extract_json_with_usage(prompt=prompt, system_prompt=system_prompt)
                         ai_api_used = True
                         ai_attempted = True
+
+                        # usage（prompt/completion tokens）を元に、1リクエストの推定コストを算出して計上する。
+                        # Slackには「今月 $X/$Y（残 $Z）, 今回 +$W」を1行で出す。
+                        prompt_tokens = int(usage.get("prompt_tokens") or 0) if isinstance(usage, dict) else 0
+                        completion_tokens = int(usage.get("completion_tokens") or 0) if isinstance(usage, dict) else 0
+                        estimated_cost = estimate_powerplexy_cost_usd(
+                            model=getattr(client, "model", "sonar-pro"),
+                            prompt_tokens=prompt_tokens,
+                            completion_tokens=completion_tokens,
+                            search_context_size="low",
+                        )
+                        if estimated_cost is not None:
+                            usage_tracker.increment(cost=estimated_cost)
+                            batch_ai_cost_usd += float(estimated_cost)
+                            calls_made += 1
+                        else:
+                            # usageが取れない場合は従来の固定推定で計上
+                            usage_tracker.increment()
+                            calls_made += 1
+
                         logger.info(
                             "[AI_ENRICH][AI_RESPONSE] company_id=%d, completion=%s",
                             company.id,
@@ -601,10 +628,7 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         len(mapped),
                     )
                     
-                    if mapped:
-                        usage_tracker.increment()
-                        calls_made += 1
-                    elif ai_attempted:
+                    if not mapped and ai_attempted:
                         # AI補完を試みたが結果が空だった
                         reasons.append("AI補完で情報が見つかりませんでした")
                         logger.info(
@@ -955,6 +979,14 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                 "作成された候補数": total_candidates,
                 "補完されたフィールド数": total_enriched_fields,
             }
+
+            # AI利用（推定）: 今月の使用額/上限、残り、今回の増分（1行のみ）
+            used = float(usage_after.cost)
+            limit = float(usage_tracker.cost_limit)
+            remaining_cost = max(limit - used, 0.0)
+            notification_extra["AI利用(推定)"] = (
+                f"今月 ${used:.2f}/${limit:.2f}（残 ${remaining_cost:.2f}）, 今回 +${batch_ai_cost_usd:.2f}"
+            )
             
             # 補完情報を追加（折りたたみ可能な形式で）
             logger.info(
