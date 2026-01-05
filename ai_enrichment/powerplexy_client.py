@@ -75,15 +75,18 @@ class PowerplexyClient:
             "Content-Type": "application/json",
         }
 
-        try:
-            response = self.session.post(
-                self.endpoint,
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=self.timeout,
-            )
-        except requests.RequestException as exc:
-            raise PowerplexyResponseError(f"PowerPlexy request failed: {exc}") from exc
+        def _post(request_payload: Dict[str, Any]) -> requests.Response:
+            try:
+                return self.session.post(
+                    self.endpoint,
+                    headers=headers,
+                    data=json.dumps(request_payload),
+                    timeout=self.timeout,
+                )
+            except requests.RequestException as exc:
+                raise PowerplexyResponseError(f"PowerPlexy request failed: {exc}") from exc
+
+        response = _post(payload)
 
         if response.status_code == 429:
             raise PowerplexyRateLimitError("PowerPlexy rate limit reached")
@@ -94,6 +97,32 @@ class PowerplexyClient:
             )
 
         if response.status_code >= 400:
+            # Perplexity側のモデル名変更に追随できるように、invalid modelの場合は1回だけ安全なデフォルトで再試行する。
+            # 例: "Invalid model 'sonar-medium' ..."
+            if (
+                response.status_code == 400
+                and "Invalid model" in response.text
+                and self.model != DEFAULT_MODEL
+            ):
+                logger.warning(
+                    "PowerPlexy invalid model %r; retrying with default model %r",
+                    self.model,
+                    DEFAULT_MODEL,
+                )
+                payload_retry = {**payload, "model": DEFAULT_MODEL}
+                response = _post(payload_retry)
+
+                if response.status_code == 429:
+                    raise PowerplexyRateLimitError("PowerPlexy rate limit reached")
+                if response.status_code >= 500:
+                    raise PowerplexyResponseError(
+                        f"PowerPlexy service error ({response.status_code})"
+                    )
+                if response.status_code >= 400:
+                    raise PowerplexyResponseError(
+                        f"PowerPlexy rejected the request ({response.status_code}): {response.text}"
+                    )
+
             raise PowerplexyResponseError(
                 f"PowerPlexy rejected the request ({response.status_code}): {response.text}"
             )
