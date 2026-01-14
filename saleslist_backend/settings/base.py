@@ -422,6 +422,11 @@ LOGGING = {
             "level": "ERROR",
             "propagate": False,
         },
+        "companies.views": {
+            "handlers": ["console", "error_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 

@@ -547,14 +547,18 @@ class ProjectViewSet(viewsets.ModelViewSet):
         writer = csv.writer(response)
         # 日本語ヘッダー
         writer.writerow([
-            '企業名',
             '担当者名',
+            '企業名',
             '担当者役職',
-            'Facebook',
+            'Webサイト',
             '業界',
+            '法人番号',
             '従業員数',
             '売上',
             '所在地',
+            'Facebook',
+            '電話番号',
+            'メールアドレス',
             'ステータス',
             '最終接触',
             '備考',
@@ -565,14 +569,18 @@ class ProjectViewSet(viewsets.ModelViewSet):
         for pc in ProjectCompany.objects.filter(project=project).select_related('company'):
             company = pc.company
             writer.writerow([
-                company.name if company else pc.company_name or '',
                 company.contact_person_name if company else '',
+                company.name if company else pc.company_name or '',
                 company.contact_person_position if company else '',
-                company.facebook_url if company else '',
+                company.website_url or company.website if company else '',
                 company.industry if company else pc.company_industry or '',
+                company.corporate_number if company else '',
                 company.employee_count if company else '',
                 company.revenue if company else '',
                 company.prefecture if company else '',
+                company.facebook_url if company else '',
+                company.phone if company else '',
+                company.contact_email or company.email if company else '',
                 pc.status or '',
                 pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
                 pc.notes or '',

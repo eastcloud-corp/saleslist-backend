@@ -31,7 +31,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 ENABLE_REVIEW_SAMPLE_API = True
 
-# 開発環境ではAI補完タスクを5分ごとに実行（テスト用）
+# 開発環境ではAI補完タスクを30分ごとに実行（テスト用）
 CELERY_BEAT_SCHEDULE = {
     "sync-facebook-activity": {
         "task": "companies.tasks.dispatch_facebook_sync",
@@ -39,6 +39,6 @@ CELERY_BEAT_SCHEDULE = {
     },
     "run-ai-enrich": {
         "task": "ai_enrichment.tasks.run_ai_enrich_scheduled",
-        "schedule": timedelta(minutes=5),  # 開発環境では5分ごとに実行
+        "schedule": timedelta(minutes=30),  # 開発環境では30分ごとに実行
     },
 }

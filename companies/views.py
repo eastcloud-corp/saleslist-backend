@@ -1,5 +1,7 @@
 import logging
 
+logger = logging.getLogger(__name__)
+
 from celery.exceptions import CeleryError, TimeoutError
 from django.conf import settings
 from django.core.management.base import CommandError
@@ -43,9 +45,6 @@ from companies.tasks import (
     run_opendata_ingestion_task,
 )
 from ai_enrichment.normalizers import normalize_candidate_value
-
-
-logger = logging.getLogger(__name__)
 
 
 ROLE_CATEGORY_DEFINITIONS = {
@@ -103,8 +102,6 @@ COMPANY_FIELD_MAPPING = {
     'website_url': 'website_url',
     'contact_email': 'contact_email',
     'phone': 'phone',
-    'contact_person_name': 'contact_person_name',
-    'contact_person_position': 'contact_person_position',
     'notes': 'notes',
     'corporate_number': 'corporate_number',
     'tob_toc_type': 'tob_toc_type',
@@ -146,6 +143,11 @@ class CompanyFilter(filters.FilterSet):
         return values
 
     def filter_industry(self, queryset, name, value):
+        """業界フィルター（業界カテゴリ対応）
+        
+        業界カテゴリ名が送信された場合、そのカテゴリに紐づく業種（子業界）で検索する。
+        業種名が直接送信された場合は従来通り部分一致検索を行う。
+        """
         values = [
             item.strip()
             for item in self._get_query_values(name, value)
@@ -154,11 +156,87 @@ class CompanyFilter(filters.FilterSet):
         if not values:
             return queryset
 
+        from masters.models import Industry
+        
+        logger.info(f"[filter_industry] 検索値: {values}")
+        
         industry_query = Q()
         for item in values:
-            industry_query |= Q(industry__icontains=item)
-
-        return queryset.filter(industry_query)
+            # 業界カテゴリかどうかを確認
+            category = Industry.objects.filter(
+                name=item,
+                is_category=True,
+                is_active=True
+            ).first()
+            
+            logger.info(f"[filter_industry] 検索項目: '{item}', カテゴリ: {category}")
+            
+            if category:
+                # 業界カテゴリの場合、子業界（業種）を取得
+                sub_industries = Industry.objects.filter(
+                    parent_industry=category,
+                    is_active=True
+                )
+                
+                logger.info(f"[filter_industry] カテゴリ '{item}' の子業界数: {sub_industries.count()}")
+                logger.info(f"[filter_industry] 子業界名: {[sub.name for sub in sub_industries]}")
+                
+                if sub_industries.exists():
+                    # 子業界名で検索（部分一致）
+                    for sub_industry in sub_industries:
+                        # 完全一致または部分一致
+                        industry_query |= Q(industry__icontains=sub_industry.name)
+                        logger.info(f"[filter_industry] 検索条件追加: industry__icontains='{sub_industry.name}'")
+                        
+                        # 業種名に含まれる主要キーワードでも検索（表記の違いに対応）
+                        # 例: 「経営コンサルティング」→「経営」「コンサルティング」でも検索
+                        # ただし、短すぎるキーワード（2文字以下）は除外
+                        keywords = sub_industry.name.replace('、', ' ').replace(',', ' ').replace('・', ' ').replace('/', ' ').split()
+                        for keyword in keywords:
+                            keyword = keyword.strip()
+                            if len(keyword) >= 3:  # 3文字以上のキーワードのみ
+                                industry_query |= Q(industry__icontains=keyword)
+                                logger.info(f"[filter_industry] キーワード検索追加: industry__icontains='{keyword}'")
+                    
+                    # カテゴリ名の主要キーワードでも検索（より柔軟な対応）
+                    # 例: 「コンサルティング・専門サービス」→「コンサルティング」「専門サービス」でも検索
+                    # 「IT・マスコミ」→「IT」「マスコミ」でも検索
+                    category_keywords = category.name.replace('・', ' ').replace('、', ' ').replace(',', ' ').replace('/', ' ').split()
+                    for keyword in category_keywords:
+                        keyword = keyword.strip()
+                        # IT・マスコミの場合、「IT」は2文字だが重要なので含める
+                        if len(keyword) >= 2:  # 2文字以上のキーワード（ITなども含む）
+                            industry_query |= Q(industry__icontains=keyword)
+                            logger.info(f"[filter_industry] カテゴリキーワード検索追加: industry__icontains='{keyword}'")
+                            
+                            # 特殊ケース: 「コンサルティング」→「コンサル」も検索
+                            if keyword == 'コンサルティング':
+                                industry_query |= Q(industry__icontains='コンサル')
+                                logger.info(f"[filter_industry] 特殊キーワード検索追加: industry__icontains='コンサル'")
+                else:
+                    # 子業界がない場合（特殊カテゴリ: 人材、農林水産など）
+                    # カテゴリ名自体で検索
+                    industry_query |= Q(industry__icontains=category.name)
+                    logger.info(f"[filter_industry] 子業界なし、カテゴリ名で検索: industry__icontains='{category.name}'")
+            else:
+                # 業種名またはその他の値の場合、そのまま検索
+                industry_query |= Q(industry__icontains=item)
+                logger.info(f"[filter_industry] 業種名として検索: industry__icontains='{item}'")
+        
+        result = queryset.filter(industry_query)
+        result_count = result.count()
+        logger.info(f"[filter_industry] 検索結果件数: {result_count}")
+        
+        # デバッグ用: 最初の10件のindustry値をログ出力
+        if result_count > 0:
+            sample_companies = result[:10]
+            logger.info(f"[filter_industry] 検索結果サンプル (industry値): {[c.industry for c in sample_companies]}")
+        else:
+            # 0件の場合、実際のデータのindustry値を確認
+            all_industries = Company.objects.exclude(industry__isnull=True).exclude(industry="").values_list('industry', flat=True).distinct()[:20]
+            logger.info(f"[filter_industry] 実際のデータのindustry値サンプル: {list(all_industries)}")
+        
+        return result
 
     def filter_has_facebook(self, queryset, name, value):
         if value:
@@ -353,15 +431,16 @@ class CompanyViewSet(viewsets.ModelViewSet):
         
         # 日本語ヘッダー
         writer.writerow([
-            '企業名',
             '担当者名',
+            '企業名',
             '担当者役職',
-            'Facebook',
+            'Webサイト',
             '業界',
+            '法人番号',
             '従業員数',
             '売上',
             '所在地',
-            'Webサイト',
+            'Facebook',
             '電話番号',
             'メールアドレス',
             '備考',
@@ -371,15 +450,16 @@ class CompanyViewSet(viewsets.ModelViewSet):
         # 企業データをエクスポート
         for company in queryset:
             writer.writerow([
-                company.name or '',
                 company.contact_person_name or '',
+                company.name or '',
                 company.contact_person_position or '',
-                company.facebook_url or '',
+                company.website_url or company.website or '',
                 company.industry or '',
+                company.corporate_number or '',
                 company.employee_count or '',
                 company.revenue or '',
                 company.prefecture or '',
-                company.website_url or company.website or '',
+                company.facebook_url or '',
                 company.phone or '',
                 company.contact_email or company.email or '',
                 company.notes or company.description or '',
