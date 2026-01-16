@@ -133,6 +133,10 @@ class Command(BaseCommand):
                     updated_count += 1
         
         # 業種（子業界）を作成（各カテゴリ内でdisplay_orderを1から始める）
+        # 特殊カテゴリ（人材、農林水産、鉱業、官公庁、NPO、その他、未分類）は
+        # 子業界を作成しない（シリアライザーでカテゴリレコード自体を業種として返す）
+        special_categories = ['人材', '農林水産', '鉱業', '官公庁', 'NPO', 'その他', '未分類']
+        
         sub_created_count = 0
         sub_updated_count = 0
         for category_name, sub_names in sub_industries_data.items():
@@ -140,9 +144,20 @@ class Command(BaseCommand):
             if not parent:
                 continue
             
+            # 特殊カテゴリの場合は子業界を作成しない
+            if category_name in special_categories:
+                # 特殊カテゴリの場合、カテゴリレコード自体が業種として扱われるため
+                # 子業界を作成する必要はない（シリアライザーで処理される）
+                continue
+            
             # 各カテゴリ内でdisplay_orderを1から始める
             sub_order = 1
             for sub_name in sub_names:
+                # 特殊カテゴリ名と同じ名前の子業界は作成しない
+                # （カテゴリレコード自体が業種として扱われるため）
+                if sub_name in special_categories:
+                    continue
+                
                 sub_industry, created = Industry.objects.get_or_create(
                     name=sub_name,
                     defaults={
@@ -155,10 +170,13 @@ class Command(BaseCommand):
                     sub_created_count += 1
                 else:
                     # 既存データの更新
-                    needs_update = False
+                    # ただし、既存レコードがカテゴリの場合は更新しない
+                    # （特殊カテゴリのカテゴリレコードを子業界に変更しない）
                     if sub_industry.is_category:
-                        sub_industry.is_category = False
-                        needs_update = True
+                        # カテゴリレコードは子業界に変更しない
+                        continue
+                    
+                    needs_update = False
                     if sub_industry.parent_industry != parent:
                         sub_industry.parent_industry = parent
                         needs_update = True
