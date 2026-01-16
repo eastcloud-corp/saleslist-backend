@@ -287,6 +287,25 @@ class CompanyReviewDecisionSerializer(serializers.Serializer):
         return value
 
 
+class CompanyReviewBulkDecisionSerializer(serializers.Serializer):
+    """レビュー一括決裁入力"""
+
+    DECISION_CHOICES = ('approve', 'reject')
+
+    batch_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+        max_length=200,
+    )
+    decision = serializers.ChoiceField(choices=DECISION_CHOICES)
+    comment = serializers.CharField(required=False, allow_blank=True, max_length=1000)
+
+    def validate_batch_ids(self, value):
+        unique_ids = sorted(set(value))
+        if len(unique_ids) != len(value):
+            raise serializers.ValidationError('batch_ids に重複があります。')
+        return unique_ids
+
 class CorporateNumberEntrySerializer(serializers.Serializer):
     company_id = serializers.IntegerField()
     corporate_number = serializers.CharField(max_length=32)

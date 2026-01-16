@@ -33,6 +33,7 @@ from .serializers import (
     CompanyReviewBatchListSerializer,
     CompanyReviewBatchDetailSerializer,
     CompanyReviewDecisionSerializer,
+    CompanyReviewBulkDecisionSerializer,
     CompanyReviewItemSerializer,
     CorporateNumberImportSerializer,
     CorporateNumberImportTriggerSerializer,
@@ -105,6 +106,9 @@ COMPANY_FIELD_MAPPING = {
     'notes': 'notes',
     'corporate_number': 'corporate_number',
     'tob_toc_type': 'tob_toc_type',
+    'contact_person_name': 'contact_person_name',
+    'contact_person_position': 'contact_person_position',
+    'facebook_url': 'facebook_url',
 }
 
 INT_FIELDS = {'employee_count', 'revenue', 'capital', 'established_year'}
@@ -673,7 +677,7 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
             email = self.email_field.to_internal_value(value)
             return email, email
 
-        if field == 'website_url':
+        if field in ('website_url', 'facebook_url'):
             if value == '':
                 return '', ''
             url = self.url_field.to_internal_value(value)
@@ -892,6 +896,196 @@ class CompanyReviewViewSet(viewsets.ReadOnlyModelViewSet):
 
         detail_serializer = CompanyReviewBatchDetailSerializer(batch)
         return Response(detail_serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='bulk-decide')
+    def bulk_decide(self, request):
+        """複数のレビューbatchを一括で承認/否認する"""
+        serializer = CompanyReviewBulkDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        batch_ids = serializer.validated_data['batch_ids']
+        decision = serializer.validated_data['decision']
+        comment = serializer.validated_data.get('comment', '') or ''
+        auth_user = request.user if request.user and request.user.is_authenticated else None
+        now = timezone.now()
+
+        with transaction.atomic():
+            batches = list(
+                CompanyReviewBatch.objects.select_for_update()
+                .prefetch_related('items__candidate')
+                .filter(pk__in=batch_ids)
+            )
+            found_ids = {batch.id for batch in batches}
+            missing = sorted(set(batch_ids) - found_ids)
+            if missing:
+                return Response(
+                    {'detail': f'指定されたレビューが見つかりません: {missing}'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # デッドロック回避のためID昇順で処理
+            batches.sort(key=lambda b: b.id)
+
+            for batch in batches:
+                if batch.status not in (
+                    CompanyReviewBatch.STATUS_PENDING,
+                    CompanyReviewBatch.STATUS_IN_REVIEW,
+                ):
+                    return Response(
+                        {
+                            'detail': f'batch id={batch.id} は処理済みのため更新できません。',
+                            'status': 'conflict',
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                company = Company.objects.select_for_update().get(pk=batch.company_id)
+                items = list(batch.items.all())
+                update_fields = set()
+                history_records = []
+                batch_modified = False
+
+                for item in items:
+                    candidate = item.candidate
+                    field = item.field
+
+                    # 更新対象外のフィールドはスキップ
+                    if field not in COMPANY_FIELD_MAPPING:
+                        # 更新対象外のフィールドはスキップするが、コメントは記録する
+                        item.comment = comment or ''
+                        item.decided_by = auth_user
+                        item.decided_at = now
+                        if decision == 'reject':
+                            # 否認の場合は否認として処理
+                            item.decision = CompanyReviewItem.DECISION_REJECTED
+                            candidate.status = CompanyUpdateCandidate.STATUS_REJECTED
+                            candidate.rejected_at = now
+                            candidate.block_reproposal = False
+                            candidate.rejection_reason_code = CompanyUpdateCandidate.REJECTION_REASON_NONE
+                            candidate.rejection_reason_detail = ''
+                            candidate.ensure_value_hash()
+                            candidate.save(update_fields=[
+                                'status',
+                                'rejected_at',
+                                'block_reproposal',
+                                'rejection_reason_code',
+                                'rejection_reason_detail',
+                                'updated_at',
+                            ])
+                            item.save(update_fields=['comment', 'decided_by', 'decided_at', 'decision', 'updated_at'])
+                        else:
+                            # 承認の場合はスキップ（decisionはpendingのまま、コメントのみ記録）
+                            item.save(update_fields=['comment', 'decided_by', 'decided_at', 'updated_at'])
+                        batch_modified = True
+                        continue
+
+                    model_field = COMPANY_FIELD_MAPPING[field]
+                    item_update_fields = ['decision', 'comment', 'decided_by', 'decided_at', 'updated_at']
+
+                    if decision == 'approve':
+                        raw_value = candidate.candidate_value
+                        converted_value, display_value = self._clean_value(field, raw_value)
+                        old_value = getattr(company, model_field, None)
+
+                        setattr(company, model_field, converted_value)
+                        update_fields.add(model_field)
+
+                        history_records.append({
+                            'field': field,
+                            'old_value': '' if old_value is None else str(old_value),
+                            'new_value': display_value,
+                            'source_type': candidate.source_type,
+                            'comment': comment or '',
+                        })
+
+                        candidate.candidate_value = display_value
+                        candidate.value_hash = CompanyUpdateCandidate.make_value_hash(field, display_value)
+                        candidate.status = CompanyUpdateCandidate.STATUS_MERGED
+                        candidate.merged_at = now
+                        candidate.block_reproposal = False
+                        candidate.rejection_reason_code = CompanyUpdateCandidate.REJECTION_REASON_NONE
+                        candidate.rejection_reason_detail = ''
+                        candidate.save(update_fields=[
+                            'candidate_value',
+                            'value_hash',
+                            'status',
+                            'merged_at',
+                            'block_reproposal',
+                            'rejection_reason_code',
+                            'rejection_reason_detail',
+                            'updated_at',
+                        ])
+
+                        item.candidate_value = display_value
+                        item_update_fields.append('candidate_value')
+                        item.decision = CompanyReviewItem.DECISION_APPROVED
+                    else:  # reject
+                        reason_code = CompanyUpdateCandidate.REJECTION_REASON_NONE
+                        reason_detail = ''
+                        candidate.status = CompanyUpdateCandidate.STATUS_REJECTED
+                        candidate.rejected_at = now
+                        candidate.block_reproposal = False
+                        candidate.rejection_reason_code = reason_code
+                        candidate.rejection_reason_detail = reason_detail
+                        candidate.ensure_value_hash()
+
+                        update_candidate_fields = [
+                            'status',
+                            'rejected_at',
+                            'block_reproposal',
+                            'rejection_reason_code',
+                            'rejection_reason_detail',
+                            'updated_at',
+                        ]
+                        if candidate.value_hash:
+                            update_candidate_fields.append('value_hash')
+
+                        candidate.save(update_fields=update_candidate_fields)
+                        item.decision = CompanyReviewItem.DECISION_REJECTED
+
+                    item.comment = comment or ''
+                    item.decided_by = auth_user
+                    item.decided_at = now
+                    item.save(update_fields=item_update_fields)
+                    batch_modified = True
+
+                if update_fields:
+                    update_fields.add('updated_at')
+                    company.save(update_fields=list(update_fields))
+
+                for record in history_records:
+                    CompanyUpdateHistory.objects.create(
+                        company=company,
+                        field=record['field'],
+                        old_value=record['old_value'],
+                        new_value=record['new_value'],
+                        source_type=record['source_type'],
+                        approved_by=auth_user,
+                        approved_at=now,
+                        comment=record['comment'],
+                    )
+
+                if auth_user and batch.assigned_to_id is None:
+                    batch.assigned_to = auth_user
+
+                if batch_modified:
+                    self._apply_batch_status(batch)
+                    batch.updated_at = now
+                    save_fields = ['status', 'updated_at']
+                    if auth_user and batch.assigned_to:
+                        save_fields.append('assigned_to')
+                    batch.save(update_fields=save_fields)
+
+                batch.refresh_from_db()
+
+        result_serializer = CompanyReviewBatchListSerializer(batches, many=True)
+        return Response(
+            {
+                'updated_count': len(batches),
+                'batch_ids': [batch.id for batch in batches],
+                'results': result_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=False, methods=['post'], url_path='generate-sample')
     def generate_sample(self, request):
