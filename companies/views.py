@@ -461,7 +461,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                         company.contact_person_name or '',
                         company.name or '',
                         company.contact_person_position or '',
-                        company.website_url or company.website or '',
+                        company.website_url or '',
                         company.industry or '',
                         company.corporate_number or '',
                         company.employee_count or '',
@@ -469,8 +469,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
                         company.prefecture or '',
                         company.facebook_url or '',
                         company.phone or '',
-                        company.contact_email or company.email or '',
-                        company.notes or company.description or '',
+                        company.contact_email or '',
+                        company.notes or '',
                         company.status or '',
                     ])
                 except Exception as e:
