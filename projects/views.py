@@ -567,30 +567,62 @@ class ProjectViewSet(viewsets.ModelViewSet):
             
             # ProjectCompany データをエクスポート
             from .models import ProjectCompany
-            for pc in ProjectCompany.objects.filter(project=project).select_related('company'):
+            project_companies = ProjectCompany.objects.filter(project=project).select_related('company')
+            total_count = project_companies.count()
+            logger.info(f'[export_csv] Project {project.id}: Found {total_count} ProjectCompany records')
+            
+            processed_count = 0
+            error_count = 0
+            
+            for pc in project_companies:
                 try:
                     company = pc.company
-                    writer.writerow([
-                        company.contact_person_name if company else '',
-                        company.name if company else pc.company_name or '',
-                        company.contact_person_position if company else '',
-                        company.website_url or company.website if company else '',
-                        company.industry if company else pc.company_industry or '',
-                        company.corporate_number if company else '',
-                        company.employee_count if company else '',
-                        company.revenue if company else '',
-                        company.prefecture if company else '',
-                        company.facebook_url if company else '',
-                        company.phone if company else '',
-                        company.contact_email or company.email if company else '',
-                        pc.status or '',
-                        pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
-                        pc.notes or '',
-                    ])
+                    # companyがNoneの場合は空文字を返す（通常は存在するはずだが、念のため）
+                    if not company:
+                        logger.warning(f'[export_csv] ProjectCompany {pc.id} has no company associated')
+                        writer.writerow([
+                            '',  # 担当者名
+                            '',  # 企業名
+                            '',  # 担当者役職
+                            '',  # Webサイト
+                            '',  # 業界
+                            '',  # 法人番号
+                            '',  # 従業員数
+                            '',  # 売上
+                            '',  # 所在地
+                            '',  # Facebook
+                            '',  # 電話番号
+                            '',  # メールアドレス
+                            pc.status or '',
+                            pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
+                            pc.notes or '',
+                        ])
+                    else:
+                        writer.writerow([
+                            company.contact_person_name or '',
+                            company.name or '',
+                            company.contact_person_position or '',
+                            company.website_url or '',
+                            company.industry or '',
+                            company.corporate_number or '',
+                            company.employee_count or '',
+                            company.revenue or '',
+                            company.prefecture or '',
+                            company.facebook_url or '',
+                            company.phone or '',
+                            company.contact_email or '',
+                            pc.status or '',
+                            pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
+                            pc.notes or '',
+                        ])
+                    processed_count += 1
                 except Exception as e:
+                    error_count += 1
                     logger.error(f'[export_csv] Error processing ProjectCompany {pc.id}: {str(e)}', exc_info=True)
                     # エラーが発生した行をスキップして続行
                     continue
+            
+            logger.info(f'[export_csv] Project {project.id}: Processed {processed_count}/{total_count} records, {error_count} errors')
             
             return response
         except Exception as e:
