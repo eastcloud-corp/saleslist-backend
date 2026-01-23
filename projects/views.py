@@ -536,57 +536,68 @@ class ProjectViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='export_csv')
     def export_csv(self, request, pk=None):
         """案件CSVエクスポート（OpenAPI仕様準拠）"""
-        project = self.get_object()
-        from django.http import HttpResponse
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="project_{project.id}.csv"'
-        
-        # BOMを追加してExcelで正しく日本語を表示
-        response.write('\ufeff')
-        import csv
-        writer = csv.writer(response)
-        # 日本語ヘッダー
-        writer.writerow([
-            '担当者名',
-            '企業名',
-            '担当者役職',
-            'Webサイト',
-            '業界',
-            '法人番号',
-            '従業員数',
-            '売上',
-            '所在地',
-            'Facebook',
-            '電話番号',
-            'メールアドレス',
-            'ステータス',
-            '最終接触',
-            '備考',
-        ])
-        
-        # ProjectCompany データをエクスポート
-        from .models import ProjectCompany
-        for pc in ProjectCompany.objects.filter(project=project).select_related('company'):
-            company = pc.company
+        try:
+            project = self.get_object()
+            from django.http import HttpResponse
+            response = HttpResponse(content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = f'attachment; filename="project_{project.id}.csv"'
+            
+            # BOMを追加してExcelで正しく日本語を表示
+            response.write('\ufeff')
+            import csv
+            writer = csv.writer(response)
+            # 日本語ヘッダー
             writer.writerow([
-                company.contact_person_name if company else '',
-                company.name if company else pc.company_name or '',
-                company.contact_person_position if company else '',
-                company.website_url or company.website if company else '',
-                company.industry if company else pc.company_industry or '',
-                company.corporate_number if company else '',
-                company.employee_count if company else '',
-                company.revenue if company else '',
-                company.prefecture if company else '',
-                company.facebook_url if company else '',
-                company.phone if company else '',
-                company.contact_email or company.email if company else '',
-                pc.status or '',
-                pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
-                pc.notes or '',
+                '担当者名',
+                '企業名',
+                '担当者役職',
+                'Webサイト',
+                '業界',
+                '法人番号',
+                '従業員数',
+                '売上',
+                '所在地',
+                'Facebook',
+                '電話番号',
+                'メールアドレス',
+                'ステータス',
+                '最終接触',
+                '備考',
             ])
-        
-        return response
+            
+            # ProjectCompany データをエクスポート
+            from .models import ProjectCompany
+            for pc in ProjectCompany.objects.filter(project=project).select_related('company'):
+                try:
+                    company = pc.company
+                    writer.writerow([
+                        company.contact_person_name if company else '',
+                        company.name if company else pc.company_name or '',
+                        company.contact_person_position if company else '',
+                        company.website_url or company.website if company else '',
+                        company.industry if company else pc.company_industry or '',
+                        company.corporate_number if company else '',
+                        company.employee_count if company else '',
+                        company.revenue if company else '',
+                        company.prefecture if company else '',
+                        company.facebook_url if company else '',
+                        company.phone if company else '',
+                        company.contact_email or company.email if company else '',
+                        pc.status or '',
+                        pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
+                        pc.notes or '',
+                    ])
+                except Exception as e:
+                    logger.error(f'[export_csv] Error processing ProjectCompany {pc.id}: {str(e)}', exc_info=True)
+                    # エラーが発生した行をスキップして続行
+                    continue
+            
+            return response
+        except Exception as e:
+            logger.error(f'[export_csv] Error exporting project {pk}: {str(e)}', exc_info=True)
+            return Response({
+                'error': f'CSVエクスポートに失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['get'], url_path='ng_companies')
     def ng_companies(self, request, pk=None):
