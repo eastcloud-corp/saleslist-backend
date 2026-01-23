@@ -1,4 +1,5 @@
 import csv
+import logging
 from typing import Dict, Iterable, List
 
 from django.db import transaction
@@ -14,6 +15,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Client, ClientNGCompany
 from .serializers import ClientSerializer, ClientCreateSerializer, ClientNGCompanySerializer
+
+logger = logging.getLogger(__name__)
 
 
 class ClientViewSet(viewsets.ModelViewSet):
@@ -306,78 +309,89 @@ class ClientViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='export-companies')
     def export_companies(self, request, pk=None):
         """クライアント配下の案件企業をCSVエクスポート"""
-        client = self.get_object()
+        try:
+            client = self.get_object()
 
-        from projects.models import ProjectCompany
+            from projects.models import ProjectCompany
 
-        project_companies = (
-            ProjectCompany.objects.filter(project__client=client)
-            .select_related('project', 'company')
-            .order_by('project__id', 'company__name')
-        )
+            project_companies = (
+                ProjectCompany.objects.filter(project__client=client)
+                .select_related('project', 'company')
+                .order_by('project__id', 'company__name')
+            )
 
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename=\"client_{client.id}_companies.csv\"'
+            response = HttpResponse(content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = f'attachment; filename=\"client_{client.id}_companies.csv\"'
 
-        # BOMを追加してExcelで正しく日本語を表示
-        response.write('\ufeff')
-        writer = csv.writer(response)
-        writer.writerow([
-            '担当者名',
-            '企業名',
-            '担当者役職',
-            'Webサイト',
-            '業界',
-            '法人番号',
-            '従業員数',
-            '売上',
-            '所在地',
-            'Facebook',
-            '電話番号',
-            'メールアドレス',
-            'ステータス',
-            '最終接触',
-            '備考',
-            'クライアント名',
-            'プロジェクトID',
-            'プロジェクト名',
-            '企業ID',
-            'スタッフ名',
-            'アクティブ',
-            '作成日時',
-            '更新日時',
-        ])
-
-        for pc in project_companies:
-            company = pc.company
-            project = pc.project
+            # BOMを追加してExcelで正しく日本語を表示
+            response.write('\ufeff')
+            writer = csv.writer(response)
             writer.writerow([
-                company.contact_person_name if company else '',
-                company.name if company else '',
-                company.contact_person_position if company else '',
-                company.website_url or company.website if company else '',
-                company.industry if company else '',
-                company.corporate_number if company else '',
-                company.employee_count if company else '',
-                company.revenue if company else '',
-                company.prefecture if company else '',
-                company.facebook_url if company else '',
-                company.phone if company else '',
-                company.contact_email or company.email if company else '',
-                pc.status or '',
-                pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
-                pc.notes or '',
-                client.name,
-                project.id,
-                project.name,
-                company.id if company else '',
-                pc.staff_name or '',
-                '1' if pc.is_active else '0',
-                pc.created_at.isoformat() if pc.created_at else '',
-                pc.updated_at.isoformat() if pc.updated_at else '',
+                '担当者名',
+                '企業名',
+                '担当者役職',
+                'Webサイト',
+                '業界',
+                '法人番号',
+                '従業員数',
+                '売上',
+                '所在地',
+                'Facebook',
+                '電話番号',
+                'メールアドレス',
+                'ステータス',
+                '最終接触',
+                '備考',
+                'クライアント名',
+                'プロジェクトID',
+                'プロジェクト名',
+                '企業ID',
+                'スタッフ名',
+                'アクティブ',
+                '作成日時',
+                '更新日時',
             ])
 
-        return response
+            for pc in project_companies:
+                try:
+                    company = pc.company
+                    project = pc.project
+                    writer.writerow([
+                        company.contact_person_name if company else '',
+                        company.name if company else '',
+                        company.contact_person_position if company else '',
+                        company.website_url or company.website if company else '',
+                        company.industry if company else '',
+                        company.corporate_number if company else '',
+                        company.employee_count if company else '',
+                        company.revenue if company else '',
+                        company.prefecture if company else '',
+                        company.facebook_url if company else '',
+                        company.phone if company else '',
+                        company.contact_email or company.email if company else '',
+                        pc.status or '',
+                        pc.contact_date.strftime('%Y-%m-%d') if pc.contact_date else '',
+                        pc.notes or '',
+                        client.name,
+                        project.id,
+                        project.name,
+                        company.id if company else '',
+                        pc.staff_name or '',
+                        '1' if pc.is_active else '0',
+                        pc.created_at.isoformat() if pc.created_at else '',
+                        pc.updated_at.isoformat() if pc.updated_at else '',
+                    ])
+                except Exception as e:
+                    logger.error(f'[export_companies] Error processing ProjectCompany {pc.id}: {str(e)}', exc_info=True)
+                    # エラーが発生した行をスキップして続行
+                    continue
+
+            return response
+        except Exception as e:
+            logger.error(f'[export_companies] Error exporting client {pk}: {str(e)}', exc_info=True)
+            return Response({
+                'error': f'CSVエクスポートに失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['post'], url_path='ng-companies/import')
     def import_ng_companies(self, request, pk=None):

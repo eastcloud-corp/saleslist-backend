@@ -420,57 +420,70 @@ class CompanyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='export_csv')  
     def export_csv(self, request):
         """企業CSVエクスポート（OpenAPI仕様準拠）"""
-        from django.http import HttpResponse
-        import csv
-        
-        # フィルタリングされたクエリセットを取得
-        queryset = self.filter_queryset(self.get_queryset())
-        
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename="companies.csv"'
-        
-        # BOMを追加してExcelで正しく日本語を表示
-        response.write('\ufeff')
-        writer = csv.writer(response)
-        
-        # 日本語ヘッダー
-        writer.writerow([
-            '担当者名',
-            '企業名',
-            '担当者役職',
-            'Webサイト',
-            '業界',
-            '法人番号',
-            '従業員数',
-            '売上',
-            '所在地',
-            'Facebook',
-            '電話番号',
-            'メールアドレス',
-            '備考',
-            'ステータス',
-        ])
-        
-        # 企業データをエクスポート
-        for company in queryset:
+        try:
+            from django.http import HttpResponse
+            import csv
+            from rest_framework import status
+            from rest_framework.response import Response
+            
+            # フィルタリングされたクエリセットを取得
+            queryset = self.filter_queryset(self.get_queryset())
+            
+            response = HttpResponse(content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = 'attachment; filename="companies.csv"'
+            
+            # BOMを追加してExcelで正しく日本語を表示
+            response.write('\ufeff')
+            writer = csv.writer(response)
+            
+            # 日本語ヘッダー
             writer.writerow([
-                company.contact_person_name or '',
-                company.name or '',
-                company.contact_person_position or '',
-                company.website_url or company.website or '',
-                company.industry or '',
-                company.corporate_number or '',
-                company.employee_count or '',
-                company.revenue or '',
-                company.prefecture or '',
-                company.facebook_url or '',
-                company.phone or '',
-                company.contact_email or company.email or '',
-                company.notes or company.description or '',
-                company.status or '',
+                '担当者名',
+                '企業名',
+                '担当者役職',
+                'Webサイト',
+                '業界',
+                '法人番号',
+                '従業員数',
+                '売上',
+                '所在地',
+                'Facebook',
+                '電話番号',
+                'メールアドレス',
+                '備考',
+                'ステータス',
             ])
-        
-        return response
+            
+            # 企業データをエクスポート
+            for company in queryset:
+                try:
+                    writer.writerow([
+                        company.contact_person_name or '',
+                        company.name or '',
+                        company.contact_person_position or '',
+                        company.website_url or company.website or '',
+                        company.industry or '',
+                        company.corporate_number or '',
+                        company.employee_count or '',
+                        company.revenue or '',
+                        company.prefecture or '',
+                        company.facebook_url or '',
+                        company.phone or '',
+                        company.contact_email or company.email or '',
+                        company.notes or company.description or '',
+                        company.status or '',
+                    ])
+                except Exception as e:
+                    logger.error(f'[export_csv] Error processing Company {company.id}: {str(e)}', exc_info=True)
+                    # エラーが発生した行をスキップして続行
+                    continue
+            
+            return response
+        except Exception as e:
+            logger.error(f'[export_csv] Error exporting companies: {str(e)}', exc_info=True)
+            return Response({
+                'error': f'CSVエクスポートに失敗しました: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'], url_path='bulk-add-to-projects')
     def bulk_add_to_projects(self, request):
