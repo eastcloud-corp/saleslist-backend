@@ -471,7 +471,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
                         company.phone or '',
                         company.contact_email or '',
                         company.notes or '',
-                        company.status or '',
+                        getattr(company, 'status', '') or '',
                     ])
                 except Exception as e:
                     logger.error(f'[export_csv] Error processing Company {company.id}: {str(e)}', exc_info=True)
