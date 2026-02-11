@@ -77,10 +77,27 @@ class ExecutiveAdmin(admin.ModelAdmin):
 
 @admin.register(CompanyUpdateCandidate)
 class CompanyUpdateCandidateAdmin(admin.ModelAdmin):
-    list_display = ('company', 'field', 'candidate_value', 'source_type', 'confidence', 'status', 'collected_at')
+    list_display = (
+        'company',
+        'field',
+        'candidate_value',
+        'rejection_reason_display',
+        'source_type',
+        'confidence',
+        'status',
+        'collected_at',
+    )
     list_filter = ('status', 'source_type', 'confidence', 'collected_at')
     search_fields = ('company__name', 'field', 'candidate_value')
     ordering = ('-created_at',)
+
+    @admin.display(description='否認理由')
+    def rejection_reason_display(self, obj):
+        if not obj.rejection_reason_code:
+            return ''
+        label = obj.get_rejection_reason_code_display()
+        detail = (obj.rejection_reason_detail or '').strip()
+        return f'{label} / {detail}' if detail else label
 
 
 @admin.register(CompanyReviewBatch)
