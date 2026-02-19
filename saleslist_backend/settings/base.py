@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "ng_companies",
     "data_collection",
     "ai_enrichment",
+    "dm_assistant",
 ]
 
 MIDDLEWARE = [
@@ -213,6 +214,16 @@ POWERPLEXY_DAILY_RECORD_LIMIT = (
     else None
 )
 ENABLE_REVIEW_SAMPLE_API = config("ENABLE_REVIEW_SAMPLE_API", default=False, cast=bool)
+
+# DM作成補助: ChatGPT (OpenAI) と Gemini
+# APIキーは後ほど共有予定。空の場合は生成時にエラーメッセージを返す
+OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+OPENAI_DM_MODEL = config("OPENAI_DM_MODEL", default="gpt-4o-mini")
+OPENAI_DM_MAX_TOKENS = config("OPENAI_DM_MAX_TOKENS", default=4000, cast=int)
+GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
+GEMINI_DM_MODEL = config("GEMINI_DM_MODEL", default="gemini-2.0-flash")
+GEMINI_DM_MAX_TOKENS = config("GEMINI_DM_MAX_TOKENS", default=4000, cast=int)
+# プロンプトは dm_assistant/prompts.py で定義。環境変数 DM_ASSISTANT_PROMPT_GPT_A 等で上書き可能
 
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
