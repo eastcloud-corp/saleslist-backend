@@ -13,3 +13,5 @@ celery==5.5.3
 requests==2.32.3
 PyYAML==6.0.2
 sendgrid==6.11.0
+openai>=1.0.0
+google-generativeai>=0.8.0
