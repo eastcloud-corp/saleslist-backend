@@ -93,7 +93,9 @@ class PowerplexyClient:
 
         if response.status_code >= 500:
             raise PowerplexyResponseError(
-                f"PowerPlexy service error ({response.status_code})"
+                f"PowerPlexy service error ({response.status_code})",
+                status_code=response.status_code,
+                response_body=response.text,
             )
 
         if response.status_code >= 400:
@@ -116,21 +118,31 @@ class PowerplexyClient:
                     raise PowerplexyRateLimitError("PowerPlexy rate limit reached")
                 if response.status_code >= 500:
                     raise PowerplexyResponseError(
-                        f"PowerPlexy service error ({response.status_code})"
+                        f"PowerPlexy service error ({response.status_code})",
+                        status_code=response.status_code,
+                        response_body=response.text,
                     )
                 if response.status_code >= 400:
                     raise PowerplexyResponseError(
-                        f"PowerPlexy rejected the request ({response.status_code}): {response.text}"
+                        f"PowerPlexy rejected the request ({response.status_code}): {response.text}",
+                        status_code=response.status_code,
+                        response_body=response.text,
                     )
 
             raise PowerplexyResponseError(
-                f"PowerPlexy rejected the request ({response.status_code}): {response.text}"
+                f"PowerPlexy rejected the request ({response.status_code}): {response.text}",
+                status_code=response.status_code,
+                response_body=response.text,
             )
 
         try:
             data = response.json()
         except ValueError as exc:
-            raise PowerplexyResponseError("PowerPlexy returned invalid JSON") from exc
+            raise PowerplexyResponseError(
+                "PowerPlexy returned invalid JSON",
+                status_code=response.status_code,
+                response_body=response.text[:2000] if response.text else None,
+            ) from exc
 
         return data
 

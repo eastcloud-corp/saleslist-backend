@@ -15,7 +15,7 @@ from django.utils import timezone
 from companies.models import Company, CompanyUpdateCandidate
 from companies.services.review_ingestion import ingest_rule_based_candidates
 from data_collection.tracker import track_data_collection_run
-from saleslist_backend.settings.base import get_ai_enrichment_cooldown
+from saleslist_backend.settings.base import get_ai_enrichment_cooldown_for_company
 
 from .constants import AI_ENRICH_BATCH_SIZE, AI_ENRICH_API_DELAY_SECONDS
 from .enrich_rules import TARGET_FIELDS, apply_rule_based, build_prompt, build_prompt_with_constraints, build_system_prompt, detect_missing_fields
@@ -82,39 +82,37 @@ def _normalize_candidate_value(field: str, value: object) -> str:
 
 def should_skip_company(company: Company, now: datetime) -> Tuple[bool, Optional[str]]:
     """
-    企業の補完をスキップすべきか判定（Phase 1: 再実行ガード）
-    
-    Args:
-        company: 対象企業
-        now: 現在時刻
-    
-    Returns:
-        (should_skip, skip_reason)
+    企業の補完をスキップすべきか判定（Phase 1: 再実行ガード）。
+    next_retry_strategy が none 以外の場合はクールダウンをバイパスして再試行可能にする。
     """
     if not company.ai_last_enriched_at:
         return False, None
-    
-    cooldown_seconds = get_ai_enrichment_cooldown()
+
+    # ② リトライロジック: next_retry_strategy が none 以外ならクールダウンをバイパス
+    next_retry = getattr(company, "next_retry_strategy", None)
+    if next_retry and next_retry != "none":
+        return False, None
+
+    # ③ 失敗企業は短縮クールダウン、それ以外は通常のクールダウン
+    cooldown_seconds = get_ai_enrichment_cooldown_for_company(company)
     elapsed = (now - company.ai_last_enriched_at).total_seconds()
-    
+
     if elapsed < cooldown_seconds:
         return True, f"cooldown_not_expired (elapsed: {elapsed:.0f}s, required: {cooldown_seconds}s)"
-    
+
     return False, None
 
 
 def _companies_requiring_update(limit: int, company_ids: Optional[Sequence[int]] = None, offset: int = 0) -> List[Company]:
     """
     補完が必要な企業を取得する。
-    
-    Args:
-        limit: 取得件数
-        company_ids: 特定の企業IDのみを対象とする場合
-        offset: スキップする件数（バッチ分割用）
+    ⑥ ai_last_enrichment_status='success' の企業は再補完対象から除外する。
     """
     queryset = Company.objects.all()
     if company_ids:
         queryset = queryset.filter(id__in=company_ids)
+    # ⑥ 補完済み（success）の企業は再補完対象から除外
+    queryset = queryset.exclude(ai_last_enrichment_status="success")
     queryset = queryset.annotate(
         never_enriched=Case(
             When(ai_last_enriched_at__isnull=True, then=Value(True)),
@@ -306,6 +304,11 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
         try:
             client = PowerplexyClient()
         except PowerplexyConfigurationError as exc:
+            # ④ API設定検証: 未設定時にわかりやすいエラーを出力
+            logger.error(
+                "POWERPLEXY_API_KEY が設定されていません。環境変数または .env に POWERPLEXY_API_KEY を設定してください。AI補完をスキップします。",
+                exc_info=False,
+            )
             notify_error("PowerPlexyの設定が不完全なためAI補完をスキップ", extra={"error": str(exc)})
             run_tracker.complete_success(metadata=_metadata_with_processed(
                 {
@@ -550,14 +553,26 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         # Rate Limitは再スローしてCelery retryに任せる
                         raise
                     except PowerplexyError as exc:
-                        logger.warning(
-                            "[AI_ENRICH][FAILED] PowerPlexy呼び出しに失敗",
-                            extra={
-                                "company_id": company.id,
-                                "error": str(exc),
-                                "execution_uuid": execution_uuid,
-                            },
-                        )
+                        # エラー詳細をメッセージに含めてログに確実に出力（extra はフォーマットにより出ない場合がある）
+                        status_code = getattr(exc, "status_code", None)
+                        response_body = getattr(exc, "response_body", None)
+                        err_msg = str(exc)
+                        if status_code is not None:
+                            logger.warning(
+                                "[AI_ENRICH][FAILED] company_id=%s, execution_uuid=%s, status_code=%s, error=%s, response_body=%s",
+                                company.id,
+                                execution_uuid,
+                                status_code,
+                                err_msg,
+                                (response_body[:500] + "..." if response_body and len(response_body) > 500 else response_body) if response_body else "",
+                            )
+                        else:
+                            logger.warning(
+                                "[AI_ENRICH][FAILED] company_id=%s, execution_uuid=%s, error=%s",
+                                company.id,
+                                execution_uuid,
+                                err_msg,
+                            )
                         failed_company_ids.append(company.id)
                         error_details.append({
                             "company_id": company.id,

@@ -10,6 +10,7 @@ from ai_enrichment.redis_usage import UsageTracker
 
 @override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
 class UsageTrackerTests(SimpleTestCase):
+    @override_settings(POWERPLEXY_DAILY_RECORD_LIMIT=None)  # 未設定時は月間上限から導出されることを検証
     @mock.patch('ai_enrichment.redis_usage.get_redis_connection', new=None)
     def test_usage_tracker_with_cache_backend(self):
         tracker = UsageTracker()

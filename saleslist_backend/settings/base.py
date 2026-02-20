@@ -207,11 +207,12 @@ POWERPLEXY_MONTHLY_CALL_LIMIT = (
     else None
 )
 POWERPLEXY_COST_PER_REQUEST = config("POWERPLEXY_COST_PER_REQUEST", default=0.05, cast=float)
-_powerplexy_daily_record_limit = config("POWERPLEXY_DAILY_RECORD_LIMIT", default=None)
+# ⑤ 日次上限: デフォルト500件を明示
+_powerplexy_daily_record_limit = config("POWERPLEXY_DAILY_RECORD_LIMIT", default="500")
 POWERPLEXY_DAILY_RECORD_LIMIT = (
     int(_powerplexy_daily_record_limit)
     if _powerplexy_daily_record_limit not in (None, "")
-    else None
+    else 500
 )
 ENABLE_REVIEW_SAMPLE_API = config("ENABLE_REVIEW_SAMPLE_API", default=False, cast=bool)
 
@@ -264,17 +265,28 @@ CORPORATE_NUMBER_API_MAX_RESULTS = config(
 
 # AI Enrichment Cooldown (Phase 1: 再実行ガード)
 # 本番環境: 24時間、ローカル環境: 5分
+# 失敗企業の再処理: 1時間（短縮クールダウン）
 AI_ENRICHMENT_COOLDOWN_PRODUCTION = 24 * 60 * 60  # 24時間（秒）
 AI_ENRICHMENT_COOLDOWN_LOCAL = 5 * 60  # 5分（秒）
+AI_ENRICHMENT_COOLDOWN_FAILED_RETRY = 1 * 60 * 60  # 1時間（失敗企業の再選出用）
 
 
 def get_ai_enrichment_cooldown() -> int:
     """
-    AI補完のクールダウン時間を取得（環境に応じて）
-    
-    Returns:
-        クールダウン時間（秒）
+    AI補完のクールダウン時間を取得（環境に応じて、企業非依存のデフォルト値）
     """
+    if DEBUG:
+        return AI_ENRICHMENT_COOLDOWN_LOCAL
+    return AI_ENRICHMENT_COOLDOWN_PRODUCTION
+
+
+def get_ai_enrichment_cooldown_for_company(company) -> int:
+    """
+    AI補完のクールダウン時間を取得（企業のステータスに応じて）。
+    ai_last_enrichment_status='failed' の企業は短縮クールダウン（1時間）で再選出可能にする。
+    """
+    if getattr(company, "ai_last_enrichment_status", None) == "failed":
+        return AI_ENRICHMENT_COOLDOWN_FAILED_RETRY
     if DEBUG:
         return AI_ENRICHMENT_COOLDOWN_LOCAL
     return AI_ENRICHMENT_COOLDOWN_PRODUCTION
