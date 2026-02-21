@@ -74,7 +74,8 @@ class UsageSnapshot:
     cost: float
 
     def can_execute(self, *, cost_limit: float, call_limit: int, cost_per_call: float) -> bool:
-        return self.cost + cost_per_call <= cost_limit and self.calls + 1 <= call_limit
+        # 月次実行回数による制限は削除。コスト上限のみチェック
+        return self.cost + cost_per_call <= cost_limit
 
 
 class UsageTracker:
