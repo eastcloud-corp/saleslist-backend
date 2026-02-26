@@ -321,17 +321,27 @@ SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=False, cast=bool
 # Custom user model
 AUTH_USER_MODEL = "accounts.User"
 
-# Database cache
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "social_navigator_cache",
-        "TIMEOUT": 300,
-        "OPTIONS": {
-            "MAX_ENTRIES": 1000,
-        },
+# Cache: Redis があれば Redis（スロットル等の競合を防ぐ）、なければ DB キャッシュ
+_redis_url = config("REDIS_URL", default=None)
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _redis_url,
+            "TIMEOUT": 300,
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "social_navigator_cache",
+            "TIMEOUT": 300,
+            "OPTIONS": {
+                "MAX_ENTRIES": 1000,
+            },
+        }
+    }
 
 # Snapshot retention
 SNAPSHOT_RETENTION_DAYS = config("SNAPSHOT_RETENTION_DAYS", default=7, cast=int)

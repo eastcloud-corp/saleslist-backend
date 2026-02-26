@@ -10,6 +10,8 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import login, update_session_auth_hash
+from django.db import IntegrityError
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from django.conf import settings
 from .serializers import LoginSerializer, UserProfileSerializer
@@ -261,6 +263,20 @@ def me_view(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password_view(request):
+    """自身のパスワード変更API"""
+    from .serializers import ChangePasswordSerializer
+    serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    user = request.user
+    user.set_password(serializer.validated_data['new_password'])
+    user.save()
+    return Response({'message': 'パスワードを変更しました。'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
 @permission_classes([AllowAny])
 @throttle_classes([ScopedRateThrottle])
 def refresh_view(request):
@@ -328,24 +344,44 @@ def users_list_view(request):
     }, status=status.HTTP_200_OK)
 
 
-@api_view(['PATCH'])
+@api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def update_user_view(request, user_id):
-    """ユーザー情報更新API（設定画面用）"""
+    """ユーザー情報更新API・削除API（設定画面用）"""
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         return Response({'error': 'ユーザーが見つかりません'}, status=status.HTTP_404_NOT_FOUND)
-    
-    # 部分更新のためのデータ取得
+
+    if request.method == 'DELETE':
+        if user.id == request.user.id:
+            return Response(
+                {'error': '自分自身のアカウントは削除できません。'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            user.delete()
+            logger.info("user.delete.success", extra={"user_id": user_id})
+        except (ProtectedError, IntegrityError) as e:
+            logger.warning("user.delete.blocked", extra={"user_id": user_id, "reason": str(e)})
+            return Response(
+                {'error': 'このユーザーは他のデータで参照されているため削除できません。無効化をご利用ください。'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            logger.exception("user.delete.failed", extra={"user_id": user_id})
+            return Response(
+                {'error': str(e) or 'ユーザーの削除に失敗しました。'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # PATCH: 部分更新
     data = request.data
-    
-    # 許可されるフィールドのみ更新
     allowed_fields = ['name', 'email', 'role', 'is_active']
     for field in allowed_fields:
         if field in data:
             setattr(user, field, data[field])
-    
     try:
         user.save()
         serializer = UserProfileSerializer(user)

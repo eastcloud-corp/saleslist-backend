@@ -12,6 +12,7 @@ urlpatterns = [
     path('logout', views.logout_view, name='logout_no_slash'),
     path('me/', views.me_view, name='me'),
     path('me', views.me_view, name='me_no_slash'),
+    path('password/change/', views.change_password_view, name='change_password'),
     path('refresh/', views.refresh_view, name='token_refresh'),
     path('refresh', views.refresh_view, name='token_refresh_no_slash'),
     path('users/', views.users_list_view, name='users_list'),
