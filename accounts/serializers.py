@@ -61,3 +61,20 @@ class UserCreateSerializer(serializers.ModelSerializer):
             password=password
         )
         return user
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """自身のパスワード変更用"""
+    current_password = serializers.CharField(max_length=128, write_only=True)
+    new_password = serializers.CharField(max_length=128, write_only=True)
+
+    def validate_current_password(self, value):
+        user = self.context.get('request').user
+        if not user.check_password(value):
+            raise serializers.ValidationError('現在のパスワードが正しくありません。')
+        return value
+
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError('新しいパスワードは8文字以上にしてください。')
+        return value
