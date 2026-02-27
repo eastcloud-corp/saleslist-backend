@@ -144,6 +144,9 @@ def run_ai_enrich_scheduled(self) -> dict:
     """
     from data_collection.services import enqueue_job
 
+    if not getattr(settings, "AI_ENRICHMENT_ENABLED", True):
+        logger.info("[AI_ENRICH][SCHEDULED] skipped (AI_ENRICHMENT_ENABLED=false)")
+        return {"status": "skipped", "reason": "ai_enrichment_disabled"}
     daily_limit = getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", None)
     if daily_limit is None:
         daily_limit = 3 if settings.DEBUG else DEFAULT_DAILY_LIMIT
@@ -273,6 +276,15 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
         metadata=tracker_metadata,
         execution_uuid=execution_uuid,
     ) as run_tracker:
+        if not getattr(settings, "AI_ENRICHMENT_ENABLED", True):
+            logger.info("[AI_ENRICH] skipped (AI_ENRICHMENT_ENABLED=false)")
+            run_tracker.complete_success(
+                metadata=_metadata_with_processed(
+                    {"result": "skipped", "reason": "ai_enrichment_disabled"},
+                    [],
+                ),
+            )
+            return {"status": "skipped", "reason": "ai_enrichment_disabled", "processed_company_ids": []}
         usage_tracker = UsageTracker()
         usage_snapshot = usage_tracker.snapshot()
         usage_snapshot_dict = {"calls": usage_snapshot.calls, "cost": usage_snapshot.cost}
