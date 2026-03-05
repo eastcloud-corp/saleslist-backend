@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import mixins, status, viewsets
-from rest_framework.permissions import IsAdminUser
+from .permissions import IsAdminOrStaffUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -51,7 +51,7 @@ def _to_iso(value):
 
 
 class DataCollectionRunViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrStaffUser]
     serializer_class = DataCollectionRunSerializer
     lookup_field = "execution_uuid"
 
@@ -97,7 +97,7 @@ class DataCollectionRunViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
 
 
 class DataCollectionTriggerView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrStaffUser]
 
     def post(self, request, *args, **kwargs):
         payload: Dict[str, Any] = request.data or {}
