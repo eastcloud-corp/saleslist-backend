@@ -36,7 +36,8 @@ class PowerplexyClient:
         max_tokens: Optional[int] = None,
         session: Optional[requests.Session] = None,
     ) -> None:
-        self.api_key = api_key or getattr(settings, "POWERPLEXY_API_KEY", "")
+        raw_key = api_key or getattr(settings, "POWERPLEXY_API_KEY", "")
+        self.api_key = (raw_key or "").strip()
         if not self.api_key:
             raise PowerplexyConfigurationError("POWERPLEXY_API_KEY is not configured")
 
@@ -158,7 +159,6 @@ class PowerplexyClient:
             抽出されたJSON辞書
         """
         data = self.query(prompt, system_prompt)
-        logger.debug("PowerPlexy raw response: %s", data)
         parsed, _usage = self._extract_parsed_and_usage(data)
         return parsed
 
@@ -172,7 +172,6 @@ class PowerplexyClient:
             (parsed_json, usage_dict)
         """
         data = self.query(prompt, system_prompt)
-        logger.debug("PowerPlexy raw response: %s", data)
         return self._extract_parsed_and_usage(data)
 
     def _extract_parsed_and_usage(
@@ -190,16 +189,12 @@ class PowerplexyClient:
                 message = choices[0].get("message", {})
                 content = message.get("content")
                 if isinstance(content, str):
-                    logger.debug("PowerPlexy content extracted: %s", content[:500])
                     parsed = self._parse_json_blob(content)
-                    logger.debug("PowerPlexy parsed JSON: %s", parsed)
                     return parsed, usage
             # Legacy response fallback
             for key in ("answer", "output", "text", "result"):
                 if key in data and isinstance(data[key], str):
-                    logger.debug("PowerPlexy legacy response key '%s': %s", key, data[key][:500])
                     parsed = self._parse_json_blob(data[key])
-                    logger.debug("PowerPlexy parsed JSON: %s", parsed)
                     return parsed, usage
         logger.error("PowerPlexy unexpected response structure: %s", data)
         raise PowerplexyResponseError("Unexpected PowerPlexy response structure")
