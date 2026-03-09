@@ -501,31 +501,6 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                     # Phase 2: 制約注入版のプロンプトを使用
                     prompt = build_prompt_with_constraints(company, remaining, context)
                     system_prompt = build_system_prompt()
-                    
-                    # Phase 2: 制約条件が含まれているかログに記録
-                    has_constraints = context.has_gbizinfo_constraints()
-                    logger.info(
-                        "[AI_ENRICH][PROMPT_WITH_CONSTRAINTS] company_id=%d, has_constraints=%s, prompt_length=%d",
-                        company.id,
-                        has_constraints,
-                        len(prompt),
-                    )
-                    if has_constraints:
-                        constraints = context.get_constraints_for_prompt()
-                        logger.info(
-                            "[AI_ENRICH][CONSTRAINTS] company_id=%d, constraints=%s",
-                            company.id,
-                            constraints,
-                        )
-                    
-                    logger.info(
-                        "[AI_ENRICH][SYSTEM_PROMPT]",
-                        extra={
-                            "company_id": company.id,
-                            "system_prompt": system_prompt,
-                            "system_prompt_length": len(system_prompt),
-                        },
-                    )
                     try:
                         logger.info(
                             "[AI_ENRICH][AI_REQUEST] company_id=%d, missing_fields=%s, prompt_length=%d",
@@ -760,14 +735,6 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                 combined.update({field: value for field, value in provisional_values.items() if value})
                 combined.update({field: value for field, value in ai_values.items() if value})
                 
-                logger.info(
-                    "[AI_ENRICH][DEBUG] company_id=%d, combined=%s, provisional_values=%s, ai_values=%s",
-                    company.id,
-                    list(combined.keys()),
-                    list(provisional_values.keys()),
-                    list(ai_values.keys()),
-                )
-                
                 # 補完情報を記録（combinedがあれば記録、normalized_entriesが空でも記録）
                 # 候補が作成されるかどうかに関係なく、補完が試みられた場合は記録
                 enriched_fields = []
@@ -796,10 +763,6 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                 company_enrichment_record["status"] = "success" if enriched_fields else "no_data"
                 
                 if not combined:
-                    logger.info(
-                        "[AI_ENRICH][DEBUG] combined is empty for company_id=%d",
-                        company.id,
-                    )
                     # 補完を試みたが結果が空の場合も記録
                     company_enrichment_record["status"] = "no_data"
                     
@@ -864,11 +827,6 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         )
 
                 if not normalized_entries:
-                    logger.info(
-                        "[AI_ENRICH][DEBUG] normalized_entries is empty for company_id=%d, combined=%s",
-                        company.id,
-                        combined,
-                    )
                     # normalized_entriesが空でも、combinedがあれば補完情報を記録
                     # 既にcompany_enrichment_recordに情報が入っているので、そのまま追加
                     if enriched_fields:
@@ -880,12 +838,6 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         )
                     success_company_ids.append(company.id)
                     continue
-
-                logger.info(
-                    "[AI_ENRICH][DEBUG] normalized_entries for company_id=%d: %s",
-                    company.id,
-                    list(normalized_entries.keys()),
-                )
                 
                 entry_records = []
                 for field, value in normalized_entries.items():
@@ -918,12 +870,6 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                         ai_last_enriched_source="ai" if ai_values else "rule",
                         ai_last_enrichment_status=enrichment_status,
                         next_retry_strategy=RetryStrategy.NONE.value,
-                    )
-                    logger.info(
-                        "[AI_ENRICH][DEBUG] company_id=%d, ingested=%d, entry_records=%d",
-                        company.id,
-                        len(ingested),
-                        len(entry_records),
                     )
                 
                 # 補完情報を記録（enriched_fieldsがあれば記録）
