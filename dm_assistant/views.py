@@ -20,7 +20,13 @@ class DmGenerateView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         client_info = serializer.validated_data["client_info"]
-        results = generate_dm_messages(client_info)
+        sender_info = serializer.validated_data.get("sender_info") or ""
+        product_info = serializer.validated_data.get("product_info") or ""
+        results = generate_dm_messages(
+            recipient_info=client_info,
+            sender_info=sender_info,
+            product_info=product_info,
+        )
 
         response_data = {
             "results": [

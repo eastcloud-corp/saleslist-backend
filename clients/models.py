@@ -76,3 +76,25 @@ class ClientNGCompany(models.Model):
 
     def __str__(self):
         return f"{self.client.name} - {self.company_name}"
+
+
+class ClientDmCandidate(models.Model):
+    """クライアント別のDM候補（DM作成補助で生成した結果の保存用）"""
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name="dm_candidates",
+        verbose_name="クライアント",
+    )
+    results = models.JSONField(default=list, verbose_name="生成結果（4件: GPT-A/B, Gemini-A/B）")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="作成日時")
+
+    class Meta:
+        db_table = "client_dm_candidates"
+        verbose_name = "クライアントDM候補"
+        verbose_name_plural = "クライアントDM候補"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["client"])]
+
+    def __str__(self):
+        return f"{self.client.name} @ {self.created_at}"

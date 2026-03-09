@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Client, ClientNGCompany
+from .models import Client, ClientNGCompany, ClientDmCandidate
 
 
 class ClientSerializer(serializers.ModelSerializer):
@@ -51,3 +51,20 @@ class ClientNGCompanySerializer(serializers.ModelSerializer):
             'reason', 'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ClientDmCandidateSerializer(serializers.ModelSerializer):
+    """クライアントDM候補のシリアライザー"""
+
+    class Meta:
+        model = ClientDmCandidate
+        fields = ["id", "client", "results", "created_at"]
+        read_only_fields = ["id", "client", "created_at"]
+
+
+class ClientDmCandidateWriteSerializer(serializers.Serializer):
+    """DM候補保存用（results のみ受け取る）"""
+    results = serializers.ListField(
+        child=serializers.DictField(),
+        allow_empty=True,
+    )
