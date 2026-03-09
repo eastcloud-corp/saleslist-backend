@@ -54,7 +54,24 @@ def _get_prompt(provider: str, prompt_type: str) -> str:
     return getattr(settings, key, None) or default
 
 
-def _call_gpt(client_info: str, prompt_template: str, prompt_type: str) -> GenerationResult:
+def _build_dm_context(recipient_info: str, sender_info: str, product_info: str) -> str:
+    """送信先・自社・商材を区別したDM用コンテキスト文を組み立てる。"""
+    recipient = (recipient_info or "").strip() or "（未入力）"
+    sender = (sender_info or "").strip() or "（未入力）"
+    product = (product_info or "").strip() or "（未入力）"
+    return f"""【送信先（DMの送り先・受け取る相手）】
+{recipient}
+
+【自社情報（送信元・DMを送る側）】
+{sender}
+
+【商材・サービス】
+{product}
+
+上記のとおり、自社から送信先へ送るDM文面を、上記ルールに従って生成してください。"""
+
+
+def _call_gpt(user_content: str, prompt_template: str, prompt_type: str) -> GenerationResult:
     """OpenAI (ChatGPT) API を呼び出し"""
     try:
         from openai import OpenAI
@@ -77,7 +94,6 @@ def _call_gpt(client_info: str, prompt_template: str, prompt_type: str) -> Gener
 
     model = getattr(settings, "OPENAI_DM_MODEL", "gpt-4o-mini")
     max_tokens = getattr(settings, "OPENAI_DM_MAX_TOKENS", DEFAULT_MAX_TOKENS)
-    user_content = f"以下のクライアント情報を元に、上記のルールに従ってDMを生成してください。\n\n---\nクライアント情報:\n{client_info}"
 
     try:
         client = OpenAI(api_key=api_key)
@@ -114,7 +130,7 @@ def _call_gpt(client_info: str, prompt_template: str, prompt_type: str) -> Gener
         )
 
 
-def _call_gemini(client_info: str, prompt_template: str, prompt_type: str) -> GenerationResult:
+def _call_gemini(user_content: str, prompt_template: str, prompt_type: str) -> GenerationResult:
     """Google Gemini API を呼び出し"""
     import warnings
 
@@ -139,22 +155,19 @@ def _call_gemini(client_info: str, prompt_template: str, prompt_type: str) -> Ge
             error="GEMINI_API_KEY が設定されていません。",
         )
 
-    model_name = getattr(settings, "GEMINI_DM_MODEL", "gemini-2.0-flash")
+    model_name = getattr(settings, "GEMINI_DM_MODEL", "gemini-2.5-flash")
     max_tokens = getattr(settings, "GEMINI_DM_MAX_TOKENS", DEFAULT_MAX_TOKENS)
-    user_content = f"""{prompt_template}
+    full_content = f"""{prompt_template}
 
 ---
 
-以下のクライアント情報を元に、上記のルールに従ってDMを生成してください。
-
-クライアント情報:
-{client_info}"""
+{user_content}"""
 
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(
-            user_content,
+            full_content,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7,
                 max_output_tokens=max_tokens,
@@ -184,21 +197,27 @@ def _call_gemini(client_info: str, prompt_template: str, prompt_type: str) -> Ge
         )
 
 
-def generate_dm_messages(client_info: str) -> list[GenerationResult]:
+def generate_dm_messages(
+    recipient_info: str,
+    sender_info: str = "",
+    product_info: str = "",
+) -> list[GenerationResult]:
     """
-    クライアント情報をもとに、4つのDM文面を並列で生成する。
+    送信先・自社・商材をもとに、自社→送信先へ送るDM文面を4パターン並列生成する。
 
     Returns:
         [GPT-A, GPT-B, Gemini-A, Gemini-B] の順の結果リスト
     """
-    client_info = (client_info or "").strip()
-    if not client_info:
+    recipient_info = (recipient_info or "").strip()
+    if not recipient_info:
         return [
-            GenerationResult(provider="gpt", prompt_type="a", message="", error="クライアント情報を入力してください。"),
-            GenerationResult(provider="gpt", prompt_type="b", message="", error="クライアント情報を入力してください。"),
-            GenerationResult(provider="gemini", prompt_type="a", message="", error="クライアント情報を入力してください。"),
-            GenerationResult(provider="gemini", prompt_type="b", message="", error="クライアント情報を入力してください。"),
+            GenerationResult(provider="gpt", prompt_type="a", message="", error="送信先（DMの送り先）を入力してください。"),
+            GenerationResult(provider="gpt", prompt_type="b", message="", error="送信先（DMの送り先）を入力してください。"),
+            GenerationResult(provider="gemini", prompt_type="a", message="", error="送信先（DMの送り先）を入力してください。"),
+            GenerationResult(provider="gemini", prompt_type="b", message="", error="送信先（DMの送り先）を入力してください。"),
         ]
+
+    user_content = _build_dm_context(recipient_info, sender_info or "", product_info or "")
 
     tasks = [
         ("gpt", "a"),
@@ -211,8 +230,8 @@ def generate_dm_messages(client_info: str) -> list[GenerationResult]:
         provider, prompt_type = task
         prompt_template = _get_prompt(provider, prompt_type)
         if provider == "gpt":
-            return _call_gpt(client_info, prompt_template, prompt_type)
-        return _call_gemini(client_info, prompt_template, prompt_type)
+            return _call_gpt(user_content, prompt_template, prompt_type)
+        return _call_gemini(user_content, prompt_template, prompt_type)
 
     results: dict[tuple[str, str], GenerationResult] = {}
     with ThreadPoolExecutor(max_workers=4) as executor:

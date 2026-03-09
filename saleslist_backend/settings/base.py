@@ -193,8 +193,8 @@ MFA_EMAIL_BODY_TEMPLATE = config(
 MFA_EMAIL_TEMPLATE_ID = config("MFA_EMAIL_TEMPLATE_ID", default="")
 MFA_DEBUG_EMAIL_RECIPIENT = config("MFA_DEBUG_EMAIL_RECIPIENT", default="")
 
-# PowerPlexy AI enrichment configuration
-POWERPLEXY_API_KEY = config("POWERPLEXY_API_KEY", default="")
+# PowerPlexy AI enrichment configuration（キーは前後の空白・改行を除去。GitHub Secrets 貼り付け時の誤りを防ぐ）
+POWERPLEXY_API_KEY = (config("POWERPLEXY_API_KEY", default="") or "").strip()
 POWERPLEXY_API_ENDPOINT = config("POWERPLEXY_API_ENDPOINT", default="https://api.perplexity.ai/chat/completions")
 POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-pro")  # llama-3.1-sonar-large-128k-onlineは2025年2月に非推奨
 POWERPLEXY_MAX_TOKENS = config("POWERPLEXY_MAX_TOKENS", default=1000, cast=int)
@@ -222,7 +222,7 @@ OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 OPENAI_DM_MODEL = config("OPENAI_DM_MODEL", default="gpt-4o-mini")
 OPENAI_DM_MAX_TOKENS = config("OPENAI_DM_MAX_TOKENS", default=4000, cast=int)
 GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
-GEMINI_DM_MODEL = config("GEMINI_DM_MODEL", default="gemini-2.0-flash")
+GEMINI_DM_MODEL = config("GEMINI_DM_MODEL", default="gemini-2.5-flash")
 GEMINI_DM_MAX_TOKENS = config("GEMINI_DM_MAX_TOKENS", default=4000, cast=int)
 # プロンプトは dm_assistant/prompts.py で定義。環境変数 DM_ASSISTANT_PROMPT_GPT_A 等で上書き可能
 

@@ -13,8 +13,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Client, ClientNGCompany
-from .serializers import ClientSerializer, ClientCreateSerializer, ClientNGCompanySerializer
+from .models import Client, ClientNGCompany, ClientDmCandidate
+from .serializers import (
+    ClientSerializer,
+    ClientCreateSerializer,
+    ClientNGCompanySerializer,
+    ClientDmCandidateSerializer,
+    ClientDmCandidateWriteSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +112,30 @@ class ClientViewSet(viewsets.ModelViewSet):
         
         serializer = ClientNGCompanySerializer(ng_company)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get", "post"], url_path="dm-candidates")
+    def dm_candidates(self, request, pk=None):
+        """GET: クライアントに紐づくDM候補（最新1件）を取得。POST: DM作成補助で生成した結果を保存。"""
+        client = self.get_object()
+        if request.method == "GET":
+            latest = ClientDmCandidate.objects.filter(client=client).first()
+            if not latest:
+                return Response({"results": None, "created_at": None})
+            return Response({
+                "results": latest.results,
+                "created_at": latest.created_at,
+            })
+        # POST
+        ser = ClientDmCandidateWriteSerializer(data=request.data)
+        if not ser.is_valid():
+            return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+        results = ser.validated_data.get("results") or []
+        obj = ClientDmCandidate.objects.create(client=client, results=results)
+        return Response({
+            "id": obj.id,
+            "results": obj.results,
+            "created_at": obj.created_at,
+        }, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'], url_path='ng-companies/bulk-add')
     def bulk_add_ng_companies(self, request, pk=None):
