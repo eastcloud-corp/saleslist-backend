@@ -2,6 +2,7 @@ import random
 from datetime import timedelta
 from typing import Callable, Iterable, List, Mapping, Optional, Sequence
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -9,6 +10,7 @@ from ..models import (
     Company,
     CompanyReviewBatch,
     CompanyReviewItem,
+    CompanyUpdateHistory,
     CompanyUpdateCandidate,
     ExternalSourceRecord,
 )
@@ -67,6 +69,13 @@ FIELD_NORMALIZERS: Mapping[str, Callable[[Optional[object]], str]] = {
 }
 
 DEFAULT_RULE_BASED_COOLDOWN_DAYS = 30
+
+# AI 補完の自動反映（レビューを通さずに Company に保存）
+# SOURCE_AI かつ confidence が閾値以上の場合に適用する。
+# 環境変数で無効化したい場合は 0 を指定する。
+AI_AUTO_MERGE_CONFIDENCE_THRESHOLD = int(
+    getattr(settings, "AI_AUTO_MERGE_CONFIDENCE_THRESHOLD", 0) or 0
+)
 
 PREFECTURE_SAMPLES = [
     "東京都",
@@ -180,6 +189,27 @@ def _normalize_current_value(field: str, value: Optional[object]) -> str:
     return _normalize_candidate_value(field, value)
 
 
+def _convert_value_for_company_field(field: str, normalized_value: str):
+    """
+    Company のフィールドへ保存する型に変換する。
+    - 数値系: int
+    - 法人番号: 数字のみ
+    それ以外は文字列として扱う。
+    """
+    if field in ("employee_count", "revenue", "capital", "established_year"):
+        if normalized_value == "":
+            return None, ""
+        try:
+            v = int(normalized_value)
+        except (TypeError, ValueError):
+            raise ValueError("invalid_int")
+        return v, str(v)
+    if field == "corporate_number":
+        v = _normalize_corporate_number(normalized_value)
+        return v, v
+    return normalized_value, normalized_value
+
+
 @transaction.atomic
 def ingest_rule_based_candidates(entries: Sequence[dict]) -> List[CompanyReviewItem]:
     """
@@ -280,13 +310,17 @@ def ingest_rule_based_candidates(entries: Sequence[dict]) -> List[CompanyReviewI
             record.save(force_insert=record.pk is None)
             continue
 
+        confidence = int(entry.get("confidence", 100) or 100)
+        source_type = entry.get("source_type", CompanyUpdateCandidate.SOURCE_RULE)
+        source_detail = entry.get("source_detail", "") or ""
+
         candidate = create_candidate_entry(
             company=company,
             field=field,
             candidate_value=normalized_value,
-            source_type=entry.get("source_type", CompanyUpdateCandidate.SOURCE_RULE),
-            source_detail=entry.get("source_detail", ""),
-            confidence=int(entry.get("confidence", 100)),
+            source_type=source_type,
+            source_detail=source_detail,
+            confidence=confidence,
             source_company_name=entry.get("source_company_name", company.name),
             source_corporate_number=entry.get("source_corporate_number", company.corporate_number or ""),
         )
@@ -299,6 +333,63 @@ def ingest_rule_based_candidates(entries: Sequence[dict]) -> List[CompanyReviewI
                 record.metadata = metadata
             record.save(force_insert=record.pk is None)
             continue
+
+        # AI 補完で確信度が高いものはレビューなしで自動反映
+        if (
+            AI_AUTO_MERGE_CONFIDENCE_THRESHOLD > 0
+            and source_type == CompanyUpdateCandidate.SOURCE_AI
+            and confidence >= AI_AUTO_MERGE_CONFIDENCE_THRESHOLD
+            and hasattr(company, field)
+        ):
+            try:
+                converted, display_value = _convert_value_for_company_field(field, normalized_value)
+            except ValueError:
+                converted, display_value = None, ""
+
+            # 変換できない場合は通常レビューへ
+            if converted is not None or display_value != "":
+                old_value = getattr(company, field, None)
+                setattr(company, field, converted)
+                company.save(update_fields=[field, "updated_at"])
+
+                candidate.candidate_value = display_value
+                candidate.value_hash = CompanyUpdateCandidate.make_value_hash(field, display_value)
+                candidate.status = CompanyUpdateCandidate.STATUS_MERGED
+                candidate.merged_at = now
+                candidate.block_reproposal = False
+                candidate.rejection_reason_code = CompanyUpdateCandidate.REJECTION_REASON_NONE
+                candidate.rejection_reason_detail = ""
+                candidate.save(update_fields=[
+                    "candidate_value",
+                    "value_hash",
+                    "status",
+                    "merged_at",
+                    "block_reproposal",
+                    "rejection_reason_code",
+                    "rejection_reason_detail",
+                    "updated_at",
+                ])
+
+                CompanyUpdateHistory.objects.create(
+                    company=company,
+                    field=field,
+                    old_value="" if old_value is None else str(old_value),
+                    new_value=display_value,
+                    source_type=candidate.source_type,
+                    approved_by=None,
+                    approved_at=now,
+                    comment=f"auto-merged (confidence={confidence})",
+                )
+
+                # 取得履歴の更新
+                if record is None:
+                    record = ExternalSourceRecord(company=company, field=field, source=source_id)
+                record.last_fetched_at = now
+                record.data_hash = value_hash
+                if metadata is not None:
+                    record.metadata = metadata
+                record.save(force_insert=record.pk is None)
+                continue
 
         batch = ensure_review_batch(company)
         item = CompanyReviewItem.objects.create(

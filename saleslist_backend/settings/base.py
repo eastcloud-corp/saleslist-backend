@@ -267,6 +267,14 @@ CORPORATE_NUMBER_API_MAX_RESULTS = config(
 # スケジュール実行のオン/オフ（false で深夜のAI補完を停止）
 AI_ENRICHMENT_ENABLED = config("AI_ENRICHMENT_ENABLED", default=True, cast=bool)
 
+# AI補完の自動反映（レビューを通さずに反映する確信度の閾値）
+# 0 の場合は無効（常にレビューへ）
+AI_AUTO_MERGE_CONFIDENCE_THRESHOLD = config(
+    "AI_AUTO_MERGE_CONFIDENCE_THRESHOLD",
+    default=0,
+    cast=int,
+)
+
 # AI Enrichment Cooldown (Phase 1: 再実行ガード)
 # 本番環境: 24時間、ローカル環境: 5分
 # 失敗企業の再処理: 1時間（短縮クールダウン）
