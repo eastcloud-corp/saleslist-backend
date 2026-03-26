@@ -42,7 +42,7 @@ from .redis_usage import UsageTracker
 logger = logging.getLogger(__name__)
 
 AI_SOURCE_DETAIL = "powerplexy"
-DEFAULT_DAILY_LIMIT = 500
+DEFAULT_DAILY_LIMIT = 10000
 
 
 def _unique_int_list(values: Sequence[int]) -> List[int]:
