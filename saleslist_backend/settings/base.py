@@ -207,12 +207,12 @@ POWERPLEXY_MONTHLY_CALL_LIMIT = (
     else None
 )
 POWERPLEXY_COST_PER_REQUEST = config("POWERPLEXY_COST_PER_REQUEST", default=0.05, cast=float)
-# ⑤ 日次上限: デフォルト500件を明示
-_powerplexy_daily_record_limit = config("POWERPLEXY_DAILY_RECORD_LIMIT", default="500")
+# ⑤ 日次上限: デフォルト10000件を明示（環境変数未設定時）
+_powerplexy_daily_record_limit = config("POWERPLEXY_DAILY_RECORD_LIMIT", default="10000")
 POWERPLEXY_DAILY_RECORD_LIMIT = (
     int(_powerplexy_daily_record_limit)
     if _powerplexy_daily_record_limit not in (None, "")
-    else 500
+    else 10000
 )
 ENABLE_REVIEW_SAMPLE_API = config("ENABLE_REVIEW_SAMPLE_API", default=False, cast=bool)
 
