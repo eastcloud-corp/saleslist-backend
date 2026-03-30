@@ -842,7 +842,17 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                 entry_records = []
                 for field, value in normalized_entries.items():
                     # Phase 2: 信頼度をコンテキストから取得（なければデフォルト値）
-                    field_confidence = context.confidence.get(field, 85 if field in ai_values else 100)
+                    # context.confidence は本来 0.0〜1.0 の float を返す想定。
+                    # 旧挙動では誤って 85/100 相当を入れてしまうケースがあり、結果的に 8500 等の値が混入し得たため、
+                    # ここで確実に 0〜1 に正規化し、最終的に 0〜100 にクランプする。
+                    field_confidence = context.confidence.get(field, 0.85 if field in ai_values else 1.0)
+                    # 念のため: 1.0超の値はパーセント表現の可能性として 100で割る
+                    if field_confidence > 1.0:
+                        if field_confidence <= 100.0:
+                            field_confidence = field_confidence / 100.0
+                        else:
+                            field_confidence = 1.0
+                    field_confidence = max(0.0, min(1.0, float(field_confidence)))
                     entry_records.append(
                         {
                             "company_id": company.id,
