@@ -80,10 +80,13 @@ def _normalize_candidate_value(field: str, value: object) -> str:
     return str(value).strip()
 
 
-def should_skip_company(company: Company, now: datetime) -> Tuple[bool, Optional[str]]:
+def should_skip_company(
+    company: Company, now: datetime, *, bypass_cooldown: bool = False
+) -> Tuple[bool, Optional[str]]:
     """
     企業の補完をスキップすべきか判定（Phase 1: 再実行ガード）。
     next_retry_strategy が none 以外の場合はクールダウンをバイパスして再試行可能にする。
+    bypass_cooldown=True のときはクールダウンのみ無視（手動バックフィル用）。
     """
     if not company.ai_last_enriched_at:
         return False, None
@@ -91,6 +94,9 @@ def should_skip_company(company: Company, now: datetime) -> Tuple[bool, Optional
     # ② リトライロジック: next_retry_strategy が none 以外ならクールダウンをバイパス
     next_retry = getattr(company, "next_retry_strategy", None)
     if next_retry and next_retry != "none":
+        return False, None
+
+    if bypass_cooldown:
         return False, None
 
     # ③ 失敗企業は短縮クールダウン、それ以外は通常のクールダウン
@@ -103,16 +109,23 @@ def should_skip_company(company: Company, now: datetime) -> Tuple[bool, Optional
     return False, None
 
 
-def _companies_requiring_update(limit: int, company_ids: Optional[Sequence[int]] = None, offset: int = 0) -> List[Company]:
+def _companies_requiring_update(
+    limit: int,
+    company_ids: Optional[Sequence[int]] = None,
+    offset: int = 0,
+    *,
+    include_successful_companies: bool = False,
+) -> List[Company]:
     """
     補完が必要な企業を取得する。
-    ⑥ ai_last_enrichment_status='success' の企業は再補完対象から除外する。
+    既定では ai_last_enrichment_status='success' の企業は再補完対象から除外する。
+    include_successful_companies=True のときは success も対象（業界バックフィル等）。
     """
     queryset = Company.objects.all()
     if company_ids:
         queryset = queryset.filter(id__in=company_ids)
-    # ⑥ 補完済み（success）の企業は再補完対象から除外
-    queryset = queryset.exclude(ai_last_enrichment_status="success")
+    if not include_successful_companies:
+        queryset = queryset.exclude(ai_last_enrichment_status="success")
     queryset = queryset.annotate(
         never_enriched=Case(
             When(ai_last_enriched_at__isnull=True, then=Value(True)),
@@ -238,7 +251,12 @@ def run_ai_enrich_scheduled(self) -> dict:
 def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional[str] = None) -> dict:
     """
     AI補完タスクのメイン処理。
-    
+
+    payload（任意）:
+    - limit / offset / company_ids: 従来どおり
+    - include_successful_companies: True で ai_last_enrichment_status=success も未取得フィールドがあれば対象
+    - bypass_cooldown: True で再実行クールダウンを無視（バックフィル用。負荷・API上限に注意）
+
     注意: このタスクは enqueue_job 経由でのみ実行されることを想定しています。
     execution_uuid が None の場合は RuntimeError を発生させます。
     """
@@ -251,6 +269,9 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
     payload = payload or {}
     tracker_metadata = {"options": payload}
     processed_company_ids: List[int] = []
+
+    include_successful_companies = bool(payload.get("include_successful_companies"))
+    bypass_cooldown = bool(payload.get("bypass_cooldown"))
 
     daily_limit = payload.get(
         "limit", getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", DEFAULT_DAILY_LIMIT)
@@ -331,7 +352,12 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
             ))
             return {"status": "skipped", "reason": "missing_api_key", "processed_company_ids": []}
 
-        companies = _companies_requiring_update(daily_limit, company_ids, offset=offset)
+        companies = _companies_requiring_update(
+            daily_limit,
+            company_ids,
+            offset=offset,
+            include_successful_companies=include_successful_companies,
+        )
         processed_company_ids = [company.id for company in companies]
         if not companies:
             logger.info("No companies require AI enrichment")
@@ -361,7 +387,9 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
             try:
                 # Phase 1: 再実行ガードチェック
                 now = timezone.now()
-                should_skip, skip_reason = should_skip_company(company, now)
+                should_skip, skip_reason = should_skip_company(
+                    company, now, bypass_cooldown=bypass_cooldown
+                )
                 if should_skip:
                     logger.info(
                         "[AI_ENRICH][SKIP] company_id=%d, skip_reason=%s, last_enriched_at=%s",

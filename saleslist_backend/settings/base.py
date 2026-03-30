@@ -268,10 +268,10 @@ CORPORATE_NUMBER_API_MAX_RESULTS = config(
 AI_ENRICHMENT_ENABLED = config("AI_ENRICHMENT_ENABLED", default=True, cast=bool)
 
 # AI補完の自動反映（レビューを通さずに反映する確信度の閾値）
-# 0 の場合は無効（常にレビューへ）
+# 0 の場合は無効（常にレビューへ）。75 以上で Company へ即反映。
 AI_AUTO_MERGE_CONFIDENCE_THRESHOLD = config(
     "AI_AUTO_MERGE_CONFIDENCE_THRESHOLD",
-    default=0,
+    default=75,
     cast=int,
 )
 
