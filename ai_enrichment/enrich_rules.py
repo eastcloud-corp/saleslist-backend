@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 TARGET_FIELDS = {
+    "industry": "業界",
     "contact_person_name": "担当者名",
     "contact_person_position": "担当者役職",
     "established_year": "設立年",
@@ -73,6 +74,7 @@ def build_prompt(company: Company, missing_fields: Sequence[str]) -> str:
     
     # フィールドごとの詳細説明
     field_descriptions = {
+        "industry": "業界・業種（簡潔なカテゴリ名。例: IT・ソフトウェア、人材サービス）",
         "contact_person_name": "担当者名（役職や括弧内の情報は除く）",
         "contact_person_position": "担当者役職",
         "established_year": "設立年（4桁の西暦、例: 2020）",
