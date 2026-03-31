@@ -52,6 +52,19 @@ class UsageTrackerTests(SimpleTestCase):
 
     @override_settings(
         POWERPLEXY_MONTHLY_COST_LIMIT=150.0,
+        POWERPLEXY_COST_PER_REQUEST=0.05,
+        POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT=False,
+        POWERPLEXY_MONTHLY_CALL_LIMIT=None,
+        POWERPLEXY_DAILY_RECORD_LIMIT="100",
+    )
+    @mock.patch('ai_enrichment.redis_usage.get_redis_connection', new=None)
+    def test_enforce_cost_limit_false_always_allows_execute(self):
+        tracker = UsageTracker()
+        tracker.increment(calls=100, cost=10_000.0)
+        self.assertTrue(tracker.can_execute())
+
+    @override_settings(
+        POWERPLEXY_MONTHLY_COST_LIMIT=150.0,
         POWERPLEXY_COST_PER_REQUEST=0.0,
         POWERPLEXY_MONTHLY_CALL_LIMIT=None,
         POWERPLEXY_DAILY_RECORD_LIMIT=None,
