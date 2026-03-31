@@ -200,6 +200,12 @@ POWERPLEXY_MODEL = config("POWERPLEXY_MODEL", default="sonar-pro")  # llama-3.1-
 POWERPLEXY_MAX_TOKENS = config("POWERPLEXY_MAX_TOKENS", default=1000, cast=int)
 POWERPLEXY_TIMEOUT = config("POWERPLEXY_TIMEOUT", default=30, cast=int)
 POWERPLEXY_MONTHLY_COST_LIMIT = config("POWERPLEXY_MONTHLY_COST_LIMIT", default=150.0, cast=float)
+# False のとき月次コスト上限をチェックせず AI 補完を続行（推定コストの Redis 集計はそのまま）
+POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT = config(
+    "POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT",
+    default=True,
+    cast=bool,
+)
 _powerplexy_monthly_call_limit = config("POWERPLEXY_MONTHLY_CALL_LIMIT", default=None)
 POWERPLEXY_MONTHLY_CALL_LIMIT = (
     int(_powerplexy_monthly_call_limit)

@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import calendar
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.core.cache import caches
 from django.utils import timezone
 
@@ -20,6 +21,14 @@ DEFAULT_COST_LIMIT = 150.0
 DEFAULT_COST_PER_REQUEST = 0.05
 
 _USAGE_KEY_TEMPLATE = "ai_usage:{year}-{month}:{metric}"
+
+
+def _enforce_monthly_cost_limit() -> bool:
+    """True のときのみ月次コスト上限で AI 実行を止める。settings 未定義時は環境変数を参照。"""
+    if hasattr(django_settings, "POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT"):
+        return bool(getattr(django_settings, "POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT"))
+    raw = os.environ.get("POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT", "true")
+    return str(raw).strip().lower() not in ("0", "false", "no", "off")
 
 
 def _current_month(now: Optional[datetime] = None) -> tuple[int, int]:
@@ -88,25 +97,25 @@ class UsageTracker:
         cost_per_call: Optional[float] = None,
     ) -> None:
         self.connection_alias = connection_alias
-        backend_name = settings.CACHES.get(connection_alias, {}).get("BACKEND", "")
+        backend_name = django_settings.CACHES.get(connection_alias, {}).get("BACKEND", "")
         self._use_cache = (
             get_redis_connection is None
             or "django_redis" not in backend_name
         )
-        self.cost_limit = cost_limit if cost_limit is not None else getattr(settings, "POWERPLEXY_MONTHLY_COST_LIMIT", DEFAULT_COST_LIMIT)
-        self.cost_per_call = cost_per_call if cost_per_call is not None else getattr(settings, "POWERPLEXY_COST_PER_REQUEST", DEFAULT_COST_PER_REQUEST)
+        self.cost_limit = cost_limit if cost_limit is not None else getattr(django_settings, "POWERPLEXY_MONTHLY_COST_LIMIT", DEFAULT_COST_LIMIT)
+        self.cost_per_call = cost_per_call if cost_per_call is not None else getattr(django_settings, "POWERPLEXY_COST_PER_REQUEST", DEFAULT_COST_PER_REQUEST)
 
         if call_limit is not None:
             resolved_call_limit = call_limit
         else:
-            explicit_call_limit = _to_int_or_none(getattr(settings, "POWERPLEXY_MONTHLY_CALL_LIMIT", None))
+            explicit_call_limit = _to_int_or_none(getattr(django_settings, "POWERPLEXY_MONTHLY_CALL_LIMIT", None))
             if explicit_call_limit is not None and explicit_call_limit >= 0:
                 resolved_call_limit = explicit_call_limit
             else:
                 resolved_call_limit = _derive_call_limit(self.cost_limit, self.cost_per_call)
         self.call_limit = max(int(resolved_call_limit), 0)
 
-        explicit_daily_limit = _to_int_or_none(getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", None))
+        explicit_daily_limit = _to_int_or_none(getattr(django_settings, "POWERPLEXY_DAILY_RECORD_LIMIT", None))
         if explicit_daily_limit is not None and explicit_daily_limit >= 0:
             resolved_daily_limit = explicit_daily_limit
         else:
@@ -136,6 +145,8 @@ class UsageTracker:
         return UsageSnapshot(calls=calls, cost=cost)
 
     def can_execute(self) -> bool:
+        if not _enforce_monthly_cost_limit():
+            return True
         usage = self.snapshot()
         return usage.can_execute(
             cost_limit=self.cost_limit,
