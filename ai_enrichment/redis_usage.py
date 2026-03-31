@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import calendar
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -20,6 +21,14 @@ DEFAULT_COST_LIMIT = 150.0
 DEFAULT_COST_PER_REQUEST = 0.05
 
 _USAGE_KEY_TEMPLATE = "ai_usage:{year}-{month}:{metric}"
+
+
+def _enforce_monthly_cost_limit() -> bool:
+    """True のときのみ月次コスト上限で AI 実行を止める。settings 未定義時は環境変数を参照。"""
+    if hasattr(django_settings, "POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT"):
+        return bool(getattr(django_settings, "POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT"))
+    raw = os.environ.get("POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT", "true")
+    return str(raw).strip().lower() not in ("0", "false", "no", "off")
 
 
 def _current_month(now: Optional[datetime] = None) -> tuple[int, int]:
@@ -136,7 +145,7 @@ class UsageTracker:
         return UsageSnapshot(calls=calls, cost=cost)
 
     def can_execute(self) -> bool:
-        if not getattr(django_settings, "POWERPLEXY_ENFORCE_MONTHLY_COST_LIMIT", True):
+        if not _enforce_monthly_cost_limit():
             return True
         usage = self.snapshot()
         return usage.can_execute(
