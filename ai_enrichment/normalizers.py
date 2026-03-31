@@ -153,4 +153,10 @@ def normalize_candidate_value(field: str, value: object) -> Optional[str]:
 
     # default: collapse whitespace
     text = re.sub(r"\s+", " ", text.replace("　", " ")).strip()
+    if field == "industry" and len(text) > 100:
+        text = text[:100].rstrip()
     return text or None
+</think>
+
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+Read

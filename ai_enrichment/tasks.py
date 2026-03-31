@@ -18,7 +18,15 @@ from data_collection.tracker import track_data_collection_run
 from saleslist_backend.settings.base import get_ai_enrichment_cooldown_for_company
 
 from .constants import AI_ENRICH_BATCH_SIZE, AI_ENRICH_API_DELAY_SECONDS
-from .enrich_rules import TARGET_FIELDS, apply_rule_based, build_prompt, build_prompt_with_constraints, build_system_prompt, detect_missing_fields
+from .enrich_rules import (
+    AI_OUTPUT_LABEL_ALIASES,
+    TARGET_FIELDS,
+    apply_rule_based,
+    build_prompt,
+    build_prompt_with_constraints,
+    build_system_prompt,
+    detect_missing_fields,
+)
 from .normalizers import normalize_candidate_value
 from .enrichment_context import EnrichmentContext
 from .confidence import calculate_confidence
@@ -68,7 +76,10 @@ def _metadata_with_processed(base: Dict[str, object], processed_ids: Sequence[in
 
 
 def _reverse_field_map() -> Dict[str, str]:
-    return {label: field for field, label in TARGET_FIELDS.items()}
+    m = {label: field for field, label in TARGET_FIELDS.items()}
+    for alias_label, field in AI_OUTPUT_LABEL_ALIASES.items():
+        m[alias_label] = field
+    return m
 
 
 def _normalize_candidate_value(field: str, value: object) -> str:
@@ -256,6 +267,7 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
     - limit / offset / company_ids: 従来どおり
     - include_successful_companies: True で ai_last_enrichment_status=success も未取得フィールドがあれば対象
     - bypass_cooldown: True で再実行クールダウンを無視（バックフィル用。負荷・API上限に注意）
+    - only_fields: 未取得のうち指定フィールドのみ補完（例: ["industry"]）。業界バックフィルで他項目を触りたくないときに使用
 
     注意: このタスクは enqueue_job 経由でのみ実行されることを想定しています。
     execution_uuid が None の場合は RuntimeError を発生させます。
@@ -272,6 +284,7 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
 
     include_successful_companies = bool(payload.get("include_successful_companies"))
     bypass_cooldown = bool(payload.get("bypass_cooldown"))
+    only_fields = payload.get("only_fields")
 
     daily_limit = payload.get(
         "limit", getattr(settings, "POWERPLEXY_DAILY_RECORD_LIMIT", DEFAULT_DAILY_LIMIT)
@@ -291,6 +304,17 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                 logger.warning("Invalid company_id provided to AI enrichment: %s", value)
         if cleaned:
             company_ids = cleaned
+
+    def _restrict_missing_fields(missing: List[str]) -> List[str]:
+        if only_fields is None:
+            return missing
+        if isinstance(only_fields, str) and only_fields.strip():
+            wanted = {only_fields.strip()}
+        elif isinstance(only_fields, (list, tuple)):
+            wanted = {str(x).strip() for x in only_fields if str(x).strip()}
+        else:
+            return missing
+        return [f for f in missing if f in wanted]
 
     with track_data_collection_run(
         "ai.enrich",
@@ -409,7 +433,7 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                     success_company_ids.append(company.id)  # スキップも成功としてカウント（処理は完了）
                     continue
                 
-                missing_fields = detect_missing_fields(company)
+                missing_fields = _restrict_missing_fields(detect_missing_fields(company))
                 # 補完を試みた企業を記録（成功/失敗に関わらず）
                 company_enrichment_record = {
                     "company_id": company.id,
@@ -612,15 +636,17 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                             list(completion.keys()),
                             list(reverse_map.keys()),
                         )
+                        # 同一フィールドが「業界」「業種」など複数キーで返った場合は canonical ラベル（TARGET_FIELDS）を優先
+                        field_pick: Dict[str, tuple[str, str]] = {}
                         for label, value in completion.items():
-                            field = reverse_map.get(label)
+                            label_str = str(label)
+                            field = reverse_map.get(label_str)
                             if not field:
                                 logger.debug(
                                     "[AI_ENRICH][AI_MAPPING] label '%s' not found in reverse_map",
                                     label,
                                 )
                                 continue
-                            # 空文字列やNoneの場合はスキップ
                             if not value or (isinstance(value, str) and value.strip() == ""):
                                 logger.debug(
                                     "[AI_ENRICH][AI_SKIP_EMPTY] field=%s, value=%s",
@@ -629,20 +655,28 @@ def run_ai_enrich(self, payload: Optional[dict] = None, execution_uuid: Optional
                                 )
                                 continue
                             normalized = normalize_candidate_value(field, value)
-                            if normalized:
-                                mapped[field] = normalized
-                                logger.info(
-                                    "[AI_ENRICH][AI_MAPPED] field=%s, value=%s, normalized=%s",
-                                    field,
-                                    value[:50],
-                                    normalized[:50],
-                                )
-                            else:
+                            if not normalized:
                                 logger.debug(
                                     "[AI_ENRICH][AI_NORMALIZE_FAILED] field=%s, value=%s",
                                     field,
                                     value,
                                 )
+                                continue
+                            canonical = TARGET_FIELDS.get(field, "")
+                            if field not in field_pick:
+                                field_pick[field] = (label_str, normalized)
+                                continue
+                            prev_label, _ = field_pick[field]
+                            if canonical and label_str == canonical and prev_label != canonical:
+                                field_pick[field] = (label_str, normalized)
+
+                        for field, (_lbl, normalized) in field_pick.items():
+                            mapped[field] = normalized
+                            logger.info(
+                                "[AI_ENRICH][AI_MAPPED] field=%s, normalized=%s",
+                                field,
+                                normalized[:50],
+                            )
                     
                     ai_values = mapped
                     

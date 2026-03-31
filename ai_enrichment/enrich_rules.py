@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Mapping, Optional, Sequence
 
 from django.conf import settings
 from django.utils import timezone
@@ -33,6 +33,14 @@ TARGET_FIELDS = {
     "prefecture": "所在地（都道府県）",
     "city": "所在地（市区町村・番地）",
     "business_description": "事業内容",
+}
+
+# LLM が TARGET_FIELDS のラベルと異なるキーで返す場合のフォールバック（→ 内部フィールド名）
+AI_OUTPUT_LABEL_ALIASES: Mapping[str, str] = {
+    # モデル verbose が「業種」のため、応答が「業種」キーになりがち
+    "業種": "industry",
+    "industry": "industry",
+    "Industry": "industry",
 }
 
 # Phase 2: AI出力に必須フィールドを追加（gBizINFO再探索用）
@@ -173,6 +181,7 @@ def build_prompt(company: Company, missing_fields: Sequence[str]) -> str:
         "",
         "【出力形式】",
         "以下のJSON形式のみを返してください。余計な文章や説明は不要です。",
+        "キー名は【抽出が必要な情報】に出ている日本語ラベルと一致させてください（例: 業界）。",
         f"出力例:\n{target_json}",
     ])
     
